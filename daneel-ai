@@ -1,0 +1,50 @@
+#! /usr/bin/python
+
+import tp.client.threads
+from tp.netlib.client import url2bits
+from tp.netlib import Connection
+from tp.netlib import failed, constants, objects
+from tp.client.cache import Cache
+
+version = (0, 0, 1)
+
+def callback(*args, **kw):
+    #print args, kw
+    pass
+def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
+    debug = False
+
+    host, username, game, password = url2bits(uri)
+    if not game is None:
+        username = "%s@%s" % (username, game)
+
+    connection = Connection()
+
+    # Download the entire universe
+    if connection.setup(host=host, debug=debug):
+        print "Unable to connect to the host."
+        return
+
+    if failed(connection.connect("daneel-ai/%i.%i.%i" % version)):
+        print "Unable to connect to the host."
+        return
+
+    if failed(connection.login(username, password)):
+        # Try creating the user..
+        print "User did not exist, trying to create user."
+        if failed(connection.account(username, password, "", "daneel-ai bot")):
+            print "Username / Password incorrect."
+            return
+
+        if failed(connection.login(username, password)):
+            print "Created username, but still couldn't login :/"
+            return
+
+    cache = Cache(Cache.key(host, username))
+    return connection, cache
+
+if __name__ == "__main__":
+    connection, cache = connect()
+    cache.update(connection,callback)
+    print cache.objects
+

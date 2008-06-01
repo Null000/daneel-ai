@@ -1,0 +1,4 @@
+This bot requires the following to be installed:
+	libtpproto-py
+	libtpclient-py
+
