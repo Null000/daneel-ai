@@ -1,16 +1,25 @@
+import re
+
 class Context(dict):
+    """Keeps track of logical variables."""
     def checkTerm(f):
         """Allows you to both pass a string representing a variable or a LogicVar object as arguments"""
         def checked(self,var):
             if(not isinstance(var,Term)):
-                var = self[var]
+                var = self.parse(var)
             return f(self,var)
         return checked
 
+    def __init__(self,constraintList=[]):
+        """Initializes the context with a list of constraint terms"""
+        self.constraints = constraintList
+
     def __missing__(self,key):
-        v = LogicVar(key)
-        self[key] = v
-        return v
+        if(re.match(r"^[A-Z]\w*$",key)):
+            v = LogicVar(self,key)
+            self[key] = v
+            return v
+        raise KeyError, "Name (%s) not found in CHR context!" % key
 
     @checkTerm
     def variable(self,var):
@@ -43,16 +52,40 @@ class Context(dict):
                     mgu.extend(zip(s.args,t.args))
         return not stop
 
+    def parse(self,expr):
+        """Parses an expression into a Term.
+        Valid expressions are for example "X", "z" or "f(g(123),B)".
+        We use the Prolog convention that tokens starting with lowercase are terms
+        and tokens starting with uppercase are variables.
+        Only functors that appear in the constraint list will be parsed to CHR constraints,
+        the other expressions are assumed to be Python code.
+        """
+        expr = expr.strip()
+        if(re.match(r"^[A-Z]\w*$",expr)):
+            return self[expr] #variable
+        else:
+            m = re.match(r"^(\w+)(\( *(.+, *)*.+ *\))?$",expr)
+            if(m is not None):
+                functor = m.group(1)
+                if(functor in self.constraints):
+                    args = m.group(2)[1:-1].split(",")
+                    args = [self.parse(x) for x in args]
+                    return Constraint(self,functor,*args)
+            return PythonTerm(self,expr)
+
+
 class Term:
     """A term in a CHR context. Can be a variable, a constraint or a wrapped Python primitive."""
-    pass
+    def __init__(self,context):
+        self.context = context
 
 class LogicVar(Term):
     """A logical variable in a CHR context. Can optionally be linked to
     another logical variable to make this an alias of the other.
     To prevent loops, the last link in a chain of aliases should always
     be used, this is the canonical form of the variable"""
-    def __init__(self,name,alias=None):
+    def __init__(self,context,name,alias=None):
+        Term.__init__(self,context)
         self.name = name
         self.link = alias            
 
@@ -63,23 +96,29 @@ class LogicVar(Term):
         var = self
         while(isinstance(var,LogicVar) and var.link is not None):
             var = var.link
-        return var
+        if(isinstance(var,LogicVar)):
+            return var
+        else:
+            return var.canonical()
         
     def contains(self, other):
         return self.canonical() == other.canonical()
 
+    def ground(self):
+        return not isinstance(self.canonical(),LogicVar)
+
 class Constraint(Term):
-    def __init__(self,name,*args):
+    def __init__(self,context,name,*args):
+        Term.__init__(self,context)
         self.functor = name
-        self.args = [(x if isinstance(x,Term) else PythonTerm(x)) for x in args]
+        self.args = [(x if isinstance(x,Term) else PythonTerm(self.context,x)) for x in args]
 
     def arity(self):
         return len(self.args)
 
     def canonical(self):
-        args = [self.functor]
-        args += [x.canonical() for x in self.args]
-        return apply(Constraint,args)
+        args = [x.canonical() for x in self.args]
+        return Constraint(self.context,self.functor,*args)
 
     def __str__(self):
         if(len(self.args) > 0):
@@ -90,21 +129,38 @@ class Constraint(Term):
     def contains(self,other):
         return any([x.contains(other) for x in self.canonical().args])
 
+    def ground(self):
+        return all([x.ground() for x in self.canonical().args])
+
 class PythonTerm(Term):
-    def __init__(self,term):
+    def __init__(self,context,term):
+        Term.__init__(self,context)
         if(isinstance(term,PythonTerm)):
             self.term = term.term
         else:
             self.term = term
 
     def canonical(self):
-        return self
+        if(self.ground()):
+            return eval(self.term,self.context)
+        else:
+            return self.term
 
     def __str__(self):
         return "%s" % (self.term,)
 
     def contains(self,other):
         return other == self or other == self.term
+
+    def ground(self):
+        #The correct way to do this would probably be to create the parse tree
+        #and search whether all variables are ground, but this seems to work too
+        try:
+            eval(self.term,self.context)
+            return True
+        except NameError:
+            return False
+
 
 class ConstraintStore(set):
     """A CHR constraint store is used to hold a collection of facts in the form of predicates."""
