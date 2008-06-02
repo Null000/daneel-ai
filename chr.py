@@ -60,7 +60,7 @@ class Context(dict):
         Only functors that appear in the constraint list will be parsed to CHR constraints,
         the other expressions are assumed to be Python code.
         """
-        expr = expr.strip()
+        expr = str(expr).strip()
         if(re.match(r"^[A-Z]\w*$",expr)):
             return self[expr] #variable
         else:
@@ -90,7 +90,7 @@ class LogicVar(Term):
         self.link = alias            
 
     def __str__(self):
-        return (self.name if self.link is None else str(self.canonical()))
+        return (self.name if self.link is None else "%s=%s" % self.name,self.canonical())
 
     def canonical(self):
         var = self
@@ -133,16 +133,24 @@ class Constraint(Term):
         return all([x.ground() for x in self.canonical().args])
 
 class PythonTerm(Term):
+    p = re.compile(r"\b([A-Z]\w*)\b")
+
     def __init__(self,context,term):
         Term.__init__(self,context)
         if(isinstance(term,PythonTerm)):
             self.term = term.term
         else:
             self.term = term
+        self.args = PythonTerm.p.findall(self.term)
 
     def canonical(self):
         if(self.ground()):
-            return eval(self.term,self.context)
+            localterm = self.term
+            for x in self.args:
+                pat = re.compile(r"\b%s\b" % x)
+                repl = self.context[x].canonical()
+                localterm = pat.sub(str(repl),localterm)
+            return eval(localterm)
         else:
             return self.term
 
@@ -155,11 +163,10 @@ class PythonTerm(Term):
     def ground(self):
         #The correct way to do this would probably be to create the parse tree
         #and search whether all variables are ground, but this seems to work too
-        try:
-            eval(self.term,self.context)
+        if(len(self.args) == 0):
             return True
-        except NameError:
-            return False
+        else:
+            return all([self.context.parse(x).ground() for x in self.args])
 
 
 class ConstraintStore(set):
