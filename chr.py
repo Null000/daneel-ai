@@ -133,6 +133,11 @@ class Constraint(Term):
         return all([x.ground() for x in self.canonical().args])
 
 class PythonTerm(Term):
+    """Implements support for a Python expression, possibly with logical variables.
+    Any function used in the expression must be known to the context, like this:
+    con["f"] = f
+    con.parse("f(X-10)")
+    """
     p = re.compile(r"\b([A-Z]\w*)\b")
 
     def __init__(self,context,term):
@@ -145,12 +150,7 @@ class PythonTerm(Term):
 
     def canonical(self):
         if(self.ground()):
-            localterm = self.term
-            for x in self.args:
-                pat = re.compile(r"\b%s\b" % x)
-                repl = self.context[x].canonical()
-                localterm = pat.sub(str(repl),localterm)
-            return eval(localterm)
+            return self.eval()
         else:
             return self.term
 
@@ -167,6 +167,24 @@ class PythonTerm(Term):
             return True
         else:
             return all([self.context.parse(x).ground() for x in self.args])
+
+    def expandVars(self)
+        localterm = self.term
+        for x in self.args:
+            pat = re.compile(r"\b%s\b" % x)
+            repl = self.context[x].canonical()
+            localterm = pat.sub(str(repl),localterm)
+        return localterm
+
+    def eval(self):
+        assert self.ground(), "Cannot evaluate a non-ground expression! (%s)" % self.term
+        exp = self.expandVars()
+        return eval(exp,self.context)
+
+    def exec(self):
+        assert self.ground(), "Cannot execute a non-ground expression! (%s)" % self.term
+        exp = self.expandVars()
+        exec(exp,self.context)
 
 
 class ConstraintStore(set):
