@@ -10,9 +10,14 @@ class Context(dict):
             return f(self,var)
         return checked
 
-    def __init__(self,constraintList=[]):
-        """Initializes the context with a list of constraint terms"""
+    def __init__(self,constraintList=[],assumeConstraints=False):
+        """Initializes the context with a list of constraint terms.
+        The assumeConstraints arguments allows you to customize the parsing:
+        if it is False (default), predicates not in the list are assumed to be
+        Python functions and won't support unification. If it is True, predicates
+        are converted to constraints and can undergo unification on the arguments."""
         self.constraints = constraintList
+        self.assumeConstraints = assumeConstraints
 
     def __missing__(self,key):
         if(re.match(r"^[A-Z]\w*$",key)):
@@ -23,7 +28,7 @@ class Context(dict):
 
     @checkTerm
     def variable(self,var):
-        return isinstance(self.canonical(var),LogicVar)
+        return isinstance(var,LogicVar) and not var.ground()
     
     @checkTerm
     def canonical(self,var):
@@ -31,6 +36,9 @@ class Context(dict):
 
     def unify(self,first,second):
         """Uses the Martelli-Montanari algorithm to compute the most general unification"""
+        if not isinstance(first,Term): first = self.parse(first)
+        if not isinstance(second,Term): second = self.parse(second)
+
         mgu = [(first,second)]
         stop = False
         while(not stop and len(mgu) > 0):
@@ -44,12 +52,14 @@ class Context(dict):
             elif(self.variable(s)):
                 s.link = t
             elif(isinstance(s,PythonTerm) and isinstance(t,PythonTerm)):
-                stop = (s.term == t.term)
+                stop = (s.term != t.term)
             elif(isinstance(s,Constraint) and isinstance(t,Constraint)):
                 if(s.functor != s.functor or s.arity() != t.arity()):
                     stop = True
                 else:
                     mgu.extend(zip(s.args,t.args))
+            else:
+                stop = True #unhandled case, probably bad
         return not stop
 
     def parse(self,expr):
@@ -57,19 +67,22 @@ class Context(dict):
         Valid expressions are for example "X", "z" or "f(g(123),B)".
         We use the Prolog convention that tokens starting with lowercase are terms
         and tokens starting with uppercase are variables.
-        Only functors that appear in the constraint list will be parsed to CHR constraints,
+        Unless the assumeConstraints flag is set, only functors that appear in
+        the constraint list will be parsed to CHR constraints,
         the other expressions are assumed to be Python code.
         """
         expr = str(expr).strip()
         if(re.match(r"^[A-Z]\w*$",expr)):
             return self[expr] #variable
         else:
-            m = re.match(r"^(\w+)(\( *(.+, *)*.+ *\))?$",expr)
+            m = re.match(r"^(\w+)(\( *(.+?, *)*.+ *\))?$",expr)
             if(m is not None):
                 functor = m.group(1)
-                if(functor in self.constraints):
-                    args = m.group(2)[1:-1].split(",")
-                    args = [self.parse(x) for x in args]
+                if(self.assumeConstraints or functor in self.constraints):
+                    args = []
+                    if(m.group(2) is not None):
+                        args = m.group(2)[1:-1].split(",")
+                        args = [self.parse(x) for x in args]
                     return Constraint(self,functor,*args)
             return PythonTerm(self,expr)
 
@@ -90,7 +103,7 @@ class LogicVar(Term):
         self.link = alias            
 
     def __str__(self):
-        return (self.name if self.link is None else "%s=%s" % self.name,self.canonical())
+        return (self.name if self.link is None else "%s=%s" % (self.name,self.canonical()))
 
     def canonical(self):
         var = self
@@ -149,16 +162,14 @@ class PythonTerm(Term):
         self.args = PythonTerm.p.findall(self.term)
 
     def canonical(self):
-        if(self.ground()):
-            return self.eval()
-        else:
-            return self.term
+        return self.term
 
     def __str__(self):
         return "%s" % (self.term,)
 
     def contains(self,other):
-        return other == self or other == self.term
+        other = str(other.canonical())
+        return other == self.term or other in self.args
 
     def ground(self):
         #The correct way to do this would probably be to create the parse tree
@@ -168,7 +179,8 @@ class PythonTerm(Term):
         else:
             return all([self.context.parse(x).ground() for x in self.args])
 
-    def expandVars(self)
+    def expandVars(self):
+        """Returns the term with the variables expanded into their values"""
         localterm = self.term
         for x in self.args:
             pat = re.compile(r"\b%s\b" % x)
@@ -176,12 +188,12 @@ class PythonTerm(Term):
             localterm = pat.sub(str(repl),localterm)
         return localterm
 
-    def eval(self):
+    def evaluate(self):
         assert self.ground(), "Cannot evaluate a non-ground expression! (%s)" % self.term
         exp = self.expandVars()
         return eval(exp,self.context)
 
-    def exec(self):
+    def execute(self):
         assert self.ground(), "Cannot execute a non-ground expression! (%s)" % self.term
         exp = self.expandVars()
         exec(exp,self.context)
@@ -191,4 +203,3 @@ class ConstraintStore(set):
     """A CHR constraint store is used to hold a collection of facts in the form of predicates."""
     #TODO
     #def match(self,pred):
-        
