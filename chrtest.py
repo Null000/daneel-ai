@@ -16,6 +16,7 @@ class ContextTest(unittest.TestCase):
         assert self.c.unify("X",23)
         assert not self.c.unify("X",230)
         assert self.c.unify("X",23)
+        assert self.c.unify(23,"X")
         assert self.c.has_key("X")
         assert self.c["X"].ground()
     def testInfiniteUnification(self):
