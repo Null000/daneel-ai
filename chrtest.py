@@ -31,6 +31,14 @@ class ContextTest(unittest.TestCase):
         assert not self.c.unify("B",5)
         assert self.c.unify("B",2)
 
+    def testPythonTermEval(self):
+        self.c["f"] = lambda x:x+5
+        term = self.c.parse("f(f(X))")
+        assert not term.ground()
+        assert self.c.unify("X",10)
+        assert term.ground()
+        assert term.evaluate() == 20
+
 
 if __name__ == "__main__":
     unittest.main()
