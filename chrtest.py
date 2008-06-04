@@ -31,6 +31,27 @@ class ContextTest(unittest.TestCase):
         assert self.c.has_key("B")
         assert not self.c.unify("B",5)
         assert self.c.unify("B",2)
+    def testFailingPythonUnification(self):
+        #this doesn't unify because f is not defined as being a constraint
+        #we see it as a Python term, it doesn't make sense to try to unify this
+        assert not self.c.unify("f(1,2)","f(A,B)")
+        assert not self.c["A"].ground()
+        assert not self.c["B"].ground()
+    def testFailingConstraintUnification(self):
+        assert not self.c.unify("pred(1,2,5)","pred(A,3,B)")
+        assert not self.c["A"].ground()
+        assert not self.c["B"].ground()
+    def testMultiUnification(self):
+        #hope I get about all cases here
+        assert self.c.unify("pred(A,pred(B),pred(5),pred(A))","pred(1,pred(pred(5)),B,pred(1))")
+        assert self.c["A"].ground()
+        assert str(self.c["A"].canonical()) == '1'
+        assert isinstance(self.c["A"],LogicVar)
+        assert isinstance(self.c["A"].link,PythonTerm)
+        assert self.c["B"].ground()
+        assert str(self.c["B"].canonical()) == 'pred(5)'
+        assert isinstance(self.c["B"],LogicVar)
+        assert isinstance(self.c["B"].link,Constraint)
 
     def testPythonTermEval(self):
         self.c["f"] = lambda x:x+5

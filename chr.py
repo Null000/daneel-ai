@@ -40,9 +40,12 @@ class Context(dict):
         if not isinstance(second,Term): second = self.parse(second)
 
         mgu = [(first,second)]
+        matchesfound = []
         stop = False
         while(not stop and len(mgu) > 0):
             s,t = mgu.pop()
+            for (var,val) in matchesfound:
+                if var == s: s = val
             if(self.variable(t) and not self.variable(s)):
                 mgu.append((t,s))
             elif(s.canonical() == t.canonical()):
@@ -50,7 +53,7 @@ class Context(dict):
             elif(self.variable(s) and not self.variable(t) and t.contains(s)):
                 stop = True
             elif(self.variable(s)):
-                s.link = t
+                matchesfound.append((s,t))
             elif(isinstance(s,PythonTerm) and isinstance(t,PythonTerm)):
                 stop = (s.term != t.term)
             elif(isinstance(s,Constraint) and isinstance(t,Constraint)):
@@ -60,6 +63,9 @@ class Context(dict):
                     mgu.extend(zip(s.args,t.args))
             else:
                 stop = True #unhandled case, probably bad
+        if not stop:
+            for (var,val) in matchesfound:
+                var.link = val
         return not stop
 
     def parse(self,expr):
