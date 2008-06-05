@@ -52,6 +52,11 @@ class ContextTest(unittest.TestCase):
         assert str(self.c["B"].canonical()) == 'pred(5)'
         assert isinstance(self.c["B"],LogicVar)
         assert isinstance(self.c["B"].link,Constraint)
+    def testChainUnification(self):
+        assert self.c.unify("A","B")
+        assert self.c.unify("pred(B)","pred(C)")
+        assert self.c.unify("C","5")
+        assert str(self.c["A"].canonical()) == '5'
 
     def testPythonTermEval(self):
         self.c["f"] = lambda x:x+5
