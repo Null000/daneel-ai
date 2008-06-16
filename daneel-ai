@@ -1,5 +1,7 @@
 #! /usr/bin/python
 
+import time
+
 import tp.client.threads
 from tp.netlib.client import url2bits
 from tp.netlib import Connection
@@ -11,6 +13,7 @@ version = (0, 0, 1)
 def callback(*args, **kw):
     #print args, kw
     pass
+
 def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     debug = False
 
@@ -43,8 +46,21 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     cache = Cache(Cache.key(host, username))
     return connection, cache
 
-if __name__ == "__main__":
+def gameLoop():
     connection, cache = connect()
-    cache.update(connection,callback)
-    print cache.objects
+    while True:
+        print "Turn started!"
+        print "Updating the cache."
+        cache.update(connection,callback)
+        #input cache in constraint store
+        #get results from store
+        #create orders
+        #send buffers?
+
+        waitfor = connection.time()
+        print "Awaiting end of turn (%d s)..." % waitfor
+        time.sleep(waitfor)
+
+if __name__ == "__main__":
+    gameLoop()
 
