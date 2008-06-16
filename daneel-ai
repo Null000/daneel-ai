@@ -50,8 +50,9 @@ def gameLoop():
     connection, cache = connect()
     while True:
         print "Turn started!"
-        print "Updating the cache."
+        print "Downloading objects."
         cache.update(connection,callback)
+
         #input cache in constraint store
         #get results from store
         #create orders
