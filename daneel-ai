@@ -8,6 +8,8 @@ from tp.netlib import Connection
 from tp.netlib import failed, constants, objects
 from tp.client.cache import Cache
 
+from chr import ConstraintStore
+
 version = (0, 0, 1)
 
 def callback(*args, **kw):
@@ -46,18 +48,35 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     cache = Cache(Cache.key(host, username))
     return connection, cache
 
+def createRuleSystem():
+    #this will need to read rules dynamically etc later on
+    return ConstraintStore(["subtype","name","size","pos","vel","contains"])
+
+def addCacheToStore(cache,store):
+    for (k,v) in cache.objects.items():
+        store.add("subtype(%i,%i)" % (k,v.subtype))
+        store.add("name(%i,%s)" % (k,v.name))
+        store.add("size(%i,%i)" % (k,v.size))
+        store.add("pos(%i,%i,%i,%i)" % ((k,) + v.pos))
+        store.add("vel(%i,%i,%i,%i)" % ((k,) + v.vel))
+        for child in v.contains:
+            store.add("contains(%i,%i)" % (k,child))
+
 def gameLoop():
     connection, cache = connect()
+    rulesystem = createRuleSystem()
     while True:
         print "Turn started!"
         print "Downloading objects."
         cache.update(connection,callback)
 
-        #input cache in constraint store
+        addCacheToStore(cache,rulesystem)
+        print rulesystem
         #get results from store
         #create orders
         #send buffers?
 
+        rulesystem.clear()
         waitfor = connection.time()
         print "Awaiting end of turn (%d s)..." % waitfor
         time.sleep(waitfor)

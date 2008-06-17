@@ -109,6 +109,9 @@ class Term:
     def __init__(self,context):
         self.context = context
 
+    def __repr__(self):
+        return "<%s>" % (str(self),)
+
 class LogicVar(Term):
     """A logical variable in a CHR context. Can optionally be linked to
     another logical variable to make this an alias of the other.
@@ -231,7 +234,7 @@ class ConstraintStore(dict):
                 self[(func,ar)] = [elem]
         else:
             elem = self.context.parse(elem)
-            assert isinstance(elem,Constraint)
+            assert isinstance(elem,Constraint), "%s could not be parsed to a Constraint" % (elem, )
             self.add(elem)
 
     def __len__(self):
