@@ -66,6 +66,36 @@ class ContextTest(unittest.TestCase):
         assert term.ground()
         assert term.evaluate() == 20
 
+class ConstraintStoreTest(unittest.TestCase):
+    def setUp(self):
+        self.s = ConstraintStore(["pred","pred2"])
+
+    def testMultiset(self):
+        self.s.add("pred(1)")
+        self.s.add("pred(1)")
+        assert len(self.s) == 2
+
+    def testMatch(self):
+        self.s.add("pred(1)")
+        matches = self.s.match(["pred(X)"])
+        assert len(matches) == 1
+        assert isinstance(matches[0][0],Constraint)
+        assert str(matches[0][0]) == "pred(1)"
+
+    def testMultiMatch(self):
+        self.s.add("pred(1)")
+        self.s.add("pred2(5)")
+        matches = self.s.match(["pred2(X)","pred(Y)"])
+        assert len(matches) == 1
+        assert isinstance(matches[0][0],Constraint)
+        assert str(matches[0][0]) == "pred2(5)"
+        assert str(matches[0][1]) == "pred(1)"
+
+    def testMultiMatchSame(self):
+        self.s.add("pred(1)")
+        self.s.add("pred(5)")
+        matches = self.s.match(["pred(X)","pred(Y)"])
+        assert len(matches) == 2 #once for 1,5 and once for 5,1
 
 if __name__ == "__main__":
     unittest.main()

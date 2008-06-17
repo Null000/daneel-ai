@@ -1,5 +1,8 @@
 import re
 
+class NotUnifiableError(Exception):
+    pass
+
 class Context(dict):
     """Keeps track of logical variables."""
     def checkTerm(f):
@@ -35,6 +38,15 @@ class Context(dict):
         return var.canonical()
 
     def unify(self,first,second):
+        try:
+            matches = self.computeUnification(first,second)
+            for (var,val) in matches:
+                var.link = val
+            return True
+        except NotUnifiableError:
+            return False
+
+    def computeUnification(self,first,second):
         """Uses the Martelli-Montanari algorithm to compute the most general unification"""
         if not isinstance(first,Term): first = self.parse(first)
         if not isinstance(second,Term): second = self.parse(second)
@@ -63,10 +75,9 @@ class Context(dict):
                     mgu.extend(zip(s.args,t.args))
             else:
                 stop = True #unhandled case, probably bad
-        if not stop:
-            for (var,val) in matchesfound:
-                var.link = val
-        return not stop
+        if stop:
+            raise NotUnifiableError
+        return matchesfound
 
     def parse(self,expr):
         """Parses an expression into a Term.
@@ -205,7 +216,42 @@ class PythonTerm(Term):
         exec(exp,self.context)
 
 
-class ConstraintStore(set):
+class ConstraintStore(dict):
     """A CHR constraint store is used to hold a collection of facts in the form of predicates."""
-    #TODO
-    #def match(self,pred):
+    def __init__(self,constraintList=[]):
+        self.context = Context(constraintList)
+
+    def add(self,elem):
+        if isinstance(elem,Constraint):
+            func = elem.functor
+            ar = elem.arity()
+            if(self.has_key((func,ar))):
+                self[(func,ar)].append(elem)
+            else:
+                self[(func,ar)] = [elem]
+        else:
+            elem = self.context.parse(elem)
+            assert isinstance(elem,Constraint)
+            self.add(elem)
+
+    def __len__(self):
+        return sum(map(len,self.values()))
+
+    def match(self,terms):
+        """Matches a list of strings against the store. Returns a list of predicate lists that match.
+        Variables will not be bound yet as these are tentative choices.
+        For example: match(["pred(X)","pred2(X,Y)"]) might return [[pred(5),pred2(5,7)],[pred(""),pred2("",3)]]"""
+        #TODO: this might become a generator to avoid having to calculate all answers (list of combinatorial size)
+        terms.reverse()
+        return self.findmatches(terms)
+
+    def findmatches(self,needles):
+        newneedles = list(needles)
+        needle = newneedles.pop()
+        constr = self.context.parse(needle)
+        if(isinstance(constr,Constraint)):
+            if len(newneedles) == 0:
+                return [self[constr.functor,constr.arity()]]
+            return [[match] + y for match in self[constr.functor,constr.arity()] for y in self.findmatches(newneedles)]
+        else:
+            assert False #TODO: PythonTerm?
