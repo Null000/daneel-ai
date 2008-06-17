@@ -229,9 +229,9 @@ class ConstraintStore(dict):
             func = elem.functor
             ar = elem.arity()
             if(self.has_key((func,ar))):
-                self[(func,ar)].append(elem)
+                self[(func,ar)].add(elem)
             else:
-                self[(func,ar)] = [elem]
+                self[(func,ar)] = set([elem])
         else:
             elem = self.context.parse(elem)
             assert isinstance(elem,Constraint), "%s could not be parsed to a Constraint" % (elem, )
@@ -243,18 +243,26 @@ class ConstraintStore(dict):
     def match(self,terms):
         """Matches a list of strings against the store. Returns a list of predicate lists that match.
         Variables will not be bound yet as these are tentative choices.
-        For example: match(["pred(X)","pred2(X,Y)"]) might return [[pred(5),pred2(5,7)],[pred(""),pred2("",3)]]"""
+        Note that all arguments should be unbounded and different (head-normal form of rules).
+        For example: match(["pred(X)","pred2(Y,Z)"]) might return [[pred(5),pred2(5,7)],[pred(""),pred2("x",3)]]"""
         #TODO: this might become a generator to avoid having to calculate all answers (list of combinatorial size)
         terms.reverse()
-        return self.findmatches(terms)
+        return self.findmatches(terms,set())
 
-    def findmatches(self,needles):
+    def findmatches(self,needles,previousterms):
         newneedles = list(needles)
         needle = newneedles.pop()
         constr = self.context.parse(needle)
         if(isinstance(constr,Constraint)):
+            possiblematches = self[constr.functor,constr.arity()].difference(previousterms)
             if len(newneedles) == 0:
-                return [self[constr.functor,constr.arity()]]
-            return [[match] + y for match in self[constr.functor,constr.arity()] for y in self.findmatches(newneedles)]
+                return [[x] for x in possiblematches]
+            finallist = []
+            for x in possiblematches:
+                usedterms = set(previousterms)
+                usedterms.add(x)
+                for y in self.findmatches(newneedles,usedterms):
+                    finallist.append([x] + y)
+            return finallist
         else:
             assert False #TODO: PythonTerm?
