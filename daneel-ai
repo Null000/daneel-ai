@@ -1,12 +1,14 @@
 #! /usr/bin/python
 
 import time
+import random
 
 import tp.client.threads
 from tp.netlib.client import url2bits
 from tp.netlib import Connection
 from tp.netlib import failed, constants, objects
 from tp.client.cache import Cache
+from tp.netlib.objects import OrderDescs
 
 from chr import ConstraintStore
 
@@ -62,6 +64,21 @@ def addCacheToStore(cache,store):
         for child in v.contains:
             store.add("contains(%i,%i)" % (k,child))
 
+def createOrders(cache,rulesystem,connection):
+    #TODO: hack, rewrite most of this to CHR rules
+    types = rulesystem.match(["subtype(X,Y)"])
+    fleets = [x[0].args[0].evaluate() for x in types if str(x[0].args[1]) == "4"]
+    stars = [x[0].args[0].evaluate() for x in types if str(x[0].args[1]) == "2"]
+    for objid in fleets:
+        print "Fleet is at %s" % (cache.objects[objid].pos,)
+        destination = random.choice(stars)
+        print "Moving to %s" % (cache.objects[destination].pos,)
+        moveorder = OrderDescs()[2]
+        args = [0, objid, -1, moveorder.subtype, 0, [], destination]
+        order = moveorder(*args)
+        evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
+        tp.client.cache.apply(connection,evt,cache)
+
 def gameLoop():
     connection, cache = connect()
     rulesystem = createRuleSystem()
@@ -71,12 +88,11 @@ def gameLoop():
         cache.update(connection,callback)
 
         addCacheToStore(cache,rulesystem)
-        print rulesystem
-        #get results from store
-        #create orders
+        createOrders(cache,rulesystem,connection)
         #send buffers?
 
         rulesystem.clear()
+        connection.turnfinished()
         waitfor = connection.time()
         print "Awaiting end of turn (%d s)..." % waitfor
         time.sleep(waitfor)
