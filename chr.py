@@ -1,6 +1,12 @@
 import re
 
-class NotUnifiableError(Exception):
+class CHRError(Exception):
+    pass
+
+class NotUnifiableError(CHRError):
+    pass
+
+class ParseError(CHRError):
     pass
 
 class Context(dict):
@@ -88,6 +94,8 @@ class Context(dict):
         the constraint list will be parsed to CHR constraints,
         the other expressions are assumed to be Python code.
         """
+        if isinstance(expr,Term):
+            return expr
         expr = str(expr).strip()
         if(re.match(r"^[A-Z]\w*$",expr)):
             return self[expr] #variable
@@ -221,8 +229,8 @@ class PythonTerm(Term):
 
 class ConstraintStore(dict):
     """A CHR constraint store is used to hold a collection of facts in the form of predicates."""
-    def __init__(self,constraintList=[]):
-        self.context = Context(constraintList)
+    def __init__(self,context=Context([])):
+        self.context = context
 
     def add(self,elem):
         if isinstance(elem,Constraint):
@@ -240,7 +248,7 @@ class ConstraintStore(dict):
     def __len__(self):
         return sum(map(len,self.values()))
 
-    def match(self,terms):
+    def findpassives(self,terms):
         """Matches a list of strings against the store. Returns a list of predicate lists that match.
         Variables will not be bound yet as these are tentative choices.
         Note that all arguments should be unbounded and different (head-normal form of rules).
