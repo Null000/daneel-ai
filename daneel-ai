@@ -1,0 +1,102 @@
+#! /usr/bin/python
+
+import time
+import random
+
+import tp.client.threads
+from tp.netlib.client import url2bits
+from tp.netlib import Connection
+from tp.netlib import failed, constants, objects
+from tp.client.cache import Cache
+from tp.netlib.objects import OrderDescs
+
+from rulesystem import RuleSystem,BoundConstraint
+
+version = (0, 0, 1)
+
+def callback(*args, **kw):
+    #print args, kw
+    pass
+
+def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
+    debug = False
+
+    host, username, game, password = url2bits(uri)
+    if not game is None:
+        username = "%s@%s" % (username, game)
+
+    connection = Connection()
+
+    # Download the entire universe
+    if connection.setup(host=host, debug=debug):
+        print "Unable to connect to the host."
+        return
+
+    if failed(connection.connect("daneel-ai/%i.%i.%i" % version)):
+        print "Unable to connect to the host."
+        return
+
+    if failed(connection.login(username, password)):
+        # Try creating the user..
+        print "User did not exist, trying to create user."
+        if failed(connection.account(username, password, "", "daneel-ai bot")):
+            print "Username / Password incorrect."
+            return
+
+        if failed(connection.login(username, password)):
+            print "Created username, but still couldn't login :/"
+            return
+
+    cache = Cache(Cache.key(host, username))
+    return connection, cache
+
+def createRuleSystem():
+    #this will need to read rules dynamically etc later on
+    return RuleSystem(["subtype","name","size","pos","vel","contains"])
+
+def addCacheToStore(cache,store):
+    for (k,v) in cache.objects.items():
+        store.addConstraint(BoundConstraint("subtype",[k,v.subtype]))
+        store.addConstraint(BoundConstraint("name",[k,v.name]))
+        store.addConstraint(BoundConstraint("size",[k,v.size]))
+        store.addConstraint(BoundConstraint("pos",(k,) + v.pos))
+        store.addConstraint(BoundConstraint("vel",(k,) + v.vel))
+        for child in v.contains:
+            store.addConstraint(BoundConstraint("contains",[k,child]))
+
+def createOrders(cache,rulesystem,connection):
+    #TODO: hack, rewrite most of this to CHR rules
+    types = rulesystem.findConstraint("subtype(X,Y)")
+    fleets = [x.args[0] for x in types if str(x.args[1]) == "4"]
+    stars = [x.args[0] for x in types if str(x.args[1]) == "2"]
+    for objid in fleets:
+        print "Fleet is at %s" % (cache.objects[objid].pos,)
+        destination = random.choice(stars)
+        print "Moving to %s" % (cache.objects[destination].pos,)
+        moveorder = OrderDescs()[2]
+        args = [0, objid, -1, moveorder.subtype, 0, [], destination]
+        order = moveorder(*args)
+        evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
+        tp.client.cache.apply(connection,evt,cache)
+
+def gameLoop():
+    connection, cache = connect()
+    rulesystem = createRuleSystem()
+    while True:
+        print "Turn started!"
+        print "Downloading objects."
+        cache.update(connection,callback)
+
+        addCacheToStore(cache,rulesystem)
+        createOrders(cache,rulesystem,connection)
+        #send buffers?
+
+        rulesystem.clearStore()
+        connection.turnfinished()
+        waitfor = connection.time()
+        print "Awaiting end of turn (%d s)..." % waitfor
+        time.sleep(waitfor)
+
+if __name__ == "__main__":
+    gameLoop()
+
