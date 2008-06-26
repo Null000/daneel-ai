@@ -10,7 +10,7 @@ from tp.netlib import failed, constants, objects
 from tp.client.cache import Cache
 from tp.netlib.objects import OrderDescs
 
-from chr import ConstraintStore
+from rulesystem import RuleSystem,BoundConstraint
 
 version = (0, 0, 1)
 
@@ -52,23 +52,24 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
 
 def createRuleSystem():
     #this will need to read rules dynamically etc later on
-    return ConstraintStore(["subtype","name","size","pos","vel","contains"])
+    return RuleSystem(["subtype","name","size","pos","vel","contains"])
+
 
 def addCacheToStore(cache,store):
     for (k,v) in cache.objects.items():
-        store.add("subtype(%i,%i)" % (k,v.subtype))
-        store.add("name(%i,%s)" % (k,v.name))
-        store.add("size(%i,%i)" % (k,v.size))
-        store.add("pos(%i,%i,%i,%i)" % ((k,) + v.pos))
-        store.add("vel(%i,%i,%i,%i)" % ((k,) + v.vel))
+        store.addConstraint(BoundConstraint("subtype",[k,v.subtype]))
+        store.addConstraint(BoundConstraint("name",[k,v.name]))
+        store.addConstraint(BoundConstraint("size",[k,v.size]))
+        store.addConstraint(BoundConstraint("pos",(k,) + v.pos))
+        store.addConstraint(BoundConstraint("vel",(k,) + v.vel))
         for child in v.contains:
-            store.add("contains(%i,%i)" % (k,child))
+            store.addConstraint(BoundConstraint("contains",[k,child]))
 
 def createOrders(cache,rulesystem,connection):
     #TODO: hack, rewrite most of this to CHR rules
-    types = rulesystem.match(["subtype(X,Y)"])
-    fleets = [x[0].args[0].evaluate() for x in types if str(x[0].args[1]) == "4"]
-    stars = [x[0].args[0].evaluate() for x in types if str(x[0].args[1]) == "2"]
+    types = rulesystem.findConstraint("subtype(X,Y)")
+    fleets = [x.args[0] for x in types if str(x.args[1]) == "4"]
+    stars = [x.args[0] for x in types if str(x.args[1]) == "2"]
     for objid in fleets:
         print "Fleet is at %s" % (cache.objects[objid].pos,)
         destination = random.choice(stars)
@@ -91,7 +92,7 @@ def gameLoop():
         createOrders(cache,rulesystem,connection)
         #send buffers?
 
-        rulesystem.clear()
+        rulesystem.clearStore()
         connection.turnfinished()
         waitfor = connection.time()
         print "Awaiting end of turn (%d s)..." % waitfor
@@ -99,4 +100,3 @@ def gameLoop():
 
 if __name__ == "__main__":
     gameLoop()
-
