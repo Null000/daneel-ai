@@ -46,6 +46,5 @@ class RuleSystemTest(unittest.TestCase):
         assert len(self.rs.store) == 1
 
 if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromTestCase(RuleSystemTest)
-    #suite = unittest.TestLoader().loadTestsFromName("ruletest.RuleSystemTest.testFiniteFiring")
+    suite = unittest.TestLoader().loadTestsFromName("ruletest")
     unittest.TextTestRunner().run(suite)
