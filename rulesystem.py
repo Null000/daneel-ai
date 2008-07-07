@@ -9,7 +9,7 @@ class RuleSystem:
         self.activestore = ConstraintStore()
         self.parser = RuleParser(constraints)
         self.rules = [self.parser.parseRule(r) for r in rules]
-        self.basecontext = self.createBaseContext(functions)
+        self.protocontext = self.createPrototypeContext(functions)
 
     def addConstraint(self,constraint):
         parsedcon = self.parser.parseConstraint(constraint)
@@ -37,9 +37,9 @@ class RuleSystem:
         self.activestore.clear()
 
     def createContext(self):
-        return self.basecontext.copy()
+        return self.protocontext.copy()
 
-    def createBaseContext(self,functions):
+    def createPrototypeContext(self,functions):
         context = functions.copy()
         #we insert a function for each constraint. When this function is called,
         #a new instance of the constraint gets inserted in the constraint store
