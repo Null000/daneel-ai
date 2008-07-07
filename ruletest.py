@@ -45,6 +45,28 @@ class RuleSystemTest(unittest.TestCase):
         assert res.args[0] == 5
         assert len(self.rs.store) == 1
 
+class ParsingTest(unittest.TestCase):
+    def testProp(self):
+        rs = RuleSystem(["pred"],["rule @ pred/1 ==> _var_0_0 == '1' | pred(2)"])
+        rs.addConstraint("pred(1)")
+        [res1,res2] = rs.findConstraint(FreeConstraint("pred",1))
+        assert res1.args[0] == 2 or res2.args[0] == 2
+        assert len(rs.store) == 2
+    def testSimpl(self):
+        rs = RuleSystem(["pred"],["rule @ pred/1 <=> _var_0_0 == '1' | pred(2)"])
+        rs.addConstraint("pred(1)")
+        [res1] = rs.findConstraint(FreeConstraint("pred",1))
+        assert res1.args[0] == 2
+        assert len(rs.store) == 1
+    def testSimpa(self):
+        rs = RuleSystem(["pred"],["rule @ pred/1 \ pred/1 <=> _var_0_0 == '1' and _var_1_0 == '10' | pred(2)"])
+        rs.addConstraint("pred(10)")
+        rs.addConstraint("pred(1)")
+        [res1,res2] = rs.findConstraint(FreeConstraint("pred",1))
+        assert res1.args[0] == 2 or res2.args[0] == 2
+        assert not (res1.args[0] == 10 or res2.args[0] == 10)
+        assert len(rs.store) == 2
+
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromName("ruletest")
     unittest.TextTestRunner().run(suite)

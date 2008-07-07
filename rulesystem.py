@@ -7,7 +7,7 @@ class RuleSystem:
         self.constraints = constraints
         self.store = ConstraintStore()
         self.activestore = ConstraintStore()
-        self.parser = RuleParser(constraints)
+        self.parser = RuleParser(self,constraints)
         self.rules = [self.parser.parseRule(r) for r in rules]
         self.protocontext = self.createPrototypeContext(functions)
 
@@ -58,16 +58,42 @@ class RuleSystem:
         return self.store.findterms(cons,excluded)
 
 class RuleParser:
-    uniquecount = 0
     freecon = re.compile(r"^(\w*)/(\d*)$")
     boundcon = re.compile(r"^(\w+)(\( *(.+?, *)*.+ *\))?$")
+    #these regexps might be a bit too loose, then again, we're trying to match a CFL.
+    #probably, it can be compiled in one RE too.
+    simplrule = re.compile(r"^((?P<name>\w+) @ )?(?P<removedhead>[^\\]+)<=>((?P<guard>.+)\|)?(?P<body>.+)$")
+    simparule = re.compile(r"^((?P<name>\w+) @ )?(?P<kepthead>.+)\\(?P<removedhead>.+)<=>((?P<guard>.+)\|)?(?P<body>.+)$")
+    proprule = re.compile(r"^((?P<name>\w+) @ )?(?P<kepthead>.+)==>((?P<guard>.+)\|)?(?P<body>.+)$")
 
-    def __init__(self,constraints=[]):
+    def __init__(self,rulesystem,constraints=[]):
         self.constraints = constraints
+        self.rulesystem = rulesystem
 
     def parseRule(self,rule):
         if isinstance(rule,Rule):
             return rule
+        m = RuleParser.simplrule.match(rule)
+        if m is not None:
+            return Rule(self.rulesystem,**m.groupdict())
+        m = RuleParser.simparule.match(rule)
+        if m is not None:
+            return Rule(self.rulesystem,**m.groupdict())
+        m = RuleParser.proprule.match(rule)
+        if m is not None:
+            return Rule(self.rulesystem,**m.groupdict())
+
+    def parseHead(self,head):
+        if isinstance(head,list):
+            return head
+        splitted = head.split(" and ")
+        return [self.parseConstraint(x.strip()) for x in splitted]
+
+    def parseGuard(self,guard):
+        return guard.strip()
+
+    def parseBody(self,body):
+        return body.strip()
 
     def parseConstraint(self,cons):
         if isinstance(cons,Constraint):
@@ -91,13 +117,20 @@ class Rule:
     * guard, Python code evaluating to True or False represented as string
     * body, a mix of constraints, PythonTerms and unifications, represented as string"""
 
-    def __init__(self,rulesystem):
+    uniquecount = 0
+
+    def __init__(self,rulesystem,name=None,kepthead=[],removedhead=[],guard="True",body=""):
+        Rule.uniquecount = Rule.uniquecount + 1
+        if name is None:
+            name = "rule_%i" % Rule.uniquecount
+
         self.rulesystem = rulesystem
-        self.name = "!notinitialized!"
-        self.kepthead = []
-        self.removedhead = []
-        self.guard = "True"
-        self.body = ""
+        parser = rulesystem.parser
+        self.name = name
+        self.kepthead = parser.parseHead(kepthead)
+        self.removedhead = parser.parseHead(removedhead)
+        self.guard = parser.parseGuard(guard)
+        self.body = parser.parseBody(body)
 
     def matchActive(self,con):
         positions = self.canAcceptAt(con)
@@ -108,7 +141,7 @@ class Rule:
             neededConstraints = [allConstraints[i] for i in range(len(allConstraints)) if i!=pos]
             partners = self.rulesystem.findConstraints(neededConstraints,set([con]))
             for p in partners:
-                    p.insert(pos,con)
+                p.insert(pos,con)
             for p in partners:
                 assert len(p) == len(self.kepthead) + len(self.removedhead)
                 context = self.rulesystem.createContext()
@@ -119,7 +152,6 @@ class Rule:
                     for j in range(tempcon.arity):
                         var = "_var_%i_%i" % (i,j)
                         context[var] = tempcon.args[j]
-
                 if eval(self.guard,context):
                     #print "Rule fired: %s" % self.name
                     if self.removedhead == []:
