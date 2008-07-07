@@ -9,19 +9,15 @@ class RuleSystem:
         self.activestore = ConstraintStore()
         self.parser = RuleParser(constraints)
         self.rules = [self.parser.parseRule(r) for r in rules]
-        self.running = False
         self.basecontext = self.createBaseContext(functions)
 
     def addConstraint(self,constraint):
-        parsedcons = self.parser.parseConstraint(constraint)
-        self.store.add(parsedcons)
-        self.activestore.add(parsedcons)
-        if not self.running:
-            self.running = True
-            while len(self.activestore) > 0:
-                activecons = self.activestore.pop()
-                self.matchActive(activecons)
-            self.running = False
+        parsedcon = self.parser.parseConstraint(constraint)
+        self.store.add(parsedcon)
+        self.activestore.add(parsedcon)
+        while len(self.activestore) > 0:
+            activecon = self.activestore.pop()
+            self.matchActive(activecon)
 
     def removeConstraint(self,constraint):
         try:
@@ -58,8 +54,8 @@ class RuleSystem:
     def findConstraint(self,con):
         return [x for [x] in self.findConstraints([self.parser.parseConstraint(con)])]
 
-    def findConstraints(self,cons):
-        return self.store.findterms(cons)
+    def findConstraints(self,cons,excluded=set()):
+        return self.store.findterms(cons,excluded)
 
 class RuleParser:
     uniquecount = 0
@@ -107,32 +103,33 @@ class Rule:
         positions = self.canAcceptAt(con)
         if(positions == []):
             return False
-        neededConstraints = self.kepthead + self.removedhead
-        #FIXME: this removes the active constraint at multiple places
-        #buggy for cases like a(X),a(Y)|X!=Y when a(1) is active constraint
-        neededConstraints = [neededConstraints[i] for i in range(len(neededConstraints)) if not i in positions]
-        partners = self.rulesystem.findConstraints(neededConstraints)
-        for p in partners:
-            for i in positions:
-                p.insert(i,con)
-        for p in partners:
-            assert len(p) == len(self.kepthead) + len(self.removedhead)
-            context = self.rulesystem.createContext()
+        allConstraints = self.kepthead + self.removedhead
+        for pos in positions:
+            neededConstraints = [allConstraints[i] for i in range(len(allConstraints)) if i!=pos]
+            partners = self.rulesystem.findConstraints(neededConstraints,set([con]))
+            for p in partners:
+                    p.insert(pos,con)
+            for p in partners:
+                assert len(p) == len(self.kepthead) + len(self.removedhead)
+                context = self.rulesystem.createContext()
 
-            #bind vars
-            for i in range(len(p)):
-                con = p[i]
-                for j in range(con.arity):
-                    var = "_var_%i_%i" % (i,j)
-                    context[var] = con.args[j]
+                #bind vars
+                for i in range(len(p)):
+                    tempcon = p[i]
+                    for j in range(tempcon.arity):
+                        var = "_var_%i_%i" % (i,j)
+                        context[var] = tempcon.args[j]
 
-            if eval(self.guard,context):
-                #print "Rule fired: %s" % self.name
-                removedConstraints = p[-len(self.removedhead):]
-                for c in removedConstraints:
-                    self.rulesystem.removeConstraint(c)
-                exec(self.body,context)
-                break
+                if eval(self.guard,context):
+                    #print "Rule fired: %s" % self.name
+                    if self.removedhead == []:
+                        removedConstraints = []
+                    else:
+                        removedConstraints = p[-len(self.removedhead):]
+                    for c in removedConstraints:
+                        self.rulesystem.removeConstraint(c)
+                    exec(self.body,context)
+                    return True
 
     def canAcceptAt(self,cons):
         head = self.kepthead + self.removedhead
@@ -161,7 +158,10 @@ class ConstraintStore:
     def __len__(self):
         return sum(map(len,self.elems.values()))
 
-    def findterms(self,terms):
+    def __str__(self):
+        return str(self.elems.values())
+
+    def findterms(self,terms,previousterms=set()):
         """Matches a list of strings against the store. Returns a list of predicate lists that match.
         Variables will not be bound yet as these are tentative choices.
         Note that all arguments should be unbounded and different (head-normal form of rules).
@@ -170,7 +170,7 @@ class ConstraintStore:
         if terms == []:
             return [[]]
         terms.reverse()
-        return self.findmatches(terms,set())
+        return self.findmatches(terms,previousterms)
 
     def findmatches(self,needles,previousterms):
         newneedles = list(needles)
@@ -211,6 +211,9 @@ class FreeConstraint(Constraint):
     def __str__(self):
         return "%s/%i" % (self.functor,self.arity)
 
+    def __repr__(self):
+        return "<FreeConstraint: %s at 0x%x>" % (str(self),id(self))
+
     def bind(self,args):
         assert len(args) == self.arity
         return BoundConstraint(self.name,args)
@@ -229,6 +232,9 @@ class BoundConstraint(Constraint):
             return self.functor
         else:
             return "%s(%s)" % (self.functor, ','.join([str(x) for x in self.args]))
+
+    def __repr__(self):
+        return "<BoundConstraint: %s at 0x%x>" % (str(self),id(self))
 
     def unifiesWith(self,other):
         if(hasattr(other,"args")):
