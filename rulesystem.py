@@ -143,7 +143,6 @@ class Rule:
             partners = self.rulesystem.findConstraints(neededConstraints,set([con]))
             for p in partners:
                 p.insert(pos,con)
-            for p in partners:
                 assert len(p) == len(self.kepthead) + len(self.removedhead)
                 context = self.rulesystem.createContext()
 
