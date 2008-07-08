@@ -52,9 +52,28 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     return connection, cache
 
 def createRuleSystem(rulesfile):
-    #this will need to read rules dynamically etc later on
-    return RuleSystem(["subtype","name","size","pos","vel","contains"])
+    rf = open(rulesfile)
+    l = stripline(rf.next())
+    while l != "[Constraints]":
+        l = stripline(rf.next())
+    cons = []
+    l = stripline(rf.next())
+    while l != "[Rules]":
+        if l != "": cons.append(l)
+        l = stripline(rf.next())
+    rules = []
+    l = stripline(rf.next())
+    while l != "[Functions]":
+        if l != "": rules.append(l)
+        l = stripline(rf.next())
+    funcs = {}
+    exec("".join(rf.readlines()),funcs)
 
+    return RuleSystem(cons,rules,funcs)
+
+def stripline(line):
+    if line[0] == "#": return ""
+    return line.strip()
 
 def addCacheToStore(cache,store):
     for (k,v) in cache.objects.items():
@@ -67,13 +86,10 @@ def addCacheToStore(cache,store):
             store.addConstraint(BoundConstraint("contains",[k,child]))
 
 def createOrders(cache,rulesystem,connection):
-    #TODO: hack, rewrite most of this to CHR rules
-    types = rulesystem.findConstraint("subtype(X,Y)")
-    fleets = [x.args[0] for x in types if str(x.args[1]) == "4"]
-    stars = [x.args[0] for x in types if str(x.args[1]) == "2"]
-    for objid in fleets:
-        print "Fleet is at %s" % (cache.objects[objid].pos,)
-        destination = random.choice(stars)
+    orders = rulesystem.findConstraint("moveto(O,DestId)")
+    for order in orders:
+        objid = int(order.args[0])
+        destination = int(order.args[1])
         print "Moving to %s" % (cache.objects[destination].pos,)
         moveorder = OrderDescs()[2]
         args = [0, objid, -1, moveorder.subtype, 0, [], destination]

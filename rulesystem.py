@@ -1,4 +1,5 @@
 from functools import partial
+from collections import defaultdict
 
 import re
 
@@ -170,7 +171,7 @@ class Rule:
 class ConstraintStore:
     """A CHR constraint store is used to hold a collection of facts in the form of predicates."""
     def __init__(self):
-        self.elems = {}
+        self.elems = defaultdict(set)
 
     def add(self,elem):
         assert isinstance(elem,Constraint), "%s is not a Constraint" % (elem, )
