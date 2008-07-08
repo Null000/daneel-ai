@@ -2,6 +2,7 @@
 
 import time
 import random
+from optparse import OptionParser
 
 import tp.client.threads
 from tp.netlib.client import url2bits
@@ -50,7 +51,7 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     cache = Cache(Cache.key(host, username))
     return connection, cache
 
-def createRuleSystem():
+def createRuleSystem(rulesfile):
     #this will need to read rules dynamically etc later on
     return RuleSystem(["subtype","name","size","pos","vel","contains"])
 
@@ -80,9 +81,9 @@ def createOrders(cache,rulesystem,connection):
         evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
         tp.client.cache.apply(connection,evt,cache)
 
-def gameLoop():
+def gameLoop(rulesfile):
     connection, cache = connect()
-    rulesystem = createRuleSystem()
+    rulesystem = createRuleSystem(rulesfile)
     while True:
         print "Turn started!"
         print "Downloading objects."
@@ -99,4 +100,10 @@ def gameLoop():
         time.sleep(waitfor)
 
 if __name__ == "__main__":
-    gameLoop()
+    parser = OptionParser(version="%prog " + ("%i.%i.%i" % version))
+    parser.add_option("-f", "--file", dest="filename", default="rules-rfts",
+                      help="read rules from FILENAME [default: %default]")
+    #verbosity? others?
+
+    (options, args) = parser.parse_args()
+    gameLoop(options.filename)
