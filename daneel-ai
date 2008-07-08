@@ -97,10 +97,11 @@ def createOrders(cache,rulesystem,connection):
         evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
         tp.client.cache.apply(connection,evt,cache)
 
-def gameLoop(rulesfile):
+def gameLoop(rulesfile,turns=-1):
     connection, cache = connect()
     rulesystem = createRuleSystem(rulesfile)
-    while True:
+    while turns != 0:
+        turns = turns - 1
         print "Turn started!"
         print "Downloading objects."
         cache.update(connection,callback)
@@ -119,7 +120,9 @@ if __name__ == "__main__":
     parser = OptionParser(version="%prog " + ("%i.%i.%i" % version))
     parser.add_option("-f", "--file", dest="filename", default="rules-rfts",
                       help="read rules from FILENAME [default: %default]")
+    parser.add_option("-n", "--numturns", dest="numturns", type="int", default=-1,
+                      help="run for NUMTURNS turns [default: unlimited]")
     #verbosity? others?
 
     (options, args) = parser.parse_args()
-    gameLoop(options.filename)
+    gameLoop(options.filename,turns=options.numturns)
