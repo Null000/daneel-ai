@@ -143,7 +143,8 @@ class Rule:
             return False
         allConstraints = self.kepthead + self.removedhead
         for pos in positions:
-            neededConstraints = [allConstraints[i] for i in range(len(allConstraints)) if i!=pos]
+            neededConstraints = list(allConstraints)
+            del neededConstraints[pos]
             partners = self.rulesystem.findConstraints(neededConstraints,set([con]))
             for p in partners:
                 p.insert(pos,con)
