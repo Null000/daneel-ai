@@ -53,9 +53,13 @@ class RuleSystem:
         return context
 
     def findConstraint(self,con):
+        """Given a free constraint, returns a list of constraints in the store that match it"""
         return [x for [x] in self.findConstraints([self.parser.parseConstraint(con)])]
 
     def findConstraints(self,cons,excluded=set()):
+        """Given a list of free constraint, and a set of constraints to exclude,
+        returns a generator for constraints in the store that match it, with no duplicates
+        and no entries from the excluded set"""
         return self.store.findterms(cons,excluded)
 
 class RuleParser:
@@ -194,15 +198,17 @@ class ConstraintStore:
         return str(self.elems.values())
 
     def findterms(self,terms,previousterms=set()):
-        """Matches a list of strings against the store. Returns a list of predicate lists that match.
+        """Matches a list of strings against the store. Generates the predicate lists that match.
         Variables will not be bound yet as these are tentative choices.
         Note that all arguments should be unbounded and different (head-normal form of rules).
-        For example: match(["pred(X)","pred2(Y,Z)"]) might return [[pred(5),pred2(5,7)],[pred(""),pred2("x",3)]]"""
-        #TODO: this might become a generator to avoid having to calculate all answers (list of combinatorial size)
+        For example: match(["pred(X)","pred2(Y,Z)"]) might return [pred(5),pred2(5,7)] and [pred(""),pred2("x",3)]"""
         if terms == []:
-            return [[]]
+            yield []
+            return
         terms.reverse()
-        return self.findmatches(terms,previousterms)
+        matches = self.findmatches(terms,previousterms)
+        while True:
+            yield matches.next()
 
     def findmatches(self,needles,previousterms):
         newneedles = list(needles)
@@ -210,14 +216,15 @@ class ConstraintStore:
         if(isinstance(constr,Constraint)):
             possiblematches = self.elems[constr.functor,constr.arity].difference(previousterms)
             if newneedles == []:
-                return [[x] for x in possiblematches]
+                for x in possiblematches:
+                    yield [x]
+                return
             finallist = []
             for x in possiblematches:
                 usedterms = set(previousterms)
                 usedterms.add(x)
                 for y in self.findmatches(newneedles,usedterms):
-                    finallist.append([x] + y)
-            return finallist
+                    yield [x] + y
         else:
             assert False #TODO: PythonTerm?
 
