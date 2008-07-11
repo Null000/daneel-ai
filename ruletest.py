@@ -70,5 +70,5 @@ class ParsingTest(unittest.TestCase):
         assert len(rs.store) == 2
 
 if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromName("ruletest.RuleSystemTest")
+    suite = unittest.TestLoader().loadTestsFromName("ruletest")
     unittest.TextTestRunner().run(suite)

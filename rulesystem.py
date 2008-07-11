@@ -100,8 +100,9 @@ class RuleParser:
     def parseGuard(self,guard):
         if isinstance(guard,list):
             return guard
-        #TODO: parse these into logilab constraints
-        return [guard.strip()]
+        #TODO: optimise into small constraints
+        var = re.compile(r"(_var_(\d+)_(\d+))")
+        return [fd.make_expression([x[0] for x in var.findall(guard)],guard)]
 
     def parseBody(self,body):
         return body.strip()
@@ -153,10 +154,11 @@ class Rule:
             var2 = ["_var_%i_%i" % (i,j) for i in range(len(allConstraints)) for j in range(allConstraints[i].arity)]
 
             domains = {}
-            #TODO: empty domain, return false?
             for i in range(len(allConstraints)):
                 c = "_var_%i" % i
                 vals = self.rulesystem.findConstraint(allConstraints[i])
+                if vals == []:
+                    continue
                 domains[c] = fd.FiniteDomain(vals)
                 for j in range(allConstraints[i].arity):
                     c2 = "%s_%i" % (c,j)
