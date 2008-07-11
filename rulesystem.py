@@ -1,6 +1,9 @@
 from functools import partial
 from collections import defaultdict
 
+from logilab.constraint import fd, Solver, Repository
+from logilab.constraint.fd import ConsistencyFailure
+
 import re
 
 class RuleSystem:
@@ -54,7 +57,7 @@ class RuleSystem:
 
     def findConstraint(self,con):
         """Given a free constraint, returns a list of constraints in the store that match it"""
-        return [x for [x] in self.findConstraints([self.parser.parseConstraint(con)])]
+        return list(self.store.elems[(con.functor,con.arity)])
 
     def findConstraints(self,cons,excluded=set()):
         """Given a list of free constraint, and a set of constraints to exclude,
@@ -95,7 +98,10 @@ class RuleParser:
         return [self.parseConstraint(x.strip()) for x in splitted]
 
     def parseGuard(self,guard):
-        return guard.strip()
+        if isinstance(guard,list):
+            return guard
+        #TODO: parse these into logilab constraints
+        return [guard.strip()]
 
     def parseBody(self,body):
         return body.strip()
@@ -119,12 +125,12 @@ class Rule:
     * name, string, preferable unique although nothing requires this
     * kepthead, list of free constraints
     * removedhead, list of free constraints
-    * guard, Python code evaluating to True or False represented as string
+    * guard, List of Python code evaluating to True or False represented as string
     * body, a mix of constraints, PythonTerms and unifications, represented as string"""
 
     uniquecount = 0
 
-    def __init__(self,rulesystem,name=None,kepthead=[],removedhead=[],guard="True",body=""):
+    def __init__(self,rulesystem,name=None,kepthead=[],removedhead=[],guard=[],body=""):
         Rule.uniquecount = Rule.uniquecount + 1
         if name is None:
             name = "rule_%i" % Rule.uniquecount
@@ -143,30 +149,57 @@ class Rule:
             return False
         allConstraints = self.kepthead + self.removedhead
         for pos in positions:
-            neededConstraints = list(allConstraints)
-            del neededConstraints[pos]
-            partners = self.rulesystem.findConstraints(neededConstraints,set([con]))
-            for p in partners:
-                p.insert(pos,con)
-                assert len(p) == len(self.kepthead) + len(self.removedhead)
-                context = self.rulesystem.createContext()
+            var1 = ["_var_%i" % i for i in range(len(allConstraints))]
+            var2 = ["_var_%i_%i" % (i,j) for i in range(len(allConstraints)) for j in range(allConstraints[i].arity)]
 
-                #bind vars
-                for i in range(len(p)):
-                    tempcon = p[i]
-                    for j in range(tempcon.arity):
-                        var = "_var_%i_%i" % (i,j)
-                        context[var] = tempcon.args[j]
-                if eval(self.guard,context):
-                    #print "Rule fired: %s" % self.name
-                    if self.removedhead == []:
-                        removedConstraints = []
-                    else:
-                        removedConstraints = p[-len(self.removedhead):]
-                    for c in removedConstraints:
-                        self.rulesystem.removeConstraint(c)
-                    exec(self.body,context)
-                    return True
+            domains = {}
+            #TODO: empty domain, return false?
+            for i in range(len(allConstraints)):
+                c = "_var_%i" % i
+                vals = self.rulesystem.findConstraint(allConstraints[i])
+                domains[c] = fd.FiniteDomain(vals)
+                for j in range(allConstraints[i].arity):
+                    c2 = "%s_%i" % (c,j)
+                    vals2 = [x.args[j] for x in vals]
+                    domains[c2] = fd.FiniteDomain(vals2)
+
+            constraints = []
+            if(len(var1) > 1):
+                constraints.append(fd.AllDistinct(var1))
+            constraints.append(fd.Equals("_var_%i" % pos,con))
+            for i in range(len(allConstraints)):
+                for j in range(allConstraints[i].arity):
+                    c = "_var_%i" % i
+                    a = "_var_%i_%i" % (i,j)
+                    constraints.append(fd.make_expression((c,a),"%s.args[%i] == %s"%(c,j,a)))
+            constraints.extend(self.guard)
+
+            try:
+                r = Repository(var1+var2, domains, constraints)
+                solution = Solver().solve_one(r, False)
+            except ConsistencyFailure:
+                continue
+            if solution is None:
+                continue
+            p = [solution["_var_%i"%i] for i in range(len(allConstraints))]
+            assert len(p) == len(self.kepthead) + len(self.removedhead)
+            context = self.rulesystem.createContext()
+
+            #bind vars
+            for i in range(len(p)):
+                tempcon = p[i]
+                for j in range(tempcon.arity):
+                    var = "_var_%i_%i" % (i,j)
+                    context[var] = tempcon.args[j]
+            #print "Rule fired: %s" % self.name
+            if self.removedhead == []:
+                removedConstraints = []
+            else:
+                removedConstraints = p[-len(self.removedhead):]
+            for c in removedConstraints:
+                self.rulesystem.removeConstraint(c)
+            exec(self.body,context)
+            return True
 
     def canAcceptAt(self,cons):
         head = self.kepthead + self.removedhead
