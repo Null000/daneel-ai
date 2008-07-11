@@ -1,6 +1,8 @@
 import unittest
 from rulesystem import *
 
+from logilab.constraint import fd, Solver, Repository
+
 class RuleSystemTest(unittest.TestCase):
     def setUp(self):
         self.rs = RuleSystem(["pred","gcd"])
@@ -8,7 +10,7 @@ class RuleSystemTest(unittest.TestCase):
         rule = Rule(self.rs)
         rule.name = "exchange"
         rule.removedhead = [FreeConstraint("pred",1)]
-        rule.guard = "_var_0_0 == 2"
+        rule.guard = [fd.Equals("_var_0_0",2)]
         rule.body = "pred(42)"
         self.rs.rules = [rule]
         self.rs.addConstraint(BoundConstraint("pred",[2]))
@@ -19,7 +21,7 @@ class RuleSystemTest(unittest.TestCase):
         rule = Rule(self.rs) # pred(2) ==> pred(42)
         rule.name = "finite"
         rule.kepthead = [FreeConstraint("pred",1)]
-        rule.guard = "_var_0_0 == 2"
+        rule.guard = [fd.Equals("_var_0_0",2)]
         rule.body = "pred(42)"
         self.rs.rules = [rule]
         self.rs.addConstraint(BoundConstraint("pred",[2]))
@@ -30,13 +32,13 @@ class RuleSystemTest(unittest.TestCase):
         rule1 = Rule(self.rs) # gcd(0) <==> pass
         rule1.name = "remove"
         rule1.removedhead = [FreeConstraint("gcd",1)]
-        rule1.guard = "_var_0_0 == 0"
+        rule1.guard = [fd.Equals("_var_0_0",0)]
         rule1.body = "pass"
         rule2 = Rule(self.rs) # gcd(X) \ gcd(Y) <==> X<=Y | gcd(Y-X)
         rule2.name = "reduce"
         rule2.kepthead = [FreeConstraint("gcd",1)]
         rule2.removedhead = [FreeConstraint("gcd",1)]
-        rule2.guard = "_var_0_0 <= _var_1_0"
+        rule2.guard = [fd.make_expression(("_var_0_0","_var_1_0"),"_var_0_0 <= _var_1_0")]
         rule2.body = "p = _var_1_0 - _var_0_0; gcd(p)"
         self.rs.rules = [rule1,rule2]
         self.rs.addConstraint(BoundConstraint("gcd",[15]))
@@ -68,5 +70,5 @@ class ParsingTest(unittest.TestCase):
         assert len(rs.store) == 2
 
 if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromName("ruletest")
+    suite = unittest.TestLoader().loadTestsFromName("ruletest.RuleSystemTest")
     unittest.TextTestRunner().run(suite)
