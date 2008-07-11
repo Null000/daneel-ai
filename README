@@ -1,4 +1,7 @@
 This bot requires the following to be installed:
 	libtpproto-py
 	libtpclient-py
-
+	logilab.constraint
+logilab.constraint can be found online at on
+http://www.logilab.org/project/logilab-constraint
+and is also provided by the Debian package python-constraint
