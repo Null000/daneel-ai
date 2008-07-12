@@ -8,15 +8,15 @@ import re
 
 class RuleSystem:
     def __init__(self,constraints=[],rules=[],functions={}):
-        self.constraints = constraints
+        self.parser = RuleParser(self,constraints)
+        self.constraints = self.parser.constraints
         self.store = ConstraintStore()
         self.activestore = ConstraintStore()
-        self.parser = RuleParser(self,constraints)
         self.rules = [self.parser.parseRule(r) for r in rules]
         self.protocontext = self.createPrototypeContext(functions)
 
     def addConstraint(self,constraint):
-        parsedcon = self.parser.parseConstraint(constraint)
+        parsedcon = self.parser.parseBoundConstraint(constraint)
         self.store.add(parsedcon)
         self.activestore.add(parsedcon)
         while len(self.activestore) > 0:
@@ -57,7 +57,7 @@ class RuleSystem:
 
     def findConstraint(self,con):
         """Given a free constraint, returns a list of constraints in the store that match it"""
-        con = self.parser.parseConstraint(con)
+        con = self.parser.parseFreeConstraint(con)
         return list(self.store.elems[(con.functor,con.arity)])
 
     def findConstraints(self,cons,excluded=set()):
@@ -67,8 +67,7 @@ class RuleSystem:
         return self.store.findterms(cons,excluded)
 
 class RuleParser:
-    freecon = re.compile(r"^(\w*)/(\d*)$")
-    boundcon = re.compile(r"^(\w+)(\( *(.+?, *)*.+ *\))?$")
+    con = re.compile(r"^(\w+)(\( *(.+?, *)*.+ *\))?$")
     #these regexps might be a bit too loose, then again, we're trying to match a CFL.
     #probably, it can be compiled in one RE too.
     simplrule = re.compile(r"^((?P<name>\w+) @ )?(?P<removedhead>[^\\]+)<=>((?P<guard>.+)\|)?(?P<body>.+)$")
@@ -76,7 +75,8 @@ class RuleParser:
     proprule = re.compile(r"^((?P<name>\w+) @ )?(?P<kepthead>.+)==>((?P<guard>.+)\|)?(?P<body>.+)$")
 
     def __init__(self,rulesystem,constraints=[]):
-        self.constraints = constraints
+        cons = map(self.parseFreeConstraint,constraints)
+        self.constraints = dict(zip([x.functor for x in cons],cons))
         self.rulesystem = rulesystem
 
     def parseRule(self,rule):
@@ -96,7 +96,7 @@ class RuleParser:
         if isinstance(head,list):
             return head
         splitted = head.split(" and ")
-        return [self.parseConstraint(x.strip()) for x in splitted]
+        return [self.parseFreeConstraint(x.strip()) for x in splitted]
 
     def parseGuard(self,guard):
         if isinstance(guard,list):
@@ -109,19 +109,55 @@ class RuleParser:
     def parseBody(self,body):
         return body.strip()
 
-    def parseConstraint(self,cons):
+    def parseFreeConstraint(self,cons):
+        if isinstance(cons,FreeConstraint):
+            return cons
+        m = RuleParser.con.match(cons)
+        assert m is not None
+        functor = m.group(1)
+        types = []
+        if(m.group(2) is not None):
+            types = m.group(2)[1:-1].split(",")
+        return FreeConstraint(functor,map(eval,types))
+
+    def parseBoundConstraint(self,cons):
         if isinstance(cons,Constraint):
             return cons
-        m = RuleParser.freecon.match(cons)
-        if m is not None:
-            return FreeConstraint(m.group(1),int(m.group(2)))
-        m = RuleParser.boundcon.match(cons)
-        if(m is not None):
-            functor = m.group(1)
+        m = RuleParser.con.match(cons)
+        assert m is not None
+        functor = m.group(1)
+        basiccon = self.constraints[functor]
+        args = []
+        if(m.group(2) is not None):
+            stack = []
+            i = m.group(2)[1:-1]
             args = []
-            if(m.group(2) is not None):
-                args = m.group(2)[1:-1].split(",")
-            return BoundConstraint(functor,args)
+            word = ""
+            matchesstart = "([\"'"
+            matchesstop = ")]\"'"
+            for c in i:
+                if c in matchesstop and stack > 0:
+                    p = matchesstart.index(stack[-1])
+                    if(matchesstop[p] == c):
+                        stack.pop()
+                    else: #either wrong, or " or '
+                        stack.append(c)
+                    word = word + c
+                elif c in matchesstart:
+                    stack.append(c)
+                    word = word + c
+                elif c == "," and stack == []:
+                    args = args + word
+                else:
+                    word = word + c
+            args.append(word)
+        assert len(args) == len(basiccon.types)
+        for (i,t) in enumerate(basiccon.types):
+            if t == tuple: #special cases hooray
+                args[i] = eval(args[i])
+            else:
+                args[i] = t(args[i])
+        return BoundConstraint(functor,args)
 
 class Rule:
     """A rule consist of:
@@ -291,11 +327,12 @@ class Constraint:
 
 class FreeConstraint(Constraint):
     """A constraint with all arguments unbounded (different variables)."""
-    def __init__(self,name,arity):
-        Constraint.__init__(self,name,arity)
+    def __init__(self,name,types):
+        Constraint.__init__(self,name,len(types))
+        self.types = types
 
     def __str__(self):
-        return "%s/%i" % (self.functor,self.arity)
+        return "%s(%s)" % (self.functor, ','.join([str(x) for x in self.types]))
 
     def __repr__(self):
         return "<FreeConstraint: %s at 0x%x>" % (str(self),id(self))
@@ -305,7 +342,12 @@ class FreeConstraint(Constraint):
         return BoundConstraint(self.name,args)
 
     def unifiesWith(self,other):
-        return self.functor == other.functor and self.arity == other.arity
+        if self.functor != other.functor or self.arity != other.arity:
+            return False
+        for (i,t) in enumerate(self.types):
+            if not isinstance(other.args[i],t):
+                return False
+        return True
 
 class BoundConstraint(Constraint):
     """A constraint with all arguments known Python expressions."""
