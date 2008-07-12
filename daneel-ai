@@ -53,19 +53,19 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
 
 def createRuleSystem(rulesfile):
     rf = open(rulesfile)
-    l = stripline(rf.next())
+    l = stripline(rf.readline())
     while l != "[Constraints]":
-        l = stripline(rf.next())
+        l = stripline(rf.readline())
     cons = []
-    l = stripline(rf.next())
+    l = stripline(rf.readline())
     while l != "[Rules]":
         if l != "": cons.append(l)
-        l = stripline(rf.next())
+        l = stripline(rf.readline())
     rules = []
-    l = stripline(rf.next())
+    l = stripline(rf.readline())
     while l != "[Functions]":
         if l != "": rules.append(l)
-        l = stripline(rf.next())
+        l = stripline(rf.readline())
     funcs = {}
     exec("".join(rf.readlines()),funcs)
 
