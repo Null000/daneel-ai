@@ -101,7 +101,6 @@ class RuleParser:
     def parseGuard(self,guard):
         if isinstance(guard,list):
             return guard
-        #TODO: optimise into small constraints
         parts = guard.split(" and ")
         var = re.compile(r"(_var_(\d+)_(\d+))")
         return [fd.make_expression([x[0] for x in var.findall(g)],g) for g in parts]
