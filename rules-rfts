@@ -7,11 +7,17 @@ vel(int,int,int,int)
 contains(int,int)
 fleet(int)
 star(int)
+stars(tuple)
 moveto(int,int)
 
 [Rules]
 fleettype @ subtype(int,int) ==> _var_0_1 == 4 | fleet(_var_0_0)
 startype @ subtype(int,int) ==> _var_0_1 == 2 | star(_var_0_0)
-domove @ star(int) and pos(int,int,int,int) and pos(int,int,int,int) \ fleet(int) <=> (_var_0_0 == _var_1_0) and (_var_2_0 == _var_3_0) and ((_var_1_1,_var_1_2,_var_1_3) != (_var_2_1,_var_2_2,_var_2_3)) | moveto(_var_3_0,_var_0_0)
+mergestars @ stars(tuple) \ star(int) <=> F = _var_0_0 + (_var_1_0,); stars(F)
+star(int) and star(int) <=> stars((_var_0_0,_var_1_0))
+pickstar @ stars(tuple) \ fleet(int) <=> Target = randomstar(_var_0_0); moveto(_var_1_0,Target)
 
 [Functions]
+import random
+def randomstar(stars):
+    return random.choice(stars)
