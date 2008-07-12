@@ -82,15 +82,15 @@ class RuleParser:
     def parseRule(self,rule):
         if isinstance(rule,Rule):
             return rule
-        m = RuleParser.simplrule.match(rule)
+        return self.tryRuleMatch(rule,RuleParser.simplrule) or\
+                self.tryRuleMatch(rule,RuleParser.simparule) or\
+                self.tryRuleMatch(rule,RuleParser.proprule)
+
+    def tryRuleMatch(self,rule,pattern):
+        m = pattern.match(rule)
         if m is not None:
-            return Rule(self.rulesystem,**m.groupdict())
-        m = RuleParser.simparule.match(rule)
-        if m is not None:
-            return Rule(self.rulesystem,**m.groupdict())
-        m = RuleParser.proprule.match(rule)
-        if m is not None:
-            return Rule(self.rulesystem,**m.groupdict())
+            d = dict([(i,m.groupdict()[i]) for i in m.groupdict() if m.groupdict()[i] is not None])
+            return Rule(self.rulesystem,**d)
 
     def parseHead(self,head):
         if isinstance(head,list):
