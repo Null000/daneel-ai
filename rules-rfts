@@ -1,17 +1,17 @@
 [Constraints]
-subtype
-name
-size
-pos
-vel
-contains
-fleet
-star
-moveto
+subtype(int,int)
+name(int,str)
+size(int,int)
+pos(int,int,int,int)
+vel(int,int,int,int)
+contains(int,int)
+fleet(int)
+star(int)
+moveto(int,int)
 
 [Rules]
-fleettype @ subtype/2 ==> _var_0_1 == 4 | fleet(_var_0_0)
-startype @ subtype/2 ==> _var_0_1 == 2 | star(_var_0_0)
-domove @ star/1 and pos/4 and pos/4 \ fleet/1 <=> (_var_0_0 == _var_1_0) and (_var_2_0 == _var_3_0) and ((_var_1_1,_var_1_2,_var_1_3) != (_var_2_1,_var_2_2,_var_2_3)) | moveto(_var_3_0,_var_0_0)
+fleettype @ subtype(int,int) ==> _var_0_1 == 4 | fleet(_var_0_0)
+startype @ subtype(int,int) ==> _var_0_1 == 2 | star(_var_0_0)
+domove @ star(int) and pos(int,int,int,int) and pos(int,int,int,int) \ fleet(int) <=> (_var_0_0 == _var_1_0) and (_var_2_0 == _var_3_0) and ((_var_1_1,_var_1_2,_var_1_3) != (_var_2_1,_var_2_2,_var_2_3)) | moveto(_var_3_0,_var_0_0)
 
 [Functions]

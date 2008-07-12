@@ -86,7 +86,7 @@ def addCacheToStore(cache,store):
             store.addConstraint(BoundConstraint("contains",[k,child]))
 
 def createOrders(cache,rulesystem,connection):
-    orders = rulesystem.findConstraint("moveto(O,DestId)")
+    orders = rulesystem.findConstraint("moveto(int,int)")
     for order in orders:
         objid = int(order.args[0])
         destination = int(order.args[1])
