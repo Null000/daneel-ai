@@ -60,12 +60,6 @@ class RuleSystem:
         con = self.parser.parseFreeConstraint(con)
         return list(self.store.elems[(con.functor,con.arity)])
 
-    def findConstraints(self,cons,excluded=set()):
-        """Given a list of free constraint, and a set of constraints to exclude,
-        returns a generator for constraints in the store that match it, with no duplicates
-        and no entries from the excluded set"""
-        return self.store.findterms(cons,excluded)
-
 class RuleParser:
     con = re.compile(r"^(\w+)(\( *(.+?, *)*.+ *\))?$")
     #these regexps might be a bit too loose, then again, we're trying to match a CFL.
@@ -278,37 +272,6 @@ class ConstraintStore:
 
     def __str__(self):
         return str(self.elems.values())
-
-    def findterms(self,terms,previousterms=set()):
-        """Matches a list of strings against the store. Generates the predicate lists that match.
-        Variables will not be bound yet as these are tentative choices.
-        Note that all arguments should be unbounded and different (head-normal form of rules).
-        For example: match(["pred(X)","pred2(Y,Z)"]) might return [pred(5),pred2(5,7)] and [pred(""),pred2("x",3)]"""
-        if terms == []:
-            yield []
-            return
-        terms.reverse()
-        matches = self.findmatches(terms,previousterms)
-        while True:
-            yield matches.next()
-
-    def findmatches(self,needles,previousterms):
-        newneedles = list(needles)
-        constr = newneedles.pop()
-        if(isinstance(constr,Constraint)):
-            possiblematches = self.elems[constr.functor,constr.arity].difference(previousterms)
-            if newneedles == []:
-                for x in possiblematches:
-                    yield [x]
-                return
-            finallist = []
-            for x in possiblematches:
-                usedterms = set(previousterms)
-                usedterms.add(x)
-                for y in self.findmatches(newneedles,usedterms):
-                    yield [x] + y
-        else:
-            assert False #TODO: PythonTerm?
 
     def pop(self):
         v = self.elems.values()
