@@ -46,6 +46,20 @@ class RuleSystemTest(unittest.TestCase):
         [res] = self.rs.findConstraint(FreeConstraint("gcd",[int]))
         assert res.args[0] == 5
         assert len(self.rs.store) == 1
+    def testMultiRule(self):
+        rule1 = Rule(self.rs) # pred(1) ==> pred(2)
+        rule1.name = "one"
+        rule1.kepthead = [FreeConstraint("pred",[int])]
+        rule1.guard = [fd.Equals("_var_0_0",1)]
+        rule1.body = "pred(2)"
+        rule2 = Rule(self.rs) # pred(1) ==> pred(3)
+        rule2.name = "two"
+        rule2.kepthead = [FreeConstraint("pred",[int])]
+        rule2.guard = [fd.Equals("_var_0_0",1)]
+        rule2.body = "pred(3)"
+        self.rs.rules = [rule1,rule2]
+        self.rs.addConstraint(BoundConstraint("pred",[1]))
+        assert len(self.rs.store) == 3
 
 class ParsingTest(unittest.TestCase):
     def testProp(self):

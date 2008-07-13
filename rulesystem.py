@@ -177,12 +177,14 @@ class Rule:
         self.body = parser.parseBody(body)
 
     def matchActive(self,con):
+        """Tries to match a given constraint against this rule.
+        Returns True if the constraint is removed from the store in the process."""
         positions = self.canAcceptAt(con)
         if(positions == []):
             return False
         for pos in positions:
             if self.matchAtPosition(con,pos):
-                return True
+                return pos >= len(self.kepthead)
         return False
 
     def matchAtPosition(self,con,pos):
