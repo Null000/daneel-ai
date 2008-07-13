@@ -5,17 +5,26 @@ size(int,int)
 pos(int,int,int,int)
 vel(int,int,int,int)
 contains(int,int)
+owner(int,int)
+whoami(int)
 fleet(int)
+planet(int)
 star(int)
 stars(tuple)
-moveto(int,int)
+order_move(int,int)
+order_buildfleet(int,tuple,str)
 
 [Rules]
-fleettype @ subtype(int,int) ==> _var_0_1 == 4 | fleet(_var_0_0)
+#TODO: perhaps these should be moved into the framework itself
+fleettype @ subtype(int,int) ==> _var_0_1 == 4 | fleet(_var_0_0); print "Fleet found with id %s"%_var_0_0
+planettype @ subtype(int,int) ==> _var_0_1 == 3 | planet(_var_0_0);
 startype @ subtype(int,int) ==> _var_0_1 == 2 | star(_var_0_0)
+
 mergestars @ stars(tuple) \ star(int) <=> F = _var_0_0 + (_var_1_0,); stars(F)
 star(int) and star(int) <=> stars((_var_0_0,_var_1_0))
-pickstar @ stars(tuple) \ fleet(int) <=> Target = randomstar(_var_0_0); moveto(_var_1_0,Target)
+scout @ stars(tuple) \ fleet(int) <=> Target = randomstar(_var_0_0); order_move(_var_1_0,Target)
+
+buildscouts @ whoami(int) and owner(int,int) \ planet(int) <=> _var_0_0 == _var_1_1 and _var_1_0 == _var_2_0 | order_buildfleet(_var_2_0,((1,1),),"Scouting Fleet")
 
 [Functions]
 import random

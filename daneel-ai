@@ -76,6 +76,7 @@ def stripline(line):
     return line.strip()
 
 def addCacheToStore(cache,store):
+    store.addConstraint(BoundConstraint("whoami",[cache.players[0].id]))
     for (k,v) in cache.objects.items():
         store.addConstraint(BoundConstraint("subtype",[k,v.subtype]))
         store.addConstraint(BoundConstraint("name",[k,v.name]))
@@ -84,9 +85,11 @@ def addCacheToStore(cache,store):
         store.addConstraint(BoundConstraint("vel",(k,) + v.vel))
         for child in v.contains:
             store.addConstraint(BoundConstraint("contains",[k,child]))
+        if hasattr(v,"owner"):
+            store.addConstraint(BoundConstraint("owner",(k,v.owner)))
 
 def createOrders(cache,rulesystem,connection):
-    orders = rulesystem.findConstraint("moveto(int,int)")
+    orders = rulesystem.findConstraint("order_move(int,int)")
     for order in orders:
         objid = int(order.args[0])
         destination = int(order.args[1])
@@ -96,10 +99,27 @@ def createOrders(cache,rulesystem,connection):
         order = moveorder(*args)
         evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
         tp.client.cache.apply(connection,evt,cache)
+    orders = rulesystem.findConstraint("order_buildfleet(int,tuple,str)")
+    for order in orders:
+        objid = order.args[0]
+        ships = list(order.args[1])
+        name = order.args[2]
+        print "Ordering fleet %s of %s" % (name,ships)
+        buildorder = findOrderDesc("Build Fleet")
+        args = [0, objid, -1, buildorder.subtype, 0, [], [[],ships], (len(name),name)]
+        order = buildorder(*args)
+        evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
+        tp.client.cache.apply(connection,evt,cache)
 
 def findOrderDesc(name):
     name = name.lower()
     for d in OrderDescs().values():
+        if d._name.lower() == name:
+            return d
+
+def findDesign(cache,name):
+    name = name.lower()
+    for d in cache.designs.values():
         if d._name.lower() == name:
             return d
 

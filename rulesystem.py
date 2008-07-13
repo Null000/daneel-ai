@@ -16,6 +16,7 @@ class RuleSystem:
         self.protocontext = self.createPrototypeContext(functions)
 
     def addConstraint(self,constraint):
+        #print "Adding constraint %s" % constraint
         parsedcon = self.parser.parseBoundConstraint(constraint)
         self.store.add(parsedcon)
         self.activestore.add(parsedcon)
