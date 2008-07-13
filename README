@@ -5,3 +5,24 @@ This bot requires the following to be installed:
 logilab.constraint can be found online at on
 http://www.logilab.org/project/logilab-constraint
 and is also provided by the Debian package python-constraint
+
+How to run:
+Just run "daneel-ai" to start the bot and make it connect to a server
+running on localhost. Use the --help option to find out other usage options.
+
+What it does:
+The bot keeps track of small facts, like "contains(0,10)" to represent the
+universe. It also has a collection of rules to deduce new knowledge and
+approriate actions from these facts.
+The current ruleset can be found in the "rules-rfts" file. It implements a
+bot that tries to build 1 scout each turn and sends these scouts to random
+places. It also builds 1 colonist each turn and will build a transport once
+5 colonists are ready to move. It then sends out these transports to planets
+it has discovered but doesn't own yet.
+More background information on the rule system can be found on the wiki:
+http://www.thousandparsec.net/wiki/Daneel-ai
+
+Known bugs:
+In some cases, a rule only fire once when it should fire multiple times. An
+example is with the "scout" rule that moves the scouts. A test case has been
+written and I'll investigate ASAP.
