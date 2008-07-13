@@ -91,11 +91,17 @@ def createOrders(cache,rulesystem,connection):
         objid = int(order.args[0])
         destination = int(order.args[1])
         print "Moving to %s" % (cache.objects[destination].pos,)
-        moveorder = OrderDescs()[2]
+        moveorder = findOrderDesc("Move")
         args = [0, objid, -1, moveorder.subtype, 0, [], destination]
         order = moveorder(*args)
         evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
         tp.client.cache.apply(connection,evt,cache)
+
+def findOrderDesc(name):
+    name = name.lower()
+    for d in OrderDescs().values():
+        if d._name.lower() == name:
+            return d
 
 def gameLoop(rulesfile,turns=-1):
     connection, cache = connect()
