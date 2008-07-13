@@ -5,7 +5,7 @@ from logilab.constraint import fd, Solver, Repository
 
 class RuleSystemTest(unittest.TestCase):
     def setUp(self):
-        self.rs = RuleSystem(["pred(int)","gcd(int)"])
+        self.rs = RuleSystem(["pred(int)","gcd(int)","info(str)","a"])
     def testExchange(self):
         rule = Rule(self.rs)
         rule.name = "exchange"
@@ -28,6 +28,29 @@ class RuleSystemTest(unittest.TestCase):
         [res1,res2] = self.rs.findConstraint(FreeConstraint("pred",[int]))
         assert res1.args[0] == 42 or res2.args[0] == 42
         assert len(self.rs.store) == 2
+    def testString(self):
+        rule = Rule(self.rs) # info("foo") <=> info("bar")
+        rule.name = "str"
+        rule.removedhead = [FreeConstraint("info",[str])]
+        rule.guard = [fd.Equals("_var_0_0","foo")]
+        rule.body = "info('bar')"
+        self.rs.rules = [rule]
+        self.rs.addConstraint(BoundConstraint("info",["foo"]))
+        [res] = self.rs.findConstraint(FreeConstraint("info",[int]))
+        assert res.args[0] == "bar"
+        assert len(self.rs.store) == 1
+    def testNoArg(self):
+        rule = Rule(self.rs) # a and pred(2) <=> pred(1)
+        rule.name = "noarg"
+        rule.removedhead = [FreeConstraint("a",[]),FreeConstraint("pred",[int])]
+        rule.guard = [fd.Equals("_var_1_0",2)]
+        rule.body = "pred(1)"
+        self.rs.rules = [rule]
+        self.rs.addConstraint(BoundConstraint("pred",[2]))
+        self.rs.addConstraint(BoundConstraint("a",[]))
+        [res] = self.rs.findConstraint(FreeConstraint("pred",[int]))
+        assert res.args[0] == 1
+        assert len(self.rs.store) == 1
     def testGCD(self):
         rule1 = Rule(self.rs) # gcd(0) <==> pass
         rule1.name = "remove"
