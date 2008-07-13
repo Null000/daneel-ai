@@ -6,13 +6,17 @@ pos(int,int,int,int)
 vel(int,int,int,int)
 contains(int,int)
 owner(int,int)
+#ObjID,ResType,Avail,Mine,Unavail
+resources(int,int,int,int,int)
 whoami(int)
 fleet(int)
 planet(int)
+myplanet(int)
 star(int)
 stars(tuple)
 order_move(int,int)
 order_buildfleet(int,tuple,str)
+order_produce(int,tuple)
 
 [Rules]
 #TODO: perhaps these should be moved into the framework itself
@@ -24,7 +28,11 @@ mergestars @ stars(tuple) \ star(int) <=> F = _var_0_0 + (_var_1_0,); stars(F)
 star(int) and star(int) <=> stars((_var_0_0,_var_1_0))
 scout @ stars(tuple) \ fleet(int) <=> Target = randomstar(_var_0_0); order_move(_var_1_0,Target)
 
-buildscouts @ whoami(int) and owner(int,int) \ planet(int) <=> _var_0_0 == _var_1_1 and _var_1_0 == _var_2_0 | order_buildfleet(_var_2_0,((1,1),),"Scouting Fleet")
+whoami(int) and owner(int,int) \ planet(int) <=> _var_0_0 == _var_1_1 and _var_1_0 == _var_2_0 | myplanet(_var_2_0)
+
+buildscouts @ myplanet(int) ==> order_buildfleet(_var_0_0,((1,1),),"Scouting")
+producecolonists @ myplanet(int) ==> order_produce(_var_0_0,((7,1),))
+buildtransports @ myplanet(int) and resources(int,int,int,int,int) ==> _var_0_0 == _var_1_0 and _var_1_1 == 7 and _var_1_2 >= 5 | order_buildfleet(_var_0_0,((3,_var_1_2),),"Colonization")
 
 [Functions]
 import random

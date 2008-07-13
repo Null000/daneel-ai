@@ -87,6 +87,9 @@ def addCacheToStore(cache,store):
             store.addConstraint(BoundConstraint("contains",[k,child]))
         if hasattr(v,"owner"):
             store.addConstraint(BoundConstraint("owner",(k,v.owner)))
+        if hasattr(v,"resources"):
+            for res in v.resources:
+                store.addConstraint(BoundConstraint("resources",(k,)+res))
 
 def createOrders(cache,rulesystem,connection):
     orders = rulesystem.findConstraint("order_move(int,int)")
@@ -109,6 +112,16 @@ def createOrders(cache,rulesystem,connection):
         args = [0, objid, -1, buildorder.subtype, 0, [], [[],ships], (len(name),name)]
         order = buildorder(*args)
         evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
+        tp.client.cache.apply(connection,evt,cache)
+    orders = rulesystem.findConstraint("order_produce(int,tuple)")
+    for order in orders:
+        objid = order.args[0]
+        toproduce = list(order.args[1])
+        print "Producing %s" % toproduce
+        order = findOrderDesc("Produce")
+        args = [0, objid, -1, order.subtype, 0, [], [[],toproduce]]
+        o = order(*args)
+        evt = cache.apply("orders","create after",objid,cache.orders[objid].head,o)
         tp.client.cache.apply(connection,evt,cache)
 
 def findOrderDesc(name):
