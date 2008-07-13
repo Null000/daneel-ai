@@ -28,6 +28,17 @@ class RuleSystemTest(unittest.TestCase):
         [res1,res2] = self.rs.findConstraint(FreeConstraint("pred",[int]))
         assert res1.args[0] == 42 or res2.args[0] == 42
         assert len(self.rs.store) == 2
+    def testMultiFiring(self):
+        rule = Rule(self.rs) # a and pred(X) ==> gcd(X)
+        rule.name = "multi"
+        rule.kepthead = [FreeConstraint("a",[]),FreeConstraint("pred",[int])]
+        rule.guard = []
+        rule.body = "gcd(_var_1_0)"
+        self.rs.rules = [rule]
+        self.rs.addConstraint(BoundConstraint("pred",[2]))
+        self.rs.addConstraint(BoundConstraint("pred",[3]))
+        self.rs.addConstraint(BoundConstraint("a",[]))
+        assert len(self.rs.store) == 5
     def testString(self):
         rule = Rule(self.rs) # info("foo") <=> info("bar")
         rule.name = "str"
