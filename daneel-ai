@@ -147,8 +147,8 @@ def findDesign(cache,name):
         if d._name.lower() == name:
             return d
 
-def gameLoop(rulesfile,turns=-1):
-    connection, cache = connect()
+def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp'):
+    connection, cache = connect(uri)
     rulesystem = createRuleSystem(rulesfile)
     while turns != 0:
         turns = turns - 1
@@ -172,7 +172,10 @@ if __name__ == "__main__":
                       help="read rules from FILENAME [default: %default]")
     parser.add_option("-n", "--numturns", dest="numturns", type="int", default=-1,
                       help="run for NUMTURNS turns [default: unlimited]")
+    parser.add_option("-u", "--uri", dest="uri",
+                      default='tp://daneel-ai:cannonfodder@localhost/tp',
+                      help="Connect to specified URI [default %default]")
     #verbosity? others?
 
     (options, args) = parser.parse_args()
-    gameLoop(options.filename,turns=options.numturns)
+    gameLoop(options.filename,turns=options.numturns,uri=options.uri)
