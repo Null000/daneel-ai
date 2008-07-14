@@ -31,6 +31,11 @@ class RuleSystem:
             pass
         self.store.remove(constraint)
 
+    def hasConstraints(self,cons):
+        for con in cons:
+            if not self.store.hasConstraint(con): return False
+        return True
+
     def matchActive(self,constraint):
         for r in self.rules:
             if r.matchActive(constraint):
@@ -221,30 +226,31 @@ class Rule:
             #print "cons " + str(constraints)
             #print ""
             r = Repository(var1+var2, domains, constraints)
-            solution = Solver().solve_one(r, False)
+            solutions = Solver().solve(r, False)
         except ConsistencyFailure:
             return False
-        if solution is None:
+        if solutions is None:
             return False
-        p = [solution["_var_%i"%i] for i in range(len(allConstraints))]
-        assert len(p) == len(self.kepthead) + len(self.removedhead)
-        context = self.rulesystem.createContext()
+        for solution in solutions:
+            p = [solution["_var_%i"%i] for i in range(len(allConstraints))]
+            assert len(p) == len(self.kepthead) + len(self.removedhead)
+            if self.rulesystem.hasConstraints(p):
+                context = self.rulesystem.createContext()
 
-        #bind vars
-        for i in range(len(p)):
-            tempcon = p[i]
-            for j in range(tempcon.arity):
-                var = "_var_%i_%i" % (i,j)
-                context[var] = tempcon.args[j]
-        #print "Rule fired: %s" % self.name
-        if self.removedhead == []:
-            removedConstraints = []
-        else:
-            removedConstraints = p[-len(self.removedhead):]
-        for c in removedConstraints:
-            self.rulesystem.removeConstraint(c)
-        exec(self.body,context)
-        return True
+                #bind vars
+                for i in range(len(p)):
+                    tempcon = p[i]
+                    for j in range(tempcon.arity):
+                        var = "_var_%i_%i" % (i,j)
+                        context[var] = tempcon.args[j]
+                #print "Rule fired: %s" % self.name
+                if self.removedhead == []:
+                    removedConstraints = []
+                else:
+                    removedConstraints = p[-len(self.removedhead):]
+                for c in removedConstraints:
+                    self.rulesystem.removeConstraint(c)
+                exec(self.body,context)
 
     def canAcceptAt(self,cons):
         head = self.kepthead + self.removedhead
@@ -269,6 +275,12 @@ class ConstraintStore:
         func = elem.functor
         ar = elem.arity
         self.elems[(func,ar)].remove(elem)
+
+    def hasConstraint(self,elem):
+        assert isinstance(elem,Constraint), "%s is not a Constraint" % (elem, )
+        func = elem.functor
+        ar = elem.arity
+        return elem in self.elems[(func,ar)]
 
     def __len__(self):
         return sum(map(len,self.elems.values()))
