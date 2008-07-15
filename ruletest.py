@@ -13,7 +13,7 @@ class RuleSystemTest(unittest.TestCase):
         rule.guard = [fd.Equals("_var_0_0",2)]
         rule.body = "pred(42)"
         self.rs.rules = [rule]
-        self.rs.addConstraint(BoundConstraint("pred",[2]))
+        self.rs.addConstraint("pred(2)")
         [res] = self.rs.findConstraint(FreeConstraint("pred",[int]))
         assert res.args[0] == 42
         assert len(self.rs.store) == 1
@@ -24,7 +24,7 @@ class RuleSystemTest(unittest.TestCase):
         rule.guard = [fd.Equals("_var_0_0",2)]
         rule.body = "pred(42)"
         self.rs.rules = [rule]
-        self.rs.addConstraint(BoundConstraint("pred",[2]))
+        self.rs.addConstraint("pred(2)")
         [res1,res2] = self.rs.findConstraint(FreeConstraint("pred",[int]))
         assert res1.args[0] == 42 or res2.args[0] == 42
         assert len(self.rs.store) == 2
@@ -35,9 +35,9 @@ class RuleSystemTest(unittest.TestCase):
         rule.guard = []
         rule.body = "gcd(_var_1_0)"
         self.rs.rules = [rule]
-        self.rs.addConstraint(BoundConstraint("pred",[2]))
-        self.rs.addConstraint(BoundConstraint("pred",[3]))
-        self.rs.addConstraint(BoundConstraint("a",[]))
+        self.rs.addConstraint("pred(2)")
+        self.rs.addConstraint("pred(3)")
+        self.rs.addConstraint("a")
         assert len(self.rs.store) == 5
     def testString(self):
         rule = Rule(self.rs) # info("foo") <=> info("bar")
@@ -46,7 +46,7 @@ class RuleSystemTest(unittest.TestCase):
         rule.guard = [fd.Equals("_var_0_0","foo")]
         rule.body = "info('bar')"
         self.rs.rules = [rule]
-        self.rs.addConstraint(BoundConstraint("info",["foo"]))
+        self.rs.addConstraint("info(foo)")
         [res] = self.rs.findConstraint(FreeConstraint("info",[int]))
         assert res.args[0] == "bar"
         assert len(self.rs.store) == 1
@@ -57,8 +57,8 @@ class RuleSystemTest(unittest.TestCase):
         rule.guard = [fd.Equals("_var_1_0",2)]
         rule.body = "pred(1)"
         self.rs.rules = [rule]
-        self.rs.addConstraint(BoundConstraint("pred",[2]))
-        self.rs.addConstraint(BoundConstraint("a",[]))
+        self.rs.addConstraint("pred(2)")
+        self.rs.addConstraint("a")
         [res] = self.rs.findConstraint(FreeConstraint("pred",[int]))
         assert res.args[0] == 1
         assert len(self.rs.store) == 1
@@ -75,8 +75,8 @@ class RuleSystemTest(unittest.TestCase):
         rule2.guard = [fd.make_expression(("_var_0_0","_var_1_0"),"_var_0_0 <= _var_1_0")]
         rule2.body = "p = _var_1_0 - _var_0_0; gcd(p)"
         self.rs.rules = [rule1,rule2]
-        self.rs.addConstraint(BoundConstraint("gcd",[15]))
-        self.rs.addConstraint(BoundConstraint("gcd",[20]))
+        self.rs.addConstraint("gcd(15)")
+        self.rs.addConstraint("gcd(20)")
         [res] = self.rs.findConstraint(FreeConstraint("gcd",[int]))
         assert res.args[0] == 5
         assert len(self.rs.store) == 1
@@ -92,7 +92,7 @@ class RuleSystemTest(unittest.TestCase):
         rule2.guard = [fd.Equals("_var_0_0",1)]
         rule2.body = "pred(3)"
         self.rs.rules = [rule1,rule2]
-        self.rs.addConstraint(BoundConstraint("pred",[1]))
+        self.rs.addConstraint("pred(1)")
         assert len(self.rs.store) == 3
 
 class ParsingTest(unittest.TestCase):
