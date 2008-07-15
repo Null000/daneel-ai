@@ -123,6 +123,17 @@ class ParsingTest(unittest.TestCase):
         assert res1.args[0] == (1,2)
         assert len(rs.store) == 1
 
+class LongTermTest(unittest.TestCase):
+    def setUp(self):
+        self.rs = RuleSystem(["short(int)","long(int)*"])
+    def testClear(self):
+        self.rs.addConstraint("short(5)")
+        self.rs.addConstraint("long(10)")
+        self.rs.clearStore()
+        assert len(self.rs.store) == 1
+        [res] = self.rs.findConstraint(FreeConstraint("long",[int]))
+        assert res.args[0] == 10
+
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromName("ruletest")
     unittest.TextTestRunner().run(suite)

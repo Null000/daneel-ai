@@ -44,9 +44,8 @@ class RuleSystem:
                 break
 
     def clearStore(self):
-        #TODO: long-term storage
         self.store.clear()
-        self.activestore.clear()
+        self.activestore.fullclear()
 
     def createContext(self):
         return self.protocontext.copy()
@@ -290,6 +289,15 @@ class ConstraintStore:
                 return s.pop()
 
     def clear(self):
+        for (k,v) in self.elems.items():
+            if v != set():
+                el = v.pop()
+                if el.freecon.longterm:
+                    v.add(el)
+                else:
+                    self.elems[k] = set()
+
+    def fullclear(self):
         self.elems.clear()
 
 class Constraint:
