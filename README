@@ -21,8 +21,3 @@ places. It also builds 1 colonist each turn and will build a transport once
 it has discovered but doesn't own yet.
 More background information on the rule system can be found on the wiki:
 http://www.thousandparsec.net/wiki/Daneel-ai
-
-Known bugs:
-In some cases, a rule only fire once when it should fire multiple times. An
-example is with the "scout" rule that moves the scouts. A test case has been
-written and I'll investigate ASAP.
