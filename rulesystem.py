@@ -46,6 +46,8 @@ class RuleSystem:
     def clearStore(self):
         self.store.clear()
         self.activestore.fullclear()
+        for r in self.rules:
+            r.history = set()
 
     def createContext(self):
         return self.protocontext.copy()
@@ -174,6 +176,7 @@ class Rule:
         self.removedhead = parser.parseHead(removedhead)
         self.guard = parser.parseGuard(guard)
         self.body = parser.parseBody(body)
+        self.history = set()
 
     def matchActive(self,con):
         """Tries to match a given constraint against this rule.
@@ -228,6 +231,7 @@ class Rule:
         for solution in solutions:
             p = [solution["_var_%i"%i] for i in range(len(allConstraints))]
             assert len(p) == len(self.kepthead) + len(self.removedhead)
+            if tuple(p) in self.history: continue
             if self.rulesystem.hasConstraints(p):
                 context = self.rulesystem.createContext()
 
@@ -244,6 +248,7 @@ class Rule:
                     removedConstraints = p[-len(self.removedhead):]
                 for c in removedConstraints:
                     self.rulesystem.removeConstraint(c)
+                self.history.add(tuple(p))
                 exec(self.body,context)
 
     def canAcceptAt(self,cons):
