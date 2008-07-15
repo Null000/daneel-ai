@@ -16,7 +16,7 @@ col(int)
 planet(int)
 myplanet(int)
 star(int)
-stars(tuple)
+stars(tuple)*
 order_move(int,int)
 order_buildfleet(int,tuple,str)
 order_produce(int,tuple)
@@ -31,15 +31,16 @@ fleettype @ subtype(int,int) ==> _var_0_1 == 4 | fleet(_var_0_0)
 planettype @ subtype(int,int) ==> _var_0_1 == 3 | planet(_var_0_0);
 startype @ subtype(int,int) ==> _var_0_1 == 2 | star(_var_0_0)
 
-mergestars @ stars(tuple) \ star(int) <=> F = _var_0_0 + (_var_1_0,); stars(F)
-star(int) and star(int) <=> stars((_var_0_0,_var_1_0))
+info @ turn(int) ==> print "Turn %s" % _var_0_0
+mergestars @ turn(int) \ stars(tuple) and star(int) <=> _var_0_0 == 0 | F = _var_1_0 + (_var_2_0,); stars(F)
+startmerge @ turn(int) \ star(int) and star(int) <=> _var_0_0 == 0 | stars((_var_1_0,_var_2_0))
 fleet(int) and name(int,unicode) <=> _var_0_0 == _var_1_0 and _var_1_1 == "Scouting" | scout(_var_1_0); print "Scout found with id %s"%_var_0_0
 fleet(int) and name(int,unicode) <=> _var_0_0 == _var_1_0 and _var_1_1 == "Colonization" | col(_var_1_0); print "Transport found with id %s"%_var_0_0
-scout @ cacheentered and stars(tuple) \ scout(int) <=> Target = randomstar(_var_1_0); order_move(_var_2_0,Target)
+scout @ cacheentered \ stars(tuple) and scout(int) <=> _var_1_0 != () | (Target,Others) = randomstar(_var_1_0); order_move(_var_2_0,Target); print "stars left: %s"%(Others,); stars(Others)
 
 whoami(int) and owner(int,int) \ planet(int) <=> _var_0_0 == _var_1_1 and _var_1_0 == _var_2_0 | myplanet(_var_2_0)
 
-buildscouts @ myplanet(int) ==> order_buildfleet(_var_0_0,((1,1),),"Scouting")
+buildscouts @ cacheentered and myplanet(int) and stars(tuple) ==> len(_var_2_0) > 10 | order_buildfleet(_var_1_0,((1,1),),"Scouting")
 producecolonists @ myplanet(int) ==> order_produce(_var_0_0,((7,1),))
 buildtransports @ myplanet(int) and resources(int,int,int,int,int) ==> _var_0_0 == _var_1_0 and _var_1_1 == 7 and _var_1_2 >= 5 | order_buildfleet(_var_0_0,((3,_var_1_2),),"Colonization")
 
@@ -49,4 +50,5 @@ movetoplanet @ cacheentered \ col(int) and planet(int) <=> order_move(_var_1_0,_
 [Functions]
 import random
 def randomstar(stars):
-    return random.choice(stars)
+    c = random.randint(0,len(stars)-1)
+    return (stars[c],stars[:c] + stars[c+1:])
