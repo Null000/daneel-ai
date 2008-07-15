@@ -146,7 +146,8 @@ class RuleParser:
                     stack.append(c)
                     word = word + c
                 elif c == "," and stack == []:
-                    args = args + word
+                    args.append(word)
+                    word = ""
                 else:
                     word = word + c
             args.append(word)

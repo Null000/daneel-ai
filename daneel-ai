@@ -76,21 +76,21 @@ def stripline(line):
     return line.strip()
 
 def addCacheToStore(cache,store):
-    store.addConstraint(BoundConstraint("whoami",[cache.players[0].id]))
+    store.addConstraint("whoami(%i)" % cache.players[0].id)
     for (k,v) in cache.objects.items():
-        store.addConstraint(BoundConstraint("subtype",[k,v.subtype]))
-        store.addConstraint(BoundConstraint("name",[k,v.name]))
-        store.addConstraint(BoundConstraint("size",[k,v.size]))
-        store.addConstraint(BoundConstraint("pos",(k,) + v.pos))
-        store.addConstraint(BoundConstraint("vel",(k,) + v.vel))
+        store.addConstraint("subtype(%i,%i)"%(k,v.subtype))
+        store.addConstraint("name(%i,%s)"%(k,v.name))
+        store.addConstraint("size(%i,%i)"%(k,v.size))
+        store.addConstraint("pos(%i,%i,%i,%i)"%((k,) + v.pos))
+        store.addConstraint("vel(%i,%i,%i,%i)"%((k,) + v.vel))
         for child in v.contains:
-            store.addConstraint(BoundConstraint("contains",[k,child]))
+            store.addConstraint("contains(%i,%i)"%(k,child))
         if hasattr(v,"owner"):
-            store.addConstraint(BoundConstraint("owner",(k,v.owner)))
+            store.addConstraint("owner(%i,%i)"%(k,v.owner))
         if hasattr(v,"resources"):
             for res in v.resources:
-                store.addConstraint(BoundConstraint("resources",(k,)+res))
-    store.addConstraint(BoundConstraint("cacheentered",[]))
+                store.addConstraint("resources(%i,%i,%i,%i,%i)"%((k,)+res))
+    store.addConstraint("cacheentered")
 
 def createOrders(cache,rulesystem,connection):
     orders = rulesystem.findConstraint("order_move(int,int)")
