@@ -9,6 +9,7 @@ owner(int,int)
 #ObjID,ResType,Avail,Mine,Unavail
 resources(int,int,int,int,int)
 whoami(int)
+turn(int)
 fleet(int)
 scout(int)
 col(int)
