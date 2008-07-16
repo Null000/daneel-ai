@@ -365,9 +365,13 @@ class BoundConstraintFactory:
         basiccon = self.constraints[name]
         assert len(args) == len(basiccon.types)
         for (i,t) in enumerate(basiccon.types):
-            if isinstance(args[i],t):continue
-            if t == tuple: #special cases hooray
-                args[i] = t(eval(args[i]))
+            if type(args[i]) == str:
+                if t == str and not (args[i][0] in "'\"" and args[i][0] == args[i][-1]):
+                    args[i] = t((args[i]))
+                else:
+                    args[i] = t(eval(args[i]))
+            elif isinstance(args[i],t):
+                continue
             else:
                 args[i] = t(args[i])
         return BoundConstraint(name,args,basiccon)

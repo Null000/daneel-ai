@@ -39,17 +39,6 @@ class RuleSystemTest(unittest.TestCase):
         self.rs.addConstraint("pred(3)")
         self.rs.addConstraint("a")
         assert len(self.rs.store) == 5
-    def testString(self):
-        rule = Rule(self.rs) # info("foo") <=> info("bar")
-        rule.name = "str"
-        rule.removedhead = [FreeConstraint("info",[str])]
-        rule.guard = [fd.Equals("_var_0_0","foo")]
-        rule.body = "info('bar')"
-        self.rs.rules = [rule]
-        self.rs.addConstraint("info(foo)")
-        [res] = self.rs.findConstraint(FreeConstraint("info",[int]))
-        assert res.args[0] == "bar"
-        assert len(self.rs.store) == 1
     def testNoArg(self):
         rule = Rule(self.rs) # a and pred(2) <=> pred(1)
         rule.name = "noarg"
@@ -122,6 +111,12 @@ class ParsingTest(unittest.TestCase):
         [res1] = rs.findConstraint(FreeConstraint("pred",[tuple]))
         assert res1.args[0] == (1,2)
         assert len(rs.store) == 1
+    def testString(self):
+        rs = RuleSystem(["info(str)"],["rule @ info(str) <=> _var_0_0 == 'foo' | info('bar')"])
+        rs.addConstraint("info('foo')")
+        [res] = rs.findConstraint(FreeConstraint("info",[int]))
+        assert res.args[0] == "bar"
+        assert len(rs.store) == 1
 
 class LongTermTest(unittest.TestCase):
     def setUp(self):
@@ -136,4 +131,5 @@ class LongTermTest(unittest.TestCase):
 
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromName("ruletest")
+    #suite = unittest.TestLoader().loadTestsFromName("ruletest.ParsingTest.testString")
     unittest.TextTestRunner().run(suite)
