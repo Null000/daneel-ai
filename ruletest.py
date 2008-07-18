@@ -86,19 +86,19 @@ class RuleSystemTest(unittest.TestCase):
 
 class ParsingTest(unittest.TestCase):
     def testProp(self):
-        rs = RuleSystem(["pred(int)"],["rule @ pred(int) ==> _var_0_0 == 1 | pred(2)"])
+        rs = RuleSystem(["pred(int)"],["rule @ pred(1) ==> pred(2)"])
         rs.addConstraint("pred(1)")
         [res1,res2] = rs.findConstraint(FreeConstraint("pred",[int]))
         assert res1.args[0] == 2 or res2.args[0] == 2
         assert len(rs.store) == 2
     def testSimpl(self):
-        rs = RuleSystem(["pred(int)"],["rule @ pred(int) <=> _var_0_0 == 1 | pred(2)"])
+        rs = RuleSystem(["pred(int)"],["rule @ pred(1) <=> pred(2)"])
         rs.addConstraint("pred(1)")
         [res1] = rs.findConstraint(FreeConstraint("pred",[int]))
         assert res1.args[0] == 2
         assert len(rs.store) == 1
     def testSimpa(self):
-        rs = RuleSystem(["pred(int)"],["rule @ pred(int) \ pred(int) <=> _var_0_0 == 1 and _var_1_0 == 10 | pred(2)"])
+        rs = RuleSystem(["pred(int)"],["rule @ pred(1) \ pred(10) <=> pred(2)"])
         rs.addConstraint("pred(10)")
         rs.addConstraint("pred(1)")
         [res1,res2] = rs.findConstraint(FreeConstraint("pred",[int]))
@@ -106,17 +106,22 @@ class ParsingTest(unittest.TestCase):
         assert not (res1.args[0] == 10 or res2.args[0] == 10)
         assert len(rs.store) == 2
     def testList(self):
-        rs = RuleSystem(["pred(tuple)"],["rule @ pred(tuple) <=> _var_0_0 == (1,) | pred((1,2))"])
+        rs = RuleSystem(["pred(tuple)"],["rule @ pred((1,)) <=> pred((1,2))"])
         rs.addConstraint("pred((1,))")
         [res1] = rs.findConstraint(FreeConstraint("pred",[tuple]))
         assert res1.args[0] == (1,2)
         assert len(rs.store) == 1
     def testString(self):
-        rs = RuleSystem(["info(str)"],["rule @ info(str) <=> _var_0_0 == 'foo' | info('bar')"])
+        rs = RuleSystem(["info(str)"],["rule @ info('foo') <=> info('bar')"])
         rs.addConstraint("info('foo')")
         [res] = rs.findConstraint(FreeConstraint("info",[int]))
         assert res.args[0] == "bar"
         assert len(rs.store) == 1
+    def testGuard(self):
+        rs = RuleSystem(["pred(int)"],["rule @ pred(X) ==> X > 5 | Y = X - 10; pred(Y)"])
+        rs.addConstraint("pred(2)")
+        rs.addConstraint("pred(11)")
+        assert len(rs.store) == 3
 
 class LongTermTest(unittest.TestCase):
     def setUp(self):
@@ -131,5 +136,4 @@ class LongTermTest(unittest.TestCase):
 
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromName("ruletest")
-    #suite = unittest.TestLoader().loadTestsFromName("ruletest.ParsingTest.testString")
     unittest.TextTestRunner().run(suite)

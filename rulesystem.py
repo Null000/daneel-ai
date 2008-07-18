@@ -6,6 +6,17 @@ from logilab.constraint.fd import ConsistencyFailure
 
 import re
 
+def totype(v,t):
+    if type(v) == str:
+        if t == str and not (v[0] in "'\"" and v[0] == v[-1]):
+            return t(v)
+        else:
+            return t(eval(v))
+    elif isinstance(v,t):
+        return v
+    else:
+        return t(v)
+
 class RuleSystem:
     def __init__(self,constraints=[],rules=[],functions={}):
         self.parser = RuleParser(self)
@@ -77,6 +88,8 @@ class RuleParser:
     simparule = re.compile(r"^((?P<name>\w+) @ )?(?P<kepthead>.+)\\(?P<removedhead>.+)<=>((?P<guard>.+)\|)?(?P<body>.+)$")
     proprule = re.compile(r"^((?P<name>\w+) @ )?(?P<kepthead>.+)==>((?P<guard>.+)\|)?(?P<body>.+)$")
 
+    uniquecount = 0
+
     def __init__(self,rulesystem):
         self.rulesystem = rulesystem
 
@@ -87,24 +100,49 @@ class RuleParser:
                 self.tryRuleMatch(rule,RuleParser.simparule) or\
                 self.tryRuleMatch(rule,RuleParser.proprule)
 
+    def parseFullRule(self,name=None,kepthead=[],removedhead=[],guard=[],body=""):
+        RuleParser.uniquecount = RuleParser.uniquecount + 1
+        if name is None:
+            name = "rule_%i" % RuleParser.uniquecount
+        rule = Rule(self.rulesystem)
+        rule.name = name
+        self.parseHead(kepthead,removedhead,rule)
+        rule.guard.extend(self.parseGuard(guard,rule))
+        rule.body = self.parseBody(body)
+        return rule
+
     def tryRuleMatch(self,rule,pattern):
         m = pattern.match(rule)
         if m is not None:
             d = dict([(i,m.groupdict()[i]) for i in m.groupdict() if m.groupdict()[i] is not None])
-            return Rule(self.rulesystem,**d)
+            return self.parseFullRule(**d)
 
-    def parseHead(self,head):
+    def parseHead(self,kepthead,removedhead,rule):
+        kepthead = self.splitHead(kepthead)
+        rule.kepthead = [self.rulesystem.bcfactory.getFreeConstraint(func,args) for (func,args) in kepthead]
+        removedhead = self.splitHead(removedhead)
+        rule.removedhead = [self.rulesystem.bcfactory.getFreeConstraint(func,args) for (func,args) in removedhead]
+        head = kepthead + removedhead
+        for (i,(functor,args)) in enumerate(head):
+            types = self.rulesystem.bcfactory.getFreeConstraint(func,args).types
+            for (j,arg) in enumerate(args):
+                if arg[0].isupper():
+                    rule.extravars.append(arg)
+                    rule.guard.append(fd.make_expression(("_var_%i_%i"%(i,j),arg),"_var_%i_%i == %s"%(i,j,arg)))
+                else:
+                    rule.guard.append(fd.Equals("_var_%i_%i"%(i,j),totype(arg,types[j])))
+
+    def splitHead(self,head):
         if isinstance(head,list):
             return head
         splitted = head.split(" and ")
-        return [self.parseFreeConstraint(x.strip()) for x in splitted]
+        return [self.parseConstraint(x.strip()) for x in splitted]
 
-    def parseGuard(self,guard):
+    def parseGuard(self,guard,rule):
         if isinstance(guard,list):
             return guard
         parts = guard.split(" and ")
-        var = re.compile(r"(_var_(\d+)_(\d+))")
-        return [fd.make_expression([x[0] for x in var.findall(g)],g) for g in parts]
+        return [fd.make_expression([x[0] for x in rule.extravars],g) for g in parts]
 
     def parseBody(self,body):
         return body.strip()
@@ -121,9 +159,7 @@ class RuleParser:
         longterm = m.group(4) == "*"
         return FreeConstraint(functor,map(eval,types),longterm)
 
-    def parseBoundConstraint(self,cons):
-        if isinstance(cons,Constraint):
-            return cons
+    def parseConstraint(self,cons):
         m = RuleParser.con.match(cons)
         assert m is not None
         functor = m.group(1)
@@ -151,7 +187,13 @@ class RuleParser:
                     word = ""
                 else:
                     word = word + c
-            args.append(word)
+            args.append(word.strip())
+        return (functor,args)
+
+    def parseBoundConstraint(self,con):
+        if isinstance(con,Constraint):
+            return con
+        (functor,args) = self.parseConstraint(con)
         return self.rulesystem.bcfactory.createConstraint(functor,args)
 
 class Rule:
@@ -162,20 +204,14 @@ class Rule:
     * guard, List of Python code evaluating to True or False represented as string
     * body, a mix of constraints, PythonTerms and unifications, represented as string"""
 
-    uniquecount = 0
-
-    def __init__(self,rulesystem,name=None,kepthead=[],removedhead=[],guard=[],body=""):
-        Rule.uniquecount = Rule.uniquecount + 1
-        if name is None:
-            name = "rule_%i" % Rule.uniquecount
-
+    def __init__(self,rulesystem):
         self.rulesystem = rulesystem
-        parser = rulesystem.parser
-        self.name = name
-        self.kepthead = parser.parseHead(kepthead)
-        self.removedhead = parser.parseHead(removedhead)
-        self.guard = parser.parseGuard(guard)
-        self.body = parser.parseBody(body)
+        self.name = None
+        self.kepthead = []
+        self.removedhead = []
+        self.extravars = []
+        self.guard = []
+        self.body = ""
         self.history = set()
 
     def matchActive(self,con):
@@ -195,6 +231,7 @@ class Rule:
         var2 = ["_var_%i_%i" % (i,j) for i in range(len(allConstraints)) for j in range(allConstraints[i].arity)]
 
         domains = {}
+        allvals = []
         for i in range(len(allConstraints)):
             c = "_var_%i" % i
             vals = self.rulesystem.findConstraint(allConstraints[i])
@@ -205,6 +242,11 @@ class Rule:
                 c2 = "%s_%i" % (c,j)
                 vals2 = [x.args[j] for x in vals]
                 domains[c2] = fd.FiniteDomain(vals2)
+                allvals.extend(vals2)
+        for i in self.extravars:
+            domains[i] = fd.FiniteDomain(allvals)
+
+        variables = var1 + var2 + self.extravars
 
         constraints = []
         if(len(var1) > 1):
@@ -218,11 +260,11 @@ class Rule:
         constraints.extend(self.guard)
 
         try:
-            #print "vars " + str(var1+var2)
+            #print "vars " + str(variables)
             #print "domains " + str(domains)
             #print "cons " + str(constraints)
             #print ""
-            r = Repository(var1+var2, domains, constraints)
+            r = Repository(variables, domains, constraints)
             solutions = Solver().solve(r, False)
         except ConsistencyFailure:
             return False
@@ -241,6 +283,8 @@ class Rule:
                     for j in range(tempcon.arity):
                         var = "_var_%i_%i" % (i,j)
                         context[var] = tempcon.args[j]
+                for v in self.extravars:
+                    context[v] = solution[v]
                 #print "Rule fired: %s" % self.name
                 if self.removedhead == []:
                     removedConstraints = []
@@ -365,13 +409,10 @@ class BoundConstraintFactory:
         basiccon = self.constraints[name]
         assert len(args) == len(basiccon.types)
         for (i,t) in enumerate(basiccon.types):
-            if type(args[i]) == str:
-                if t == str and not (args[i][0] in "'\"" and args[i][0] == args[i][-1]):
-                    args[i] = t((args[i]))
-                else:
-                    args[i] = t(eval(args[i]))
-            elif isinstance(args[i],t):
-                continue
-            else:
-                args[i] = t(args[i])
+            args[i] = totype(args[i],t)
         return BoundConstraint(name,args,basiccon)
+
+    def getFreeConstraint(self,functor,args):
+        if not isinstance(args,int):
+            args = len(args)
+        return self.constraints[functor]
