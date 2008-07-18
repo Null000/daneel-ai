@@ -122,6 +122,12 @@ class ParsingTest(unittest.TestCase):
         rs.addConstraint("pred(2)")
         rs.addConstraint("pred(11)")
         assert len(rs.store) == 3
+    def testEquals(self):
+        rs = RuleSystem(["pred(int)","prod(int)"],["rule @ pred(X) and prod(X) ==> Y = X - 10; pred(Y)"])
+        rs.addConstraint("pred(2)")
+        rs.addConstraint("prod(3)")
+        rs.addConstraint("prod(2)")
+        assert len(rs.store) == 4
 
 class LongTermTest(unittest.TestCase):
     def setUp(self):
