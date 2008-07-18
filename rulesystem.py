@@ -127,7 +127,8 @@ class RuleParser:
             types = self.rulesystem.bcfactory.getFreeConstraint(func,args).types
             for (j,arg) in enumerate(args):
                 if arg[0].isupper():
-                    rule.extravars.append(arg)
+                    if not arg in rule.extravars:
+                        rule.extravars.append(arg)
                     rule.guard.append(fd.make_expression(("_var_%i_%i"%(i,j),arg),"_var_%i_%i == %s"%(i,j,arg)))
                 else:
                     rule.guard.append(fd.Equals("_var_%i_%i"%(i,j),totype(arg,types[j])))
@@ -142,7 +143,7 @@ class RuleParser:
         if isinstance(guard,list):
             return guard
         parts = guard.split(" and ")
-        return [fd.make_expression([x[0] for x in rule.extravars],g) for g in parts]
+        return [fd.make_expression(rule.extravars,g) for g in parts]
 
     def parseBody(self,body):
         return body.strip()
