@@ -131,6 +131,8 @@ class RuleParser:
                     if not arg in rule.extravars:
                         rule.extravars.append(arg)
                     rule.guard.append(fd.make_expression(("_var_%i_%i"%(i,j),arg),"_var_%i_%i == %s"%(i,j,arg)))
+                elif arg[0] == "_":
+                    continue
                 else:
                     rule.guard.append(fd.Equals("_var_%i_%i"%(i,j),totype(arg,types[j])))
 

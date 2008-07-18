@@ -42,8 +42,7 @@ whoami(Me) and owner(P,Me) \ planet(P) <=> myplanet(P)
 
 buildscouts @ cacheentered and myplanet(P) and stars(Ss) ==> len(Ss) > 10 | order_buildfleet(P,((1,1),),"Scouting")
 producecolonists @ myplanet(P) ==> order_produce(P,((7,1),))
-#TODO: replace A,B with _
-buildtransports @ myplanet(P) and resources(P,7,Num,A,B) ==> Num >= 5 | order_buildfleet(P,((3,Num),),"Colonization")
+buildtransports @ myplanet(P) and resources(P,7,Num,_,_) ==> Num >= 5 | order_buildfleet(P,((3,Num),),"Colonization")
 
 colonise @ cacheentered and contains(S,F) and contains(S,P) \ col(F) and planet(P) <=> order_colonise(F,P)
 movetoplanet @ cacheentered \ col(F) and planet(P) <=> order_move(F,P)
