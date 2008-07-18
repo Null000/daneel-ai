@@ -7,8 +7,9 @@ from logilab.constraint.fd import ConsistencyFailure
 import re
 
 def totype(v,t):
-    if type(v) == str:
-        if t == str and not (v[0] in "'\"" and v[0] == v[-1]):
+    strtypes = [str,unicode]
+    if type(v) in strtypes:
+        if t in strtypes and not (v[0] in "'\"" and v[0] == v[-1]):
             return t(v)
         else:
             return t(eval(v))

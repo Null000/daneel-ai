@@ -117,6 +117,12 @@ class ParsingTest(unittest.TestCase):
         [res] = rs.findConstraint(FreeConstraint("info",[int]))
         assert res.args[0] == "bar"
         assert len(rs.store) == 1
+    def testUnicode(self):
+        rs = RuleSystem(["info(unicode)"],["rule @ info('foo') <=> info('bar')"])
+        rs.addConstraint("info('foo')")
+        [res] = rs.findConstraint(FreeConstraint("info",[int]))
+        assert res.args[0] == "bar"
+        assert len(rs.store) == 1
     def testGuard(self):
         rs = RuleSystem(["pred(int)"],["rule @ pred(X) ==> X > 5 | Y = X - 10; pred(Y)"])
         rs.addConstraint("pred(2)")
