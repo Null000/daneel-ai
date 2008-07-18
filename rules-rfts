@@ -27,25 +27,26 @@ cacheentered
 
 [Rules]
 #TODO: perhaps these should be moved into the framework itself
-fleettype @ subtype(int,int) ==> _var_0_1 == 4 | fleet(_var_0_0)
-planettype @ subtype(int,int) ==> _var_0_1 == 3 | planet(_var_0_0);
-startype @ subtype(int,int) ==> _var_0_1 == 2 | star(_var_0_0)
+fleettype @ subtype(X,4) ==> fleet(X)
+planettype @ subtype(X,3) ==> planet(X)
+startype @ subtype(X,2) ==> star(X)
 
-info @ turn(int) ==> print "Turn %s" % _var_0_0
-mergestars @ turn(int) \ stars(tuple) and star(int) <=> _var_0_0 == 0 | F = _var_1_0 + (_var_2_0,); stars(F)
-startmerge @ turn(int) \ star(int) and star(int) <=> _var_0_0 == 0 | stars((_var_1_0,_var_2_0))
-fleet(int) and name(int,unicode) <=> _var_0_0 == _var_1_0 and _var_1_1 == "Scouting" | scout(_var_1_0); print "Scout found with id %s"%_var_0_0
-fleet(int) and name(int,unicode) <=> _var_0_0 == _var_1_0 and _var_1_1 == "Colonization" | col(_var_1_0); print "Transport found with id %s"%_var_0_0
-scout @ cacheentered \ stars(tuple) and scout(int) <=> _var_1_0 != () | (Target,Others) = randomstar(_var_1_0); order_move(_var_2_0,Target); print "stars left: %s"%(Others,); stars(Others)
+info @ turn(X) ==> print "Turn %s" % X
+mergestars @ turn(0) \ stars(Ss) and star(S) <=> F = Ss + (S,); stars(F)
+startmerge @ turn(0) \ star(S1) and star(S2) <=> stars((S1,S2))
+fleet(F) and name(F,"Scouting") <=> scout(F); print "Scout found with id %s"%F
+fleet(F) and name(F,"Colonization") <=> col(F); print "Transport found with id %s"%F
+scout @ cacheentered \ stars(Ss) and scout(Sc) <=> Ss != () | (Target,Others) = randomstar(Ss); order_move(Sc,Target); print "stars left: %s"%(Others,); stars(Others)
 
-whoami(int) and owner(int,int) \ planet(int) <=> _var_0_0 == _var_1_1 and _var_1_0 == _var_2_0 | myplanet(_var_2_0)
+whoami(Me) and owner(P,Me) \ planet(P) <=> myplanet(P)
 
-buildscouts @ cacheentered and myplanet(int) and stars(tuple) ==> len(_var_2_0) > 10 | order_buildfleet(_var_1_0,((1,1),),"Scouting")
-producecolonists @ myplanet(int) ==> order_produce(_var_0_0,((7,1),))
-buildtransports @ myplanet(int) and resources(int,int,int,int,int) ==> _var_0_0 == _var_1_0 and _var_1_1 == 7 and _var_1_2 >= 5 | order_buildfleet(_var_0_0,((3,_var_1_2),),"Colonization")
+buildscouts @ cacheentered and myplanet(P) and stars(Ss) ==> len(Ss) > 10 | order_buildfleet(P,((1,1),),"Scouting")
+producecolonists @ myplanet(P) ==> order_produce(P,((7,1),))
+#TODO: replace A,B with _
+buildtransports @ myplanet(P) and resources(P,7,Num,A,B) ==> Num >= 5 | order_buildfleet(P,((3,Num),),"Colonization")
 
-colonise @ cacheentered and contains(int,int) and contains(int,int) \ col(int) and planet(int) <=> _var_3_0 == _var_1_1 and _var_4_0 == _var_2_1 and _var_1_0 == _var_2_0 | order_colonise(_var_3_0,_var_4_0)
-movetoplanet @ cacheentered \ col(int) and planet(int) <=> order_move(_var_1_0,_var_2_0)
+colonise @ cacheentered and contains(S,F) and contains(S,P) \ col(F) and planet(P) <=> order_colonise(F,P)
+movetoplanet @ cacheentered \ col(F) and planet(P) <=> order_move(F,P)
 
 [Functions]
 import random
