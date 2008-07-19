@@ -5,6 +5,7 @@ from logilab.constraint import fd, Solver, Repository
 from logilab.constraint.fd import ConsistencyFailure
 
 import re
+import logging
 
 def totype(v,t):
     strtypes = [str,unicode]
@@ -19,7 +20,7 @@ def totype(v,t):
         return t(v)
 
 class RuleSystem:
-    def __init__(self,constraints=[],rules=[],functions={}):
+    def __init__(self,constraints=[],rules=[],functions={},verbosity=0):
         self.parser = RuleParser(self)
         cons = [self.parser.parseFreeConstraint(x) for x in constraints]
         self.bcfactory = BoundConstraintFactory(cons)
@@ -28,9 +29,14 @@ class RuleSystem:
         self.activestore = ConstraintStore()
         self.rules = [self.parser.parseRule(r) for r in rules]
         self.protocontext = self.createPrototypeContext(functions)
+        self.verbosity=verbosity
+        if verbosity > 1:
+            logging.getLogger("rulesystem").setLevel(logging.DEBUG)
+        elif verbosity > 0:
+            logging.getLogger("rulesystem").setLevel(logging.INFO)
 
     def addConstraint(self,constraint):
-        #print "Adding constraint %s" % constraint
+        logging.getLogger("rulesystem.addconstraint").info("Adding constraint %s" % constraint)
         parsedcon = self.parser.parseBoundConstraint(constraint)
         self.store.add(parsedcon)
         self.activestore.add(parsedcon)
@@ -264,12 +270,11 @@ class Rule:
         constraints.extend(self.guard)
 
         try:
-            #print "vars " + str(variables)
-            #print "domains " + str(domains)
-            #print "cons " + str(constraints)
-            #print ""
+            logging.getLogger("rulesystem.matchAtPosition").debug("vars " + str(variables))
+            logging.getLogger("rulesystem.matchAtPosition").debug("domains " + str(domains))
+            logging.getLogger("rulesystem.matchAtPosition").debug("cons " + str(constraints))
             r = Repository(variables, domains, constraints)
-            solutions = Solver().solve(r, False)
+            solutions = Solver().solve(r, self.rulesystem.verbosity > 2)
         except ConsistencyFailure:
             return False
         if solutions is None:
@@ -289,7 +294,7 @@ class Rule:
                         context[var] = tempcon.args[j]
                 for v in self.extravars:
                     context[v] = solution[v]
-                #print "Rule fired: %s" % self.name
+                logging.getLogger("rulesystem.matchAtPosition").info("Rule fired: %s" % self.name)
                 if self.removedhead == []:
                     removedConstraints = []
                 else:

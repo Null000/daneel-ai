@@ -2,6 +2,8 @@
 
 import time
 import random
+import logging
+import sys
 from optparse import OptionParser
 
 import tp.client.threads
@@ -51,7 +53,7 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     cache = Cache(Cache.key(host, username))
     return connection, cache
 
-def createRuleSystem(rulesfile):
+def createRuleSystem(rulesfile,verbosity):
     rf = open(rulesfile)
     l = stripline(rf.readline())
     while l != "[Constraints]":
@@ -69,7 +71,7 @@ def createRuleSystem(rulesfile):
     funcs = {}
     exec("".join(rf.readlines()),funcs)
 
-    return RuleSystem(cons,rules,funcs)
+    return RuleSystem(cons,rules,funcs,verbosity)
 
 def stripline(line):
     if line[0] == "#": return ""
@@ -148,9 +150,14 @@ def findDesign(cache,name):
         if d._name.lower() == name:
             return d
 
-def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp'):
+def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',verbosity=0):
+    try:
+        level = {0:logging.WARNING,1:logging.INFO,2:logging.DEBUG}[verbosity]
+    except KeyError:
+        level = 1
+    logging.basicConfig(level=level,stream=sys.stdout)
     connection, cache = connect(uri)
-    rulesystem = createRuleSystem(rulesfile)
+    rulesystem = createRuleSystem(rulesfile,verbosity)
     while turns != 0:
         turns = turns - 1
         print "Turn started!"
@@ -176,7 +183,9 @@ if __name__ == "__main__":
     parser.add_option("-u", "--uri", dest="uri",
                       default='tp://daneel-ai:cannonfodder@localhost/tp',
                       help="Connect to specified URI [default %default]")
-    #verbosity? others?
+    parser.add_option("-v", action="count", dest="verbosity", default=0,
+                      help="More verbose output. -vv and -vvv increase output even more.")
+
 
     (options, args) = parser.parse_args()
-    gameLoop(options.filename,turns=options.numturns,uri=options.uri)
+    gameLoop(options.filename,turns=options.numturns,uri=options.uri,verbosity=options.verbosity)
