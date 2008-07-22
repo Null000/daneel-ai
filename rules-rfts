@@ -1,4 +1,5 @@
 [Modules]
+basic
 
 [Constraints]
 subtype(int,int)
