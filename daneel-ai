@@ -100,8 +100,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
     rulesystem = createRuleSystem(rulesfile,verbosity)
     while turns != 0:
         turns = turns - 1
-        print "Turn started!"
-        print "Downloading objects."
+        logging.getLogger("daneel").info("Downloading objects")
         cache.update(connection,callback)
 
         startTurn(cache,rulesystem)
@@ -110,7 +109,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         rulesystem.clearStore()
         connection.turnfinished()
         waitfor = connection.time()
-        print "Awaiting end of turn (%d s)..." % waitfor
+        logging.getLogger("daneel").info("Awaiting end of turn (%d s)..." % waitfor)
         time.sleep(waitfor)
 
 if __name__ == "__main__":
