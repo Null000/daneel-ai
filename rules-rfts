@@ -2,38 +2,12 @@
 basic
 
 [Constraints]
-subtype(int,int)
-name(int,unicode)
-size(int,int)
-pos(int,int,int,int)
-vel(int,int,int,int)
-contains(int,int)
-owner(int,int)
-#ObjID,ResType,Avail,Mine,Unavail
-resources(int,int,int,int,int)
-whoami(int)
-turn(int)
-fleet(int)
+stars(tuple)*
+myplanet(int)
 scout(int)
 col(int)
-planet(int)
-myplanet(int)
-star(int)
-stars(tuple)*
-order_move(int,int)
-order_buildfleet(int,tuple,str)
-order_produce(int,tuple)
-order_colonise(int,int)
-#next constraint gets added when all data from the cache has been entered into the store
-#it can be used to force phases onto the rule evaluation
-cacheentered
 
 [Rules]
-#TODO: perhaps these should be moved into the framework itself
-fleettype @ subtype(X,4) ==> fleet(X)
-planettype @ subtype(X,3) ==> planet(X)
-startype @ subtype(X,2) ==> star(X)
-
 info @ turn(X) ==> print "Turn %s" % X
 mergestars @ turn(0) \ stars(Ss) and star(S) <=> F = Ss + (S,); stars(F)
 startmerge @ turn(0) \ star(S1) and star(S2) <=> stars((S1,S2))

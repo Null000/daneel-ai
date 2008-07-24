@@ -1,6 +1,29 @@
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
 
+constraints = """subtype(int,int)
+name(int,unicode)
+size(int,int)
+pos(int,int,int,int)
+vel(int,int,int,int)
+contains(int,int)
+owner(int,int)
+resources(int,int,int,int,int)
+whoami(int)
+turn(int)
+fleet(int)
+planet(int)
+star(int)
+order_move(int,int)
+order_buildfleet(int,tuple,str)
+order_produce(int,tuple)
+order_colonise(int,int)
+cacheentered""".split('\n')
+
+rules = """fleettype @ subtype(X,4) ==> fleet(X)
+planettype @ subtype(X,3) ==> planet(X)
+startype @ subtype(X,2) ==> star(X)""".split('\n')
+
 def startTurn(cache,store):
     store.addConstraint("whoami(%i)" % cache.players[0].id)
     store.addConstraint("turn(%i)"%cache.objects[0].turn)

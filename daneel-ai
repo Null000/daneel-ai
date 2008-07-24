@@ -55,25 +55,28 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
 
 def createRuleSystem(rulesfile,verbosity):
     global mods
+    cons,rules = [],[]
+    funcs = {}
     rf = open(rulesfile)
     l = stripline(rf.readline())
     while l != "[Modules]":
         l = stripline(rf.readline())
     l = stripline(rf.readline())
     while l != "[Constraints]":
-        if l != "": mods.append(__import__(l))
+        if l != "":
+            m = __import__(l)
+            mods.append(m)
+            cons.extend(m.constraints)
+            rules.extend(m.rules)
         l = stripline(rf.readline())
-    cons = []
     l = stripline(rf.readline())
     while l != "[Rules]":
         if l != "": cons.append(l)
         l = stripline(rf.readline())
-    rules = []
     l = stripline(rf.readline())
     while l != "[Functions]":
         if l != "": rules.append(l)
         l = stripline(rf.readline())
-    funcs = {}
     exec("".join(rf.readlines()),funcs)
 
     return RuleSystem(cons,rules,funcs,verbosity)
