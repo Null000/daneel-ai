@@ -66,8 +66,14 @@ def createRuleSystem(rulesfile,verbosity):
         if l != "":
             m = __import__(l)
             mods.append(m)
-            cons.extend(m.constraints)
-            rules.extend(m.rules)
+            try:
+                cons.extend(m.constraints)
+            except AttributeError:
+                pass
+            try:
+                rules.extend(m.rules)
+            except AttributeError:
+                pass
         l = stripline(rf.readline())
     l = stripline(rf.readline())
     while l != "[Rules]":
@@ -87,11 +93,17 @@ def stripline(line):
 
 def startTurn(cache,store):
     for m in mods:
-        m.startTurn(cache,store)
+        try:
+            m.startTurn(cache,store)
+        except AttributeError:
+            pass
 
 def endTurn(cache,rulesystem,connection):
     for m in mods:
-        m.endTurn(cache,rulesystem,connection)
+        try:
+            m.endTurn(cache,rulesystem,connection)
+        except AttributeError:
+            pass
 
 def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',verbosity=0):
     try:
