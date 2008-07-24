@@ -1,6 +1,11 @@
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
 
+constraints = """order_move(int,int)
+order_buildfleet(int,tuple,str)
+order_produce(int,tuple)
+order_colonise(int,int)""".split('\n')
+
 def endTurn(cache,rulesystem,connection):
     orders = rulesystem.findConstraint("order_move(int,int)")
     for order in orders:
