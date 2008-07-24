@@ -1,8 +1,4 @@
-import tp.client.threads
-from tp.netlib.client import url2bits
-from tp.netlib import Connection
-from tp.netlib import failed, constants, objects
-from tp.client.cache import Cache
+import tp.client.cache
 from tp.netlib.objects import OrderDescs
 
 def startTurn(cache,store):
