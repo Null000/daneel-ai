@@ -74,6 +74,10 @@ def createRuleSystem(rulesfile,verbosity):
                 rules.extend(m.rules)
             except AttributeError:
                 pass
+            try:
+                funcs.update(m.functions)
+            except AttributeError:
+                pass
         l = stripline(rf.readline())
     l = stripline(rf.readline())
     while l != "[Rules]":
