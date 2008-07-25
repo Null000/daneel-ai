@@ -1,0 +1,10 @@
+[Modules]
+basic
+mod-risk
+
+[Constraints]
+
+[Rules]
+info @ turn(X) ==> print "Turn %s" % X
+
+[Functions]
