@@ -71,6 +71,7 @@ class RuleSystem:
         return self.protocontext.copy()
 
     def createPrototypeContext(self,functions):
+        functions['rulesystem'] = self
         context = functions.copy()
         #we insert a function for each constraint. When this function is called,
         #a new instance of the constraint gets inserted in the constraint store

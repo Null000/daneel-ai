@@ -53,7 +53,7 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     cache = Cache(Cache.key(host, username))
     return connection, cache
 
-def createRuleSystem(rulesfile,verbosity):
+def createRuleSystem(rulesfile,verbosity,cache,connection):
     global mods
     cons,rules = [],[]
     funcs = {}
@@ -75,7 +75,7 @@ def createRuleSystem(rulesfile,verbosity):
             except AttributeError:
                 pass
             try:
-                funcs.update(m.functions)
+                exec("".join(m.functions),funcs)
             except AttributeError:
                 pass
         l = stripline(rf.readline())
@@ -88,6 +88,8 @@ def createRuleSystem(rulesfile,verbosity):
         if l != "": rules.append(l)
         l = stripline(rf.readline())
     exec("".join(rf.readlines()),funcs)
+    funcs['cache'] = cache
+    funcs['connection'] = connection
 
     return RuleSystem(cons,rules,funcs,verbosity)
 
@@ -123,7 +125,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         level = 1
     logging.basicConfig(level=level,stream=sys.stdout)
     connection, cache = connect(uri)
-    rulesystem = createRuleSystem(rulesfile,verbosity)
+    rulesystem = createRuleSystem(rulesfile,verbosity,cache,connection)
     logging.getLogger("daneel").info("Downloading all data")
     cache.update(connection,callback)
     init(cache,rulesystem,connection)
