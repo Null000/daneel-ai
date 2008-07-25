@@ -105,6 +105,13 @@ def endTurn(cache,rulesystem,connection):
         except AttributeError:
             pass
 
+def init(cache,rulesystem,connection):
+    for m in mods:
+        try:
+            m.init(cache,rulesystem,connection)
+        except AttributeError:
+            pass
+
 def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',verbosity=0):
     try:
         level = {0:logging.WARNING,1:logging.INFO,2:logging.DEBUG}[verbosity]
@@ -113,9 +120,12 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
     logging.basicConfig(level=level,stream=sys.stdout)
     connection, cache = connect(uri)
     rulesystem = createRuleSystem(rulesfile,verbosity)
+    logging.getLogger("daneel").info("Downloading all data")
+    cache.update(connection,callback)
+    init(cache,rulesystem,connection)
     while turns != 0:
         turns = turns - 1
-        logging.getLogger("daneel").info("Downloading objects")
+        logging.getLogger("daneel").info("Downloading updates")
         cache.update(connection,callback)
 
         startTurn(cache,rulesystem)
