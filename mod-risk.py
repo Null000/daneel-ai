@@ -2,7 +2,8 @@ import tp.client.cache
 from tp.netlib.objects import OrderDescs
 
 constraints = """adjacent(int,int)*
-ownedplanets(tuple)*""".split('\n')
+ownedplanets(tuple)*
+reinforcements(int)""".split('\n')
 
 rules = """adjacentset @ adjacent(A,B) \ adjacent(A,B) <=> pass
 whoami(Me) and owner(P,Me) and planet(P) \ ownedplanets(T) <=> P not in T | findajacencies(P); ownedplanets(T + (P,))
@@ -31,3 +32,10 @@ def findOrderDesc(name):
 
 def init(cachelocal,rulesystem,connectionlocal):
     rulesystem.addConstraint("ownedplanets(())")
+
+def startTurn(cache,store):
+    me = cache.players[0].id
+    for (k,v) in cache.objects.items():
+        if v.subtype == 3 and v.owner == me:
+            store.addConstraint("reinforcements(%i)"%v.resources[0][2])
+            break
