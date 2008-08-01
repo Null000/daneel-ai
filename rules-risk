@@ -6,5 +6,7 @@ mod-risk
 
 [Rules]
 info @ turn(X) ==> print "Turn %s" % X
+reinforcements(X) ==> print "Reinforcements available: %s" % X
+armies(P,N) ==> print "Armies at planet %i : %i" % (P,N)
 
 [Functions]

@@ -3,11 +3,12 @@ from tp.netlib.objects import OrderDescs
 
 constraints = """adjacent(int,int)*
 ownedplanets(tuple)*
-reinforcements(int)""".split('\n')
+reinforcements(int)
+armies(int,int)""".split('\n')
 
 rules = """adjacentset @ adjacent(A,B) \ adjacent(A,B) <=> pass
 whoami(Me) and owner(P,Me) and planet(P) \ ownedplanets(T) <=> P not in T | findajacencies(P); ownedplanets(T + (P,))
-adjacent(A,B) ==> print 'Adjacent planets: %s and %s' % (A,B)""".split('\n')
+resources(P,1,N,_) ==> armies(P,N)""".split('\n')
 
 functions = """
 import tp.client.cache
