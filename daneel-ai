@@ -135,6 +135,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         cache.update(connection,callback)
 
         startTurn(cache,rulesystem)
+        rulesystem.addConstraint("cacheentered")
         endTurn(cache,rulesystem,connection)
 
         rulesystem.clearStore()

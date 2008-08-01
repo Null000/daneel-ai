@@ -47,4 +47,3 @@ def startTurn(cache,store):
                 store.addConstraint("ships(%i,%i,%i)"%(k,t,num))
         if hasattr(v,"damage"):
             store.addConstraint("damage(%i,%i)"%(k,v.damage))
-    store.addConstraint("cacheentered")
