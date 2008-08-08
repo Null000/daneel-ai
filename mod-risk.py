@@ -2,37 +2,24 @@ import tp.client.cache
 from tp.netlib.objects import OrderDescs
 
 constraints = """adjacent(int,int)*
-ownedplanets(tuple)*
+startingturn(int)*
 reinforcements(int)
 armies(int,int)""".split('\n')
 
 rules = """adjacentset @ adjacent(A,B) \ adjacent(A,B) <=> pass
-whoami(Me) and owner(P,Me) and planet(P) \ ownedplanets(T) <=> P not in T | findajacencies(P); ownedplanets(T + (P,))
 resources(P,1,N,_) ==> armies(P,N)""".split('\n')
 
-functions = """
-import tp.client.cache
-from tp.netlib.objects import OrderDescs
+def init(cache,rulesystem,connection):
+    planets = {}
+    #two loops because we want to make sure all planet positions are stored first
+    for obj in cache.objects.itervalues():
+        if obj.subtype == 3:
+            planets[obj.pos] = obj.id
+    for obj in cache.objects.itervalues():
+        if obj.subtype == 5:
+            rulesystem.addConstraint("adjacent(%i,%i)"%(planets[obj.start],planets[obj.end]))
+            rulesystem.addConstraint("adjacent(%i,%i)"%(planets[obj.end],planets[obj.start]))
 
-def findajacencies(planet):
-    moveorder = findOrderDesc("Move")
-    args = [0, planet, -1, moveorder.subtype, 0, [], ([], [])]
-    order = moveorder(*args)
-    evt = cache.apply("orders","create after",planet,cache.orders[planet].head,order)
-    tp.client.cache.apply(connection,evt,cache)
-    for (i,name,something) in cache.orders[planet].first.CurrentOrder.Planet[0]:
-        rulesystem.addConstraint('adjacent(%s,%s)'%(i,planet))
-        rulesystem.addConstraint('adjacent(%s,%s)'%(planet,i))
-
-def findOrderDesc(name):
-    name = name.lower()
-    for d in OrderDescs().values():
-        if d._name.lower() == name:
-            return d
-"""
-
-def init(cachelocal,rulesystem,connectionlocal):
-    rulesystem.addConstraint("ownedplanets(())")
 
 def startTurn(cache,store):
     me = cache.players[0].id

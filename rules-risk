@@ -6,6 +6,7 @@ mod-risk
 
 [Rules]
 info @ turn(X) ==> print "Turn %s" % X
+adjacent(P1,P2) ==> print "Adjacency: %i and %i" % (P1,P2)
 reinforcements(X) ==> print "Reinforcements available: %s" % X
 armies(P,N) ==> print "Armies at planet %i : %i" % (P,N)
 
