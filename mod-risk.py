@@ -2,7 +2,6 @@ import tp.client.cache
 from tp.netlib.objects import OrderDescs
 
 constraints = """adjacent(int,int)*
-startingturn(int)*
 reinforcements(int)
 armies(int,int)""".split('\n')
 
