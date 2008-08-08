@@ -12,6 +12,9 @@ galaxy(int)
 star(int)
 planet(int)
 fleet(int)
+wormhole(int)
+start(int,int,int,int)
+end(int,int,int,int)
 owner(int,int)
 resources(int,int,int,int,int)
 whoami(int)
@@ -24,7 +27,8 @@ rules = """universetype @ subtype(X,0) ==> universe(X)
 galaxytype @ subtype(X,1) ==> galaxy(X)
 startype @ subtype(X,2) ==> star(X)
 planettype @ subtype(X,3) ==> planet(X)
-fleettype @ subtype(X,4) ==> fleet(X)""".split('\n')
+fleettype @ subtype(X,4) ==> fleet(X)
+wormholetype @ subtype(X,5) ==> wormhole(X)""".split('\n')
 
 def startTurn(cache,store):
     store.addConstraint("whoami(%i)" % cache.players[0].id)
@@ -47,3 +51,7 @@ def startTurn(cache,store):
                 store.addConstraint("ships(%i,%i,%i)"%(k,t,num))
         if hasattr(v,"damage"):
             store.addConstraint("damage(%i,%i)"%(k,v.damage))
+        if hasattr(v,"start"):
+            store.addConstraint("start(%i,%i,%i,%i)"%((k,)+v.start))
+        if hasattr(v,"end"):
+            store.addConstraint("end(%i,%i,%i,%i)"%((k,)+v.end))
