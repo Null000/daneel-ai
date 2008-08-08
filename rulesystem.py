@@ -385,6 +385,8 @@ class FreeConstraint(Constraint):
         if self.functor != other.functor or self.arity != other.arity:
             return False
         for (i,t) in enumerate(self.types):
+            if t in (int,long):
+                t = (int,long)
             if not isinstance(other.args[i],t):
                 return False
         return True
