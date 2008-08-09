@@ -108,14 +108,14 @@ class RuleParser:
                 self.tryRuleMatch(rule,RuleParser.simparule) or\
                 self.tryRuleMatch(rule,RuleParser.proprule)
 
-    def parseFullRule(self,name=None,kepthead=[],removedhead=[],guard=[],body=""):
+    def parseFullRule(self,name=None,kepthead=[],removedhead=[],guard="True",body=""):
         RuleParser.uniquecount = RuleParser.uniquecount + 1
         if name is None:
             name = "rule_%i" % RuleParser.uniquecount
         rule = Rule(self.rulesystem)
         rule.name = name
         self.parseHead(kepthead,removedhead,rule)
-        rule.guard.extend(self.parseGuard(guard,rule))
+        rule.userguard = self.parseGuard(guard,rule)
         rule.body = self.parseBody(body)
         return rule
 
@@ -150,10 +150,7 @@ class RuleParser:
         return [self.parseConstraint(x.strip()) for x in splitted]
 
     def parseGuard(self,guard,rule):
-        if isinstance(guard,list):
-            return guard
-        parts = guard.split(" and ")
-        return [fd.make_expression(rule.extravars,g) for g in parts]
+        return guard.strip()
 
     def parseBody(self,body):
         return body.strip()
@@ -222,6 +219,7 @@ class Rule:
         self.removedhead = []
         self.extravars = []
         self.guard = []
+        self.userguard = "True"
         self.body = ""
         self.history = set()
 
@@ -275,7 +273,7 @@ class Rule:
             logging.getLogger("rulesystem.matchAtPosition").debug("domains " + str(domains))
             logging.getLogger("rulesystem.matchAtPosition").debug("cons " + str(constraints))
             r = Repository(variables, domains, constraints)
-            solutions = Solver().solve(r, self.rulesystem.verbosity > 2)
+            solutions = Solver().solve(r, self.rulesystem.verbosity > 2 and self.rulesystem.verbosity - 2)
         except ConsistencyFailure:
             return False
         if solutions is None:
@@ -295,15 +293,16 @@ class Rule:
                         context[var] = tempcon.args[j]
                 for v in self.extravars:
                     context[v] = solution[v]
-                logging.getLogger("rulesystem.matchAtPosition").info("Rule fired: %s" % self.name)
-                if self.removedhead == []:
-                    removedConstraints = []
-                else:
-                    removedConstraints = p[-len(self.removedhead):]
-                for c in removedConstraints:
-                    self.rulesystem.removeConstraint(c)
-                self.history.add(tuple(p))
-                exec(self.body,context)
+                if eval(self.userguard,context):
+                    logging.getLogger("rulesystem.matchAtPosition").info("Rule fired: %s" % self.name)
+                    if self.removedhead == []:
+                        removedConstraints = []
+                    else:
+                        removedConstraints = p[-len(self.removedhead):]
+                    for c in removedConstraints:
+                        self.rulesystem.removeConstraint(c)
+                    self.history.add(tuple(p))
+                    exec(self.body,context)
 
     def canAcceptAt(self,cons):
         head = self.kepthead + self.removedhead
