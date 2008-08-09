@@ -142,7 +142,10 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         connection.turnfinished()
         waitfor = connection.time()
         logging.getLogger("daneel").info("Awaiting end of turn (%d s)..." % waitfor)
-        time.sleep(waitfor)
+        while waitfor > 1:
+            time.sleep(1)
+            waitfor = connection.time()
+        time.sleep(2)
 
 if __name__ == "__main__":
     parser = OptionParser(version="%prog " + ("%i.%i.%i" % version))
