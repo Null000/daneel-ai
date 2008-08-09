@@ -6,7 +6,7 @@ reinforcements(int)
 armies(int,int)""".split('\n')
 
 rules = """adjacentset @ adjacent(A,B) \ adjacent(A,B) <=> pass
-resources(P,1,N,_) ==> armies(P,N)""".split('\n')
+addarmies @ resources(P,1,N,_) ==> armies(P,N)""".split('\n')
 
 def init(cache,rulesystem,connection):
     planets = {}
