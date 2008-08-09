@@ -132,7 +132,7 @@ class RuleParser:
         rule.removedhead = [self.rulesystem.bcfactory.getFreeConstraint(func,args) for (func,args) in removedhead]
         head = kepthead + removedhead
         for (i,(functor,args)) in enumerate(head):
-            types = self.rulesystem.bcfactory.getFreeConstraint(func,args).types
+            types = self.rulesystem.bcfactory.getFreeConstraint(functor,args).types
             for (j,arg) in enumerate(args):
                 if arg[0].isupper():
                     if not arg in rule.extravars:
