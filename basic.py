@@ -1,7 +1,8 @@
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
 
-constraints = """subtype(int,int)
+constraints = """player(int,unicode)
+subtype(int,int)
 name(int,unicode)
 size(int,int)
 pos(int,int,int,int)
@@ -31,6 +32,8 @@ fleettype @ subtype(X,4) ==> fleet(X)
 wormholetype @ subtype(X,5) ==> wormhole(X)""".split('\n')
 
 def startTurn(cache,store):
+    for (k,v) in cache.players.items():
+        store.addConstraint("player(%i,%s)" % (k,v.name))
     store.addConstraint("whoami(%i)" % cache.players[0].id)
     store.addConstraint("turn(%i)"%cache.objects[0].turn)
     for (k,v) in cache.objects.items():
