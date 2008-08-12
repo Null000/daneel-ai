@@ -1,3 +1,4 @@
+import logging
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
 
@@ -12,15 +13,18 @@ rules = """adjacentset @ adjacent(A,B) \ adjacent(A,B) <=> pass
 addarmies @ resources(P,1,N,_) ==> armies(P,N)""".split('\n')
 
 def init(cache,rulesystem,connection):
-    planets = {}
+    planets, systems = {}, {}
     #two loops because we want to make sure all planet positions are stored first
     for obj in cache.objects.itervalues():
         if obj.subtype == 3:
-            planets[obj.pos] = obj.id
+            planets[obj.parent] = obj.id
+    for obj in cache.objects.itervalues():
+        if obj.subtype == 2:
+            systems[obj.pos] = planets[obj.id]
     for obj in cache.objects.itervalues():
         if obj.subtype == 5:
-            rulesystem.addConstraint("adjacent(%i,%i)"%(planets[obj.start],planets[obj.end]))
-            rulesystem.addConstraint("adjacent(%i,%i)"%(planets[obj.end],planets[obj.start]))
+            rulesystem.addConstraint("adjacent(%i,%i)"%(systems[obj.start],systems[obj.end]))
+            rulesystem.addConstraint("adjacent(%i,%i)"%(systems[obj.end],systems[obj.start]))
 
 
 def startTurn(cache,store):
@@ -36,7 +40,7 @@ def endTurn(cache,rulesystem,connection):
         start = int(order.args[0])
         destination = int(order.args[1])
         amount = int(order.args[2])
-        print "Moving %s troops from %s to %s" % (amount,start,destination)
+        logging.getLogger("daneel.mod-risk").debug("Moving %s troops from %s to %s" % (amount,start,destination))
         moveorder = findOrderDesc("Move")
         args = [0, start, -1, moveorder.subtype, 0, [], ([], [(destination, amount)])]
         order = moveorder(*args)
@@ -46,7 +50,7 @@ def endTurn(cache,rulesystem,connection):
     for order in orders:
         objid = order.args[0]
         amount = order.args[1]
-        print "Reinforcing %s with %s troops" % (objid,amount)
+        logging.getLogger("daneel.mod-risk").debug("Reinforcing %s with %s troops" % (objid,amount))
         orderd = findOrderDesc("Reinforce")
         args = [0, objid, -1, orderd.subtype, 0, [], amount, 0]
         order = orderd(*args)
@@ -58,7 +62,7 @@ def endTurn(cache,rulesystem,connection):
     for order in orders:
         objid = order.args[0]
         amount = order.args[1]
-        print "Colonizing %s with %s troops" % (objid,amount)
+        logging.getLogger("daneel.mod-risk").debug("Colonizing %s with %s troops" % (objid,amount))
         order = findOrderDesc("Colonize")
         args = [0, objid, -1, order.subtype, 0, [], ([], [(amount, 0)])]
         o = order(*args)
