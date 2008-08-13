@@ -36,7 +36,7 @@ class RuleSystem:
             logging.getLogger("rulesystem").setLevel(logging.INFO)
 
     def addConstraint(self,constraint):
-        logging.getLogger("rulesystem.addconstraint").info("Adding constraint %s" % constraint)
+        logging.getLogger("rulesystem.addconstraint").info(str(constraint))
         parsedcon = self.parser.parseBoundConstraint(constraint)
         self.store.add(parsedcon)
         self.activestore.add(parsedcon)
@@ -294,7 +294,7 @@ class Rule:
                 for v in self.extravars:
                     context[v] = solution[v]
                 if eval(self.userguard,context):
-                    logging.getLogger("rulesystem.matchAtPosition").info("Rule fired: %s" % self.name)
+                    logging.getLogger("rulesystem.matchAtPosition").info("Fired:%s" % self.name)
                     if self.removedhead == []:
                         removedConstraints = []
                     else:
