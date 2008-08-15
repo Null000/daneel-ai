@@ -418,7 +418,7 @@ class BoundConstraintFactory:
 
     def createConstraint(self,name,args):
         basiccon = self.constraints[name]
-        assert len(args) == len(basiccon.types)
+        assert len(args) == len(basiccon.types), "%s takes %i arguments, got %i" % (name,len(basiccon.types),len(args))
         for (i,t) in enumerate(basiccon.types):
             args[i] = totype(args[i],t)
         return BoundConstraint(name,args,basiccon)
