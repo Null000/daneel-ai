@@ -3,6 +3,9 @@ from rulesystem import *
 
 from logilab.constraint import fd, Solver, Repository
 
+import logging, sys
+logging.basicConfig(level=logging.WARNING,stream=sys.stdout)
+
 class RuleSystemTest(unittest.TestCase):
     def setUp(self):
         self.rs = RuleSystem(["pred(int)","gcd(int)","info(str)","a"])
@@ -134,6 +137,28 @@ class ParsingTest(unittest.TestCase):
         rs.addConstraint("prod(3)")
         rs.addConstraint("prod(2)")
         assert len(rs.store) == 4
+    def testSearchAlgo(self):
+        #you might want to draw this
+        basic = ["search(int,int,tuple)", "edge(int,int)", "goal(int)", "reached(tuple)"]
+        rules = ["edge(V1,V2) and search(V1,N,L) ==> V2 not in L and N > 0 | search(V2,N-1,L+(V2,))",
+                    "search(V,0,L) and goal(V) <=> reached(L)",
+                    "search(V,_,_) <=> pass"]
+        rs = RuleSystem(basic,rules)
+        rs.addConstraint("edge(1,2)")
+        rs.addConstraint("edge(2,3)")
+        rs.addConstraint("edge(2,4)")
+        rs.addConstraint("edge(3,4)")
+        rs.addConstraint("edge(4,5)")
+        rs.addConstraint("goal(5)")
+        assert len(rs.store) == 6
+        rs.addConstraint("search(2,1,(2,))")
+        assert len(rs.store) == 6
+        assert rs.findConstraint(FreeConstraint("reached",[int])) == []
+        rs.addConstraint("search(1,3,(1,))")
+        assert len(rs.store) == 6
+        [res] = rs.findConstraint(FreeConstraint("reached",[int]))
+        path = res.args[0]
+        assert path == (1,2,4,5)
 
 class LongTermTest(unittest.TestCase):
     def setUp(self):
