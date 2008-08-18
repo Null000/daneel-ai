@@ -28,11 +28,8 @@ def init(cache,rulesystem,connection):
 
 
 def startTurn(cache,store):
-    me = cache.players[0].id
-    for (k,v) in cache.objects.items():
-        if v.subtype == 3 and v.owner == me:
-            store.addConstraint("reinforcements(%i)"%v.resources[0][2])
-            break
+    v = cache.objects[selectOwnedPlanet(cache)]
+    store.addConstraint("reinforcements(%i)"%v.resources[0][2])
 
 def endTurn(cache,rulesystem,connection):
     orders = rulesystem.findConstraint("order_move(int,int,int)")
@@ -57,16 +54,16 @@ def endTurn(cache,rulesystem,connection):
         evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
         tp.client.cache.apply(connection,evt,cache)
     #TODO: Colonization doesn't seem to work yet?
-    #orders = rulesystem.findConstraint("order_colonise(int,int)")
-    orders = []
+    orders = rulesystem.findConstraint("order_colonise(int,int)")
+    planet = selectOwnedPlanet(cache)
     for order in orders:
         objid = order.args[0]
         amount = order.args[1]
         logging.getLogger("daneel.mod-risk").debug("Colonizing %s with %s troops" % (objid,amount))
-        order = findOrderDesc("Colonize")
-        args = [0, objid, -1, order.subtype, 0, [], ([], [(amount, 0)])]
-        o = order(*args)
-        evt = cache.apply("orders","create after",objid,cache.orders[objid].head,o)
+        orderd = findOrderDesc("Colonize")
+        args = [0, planet, -1, orderd.subtype, 0, [], ([], [(objid, amount)])]
+        o = orderd(*args)
+        evt = cache.apply("orders","create after",planet,cache.orders[planet].head,o)
         tp.client.cache.apply(connection,evt,cache)
 
 def findOrderDesc(name):
@@ -74,3 +71,9 @@ def findOrderDesc(name):
     for d in OrderDescs().values():
         if d._name.lower() == name:
             return d
+
+def selectOwnedPlanet(cache):
+    me = cache.players[0].id
+    for (k,v) in cache.objects.items():
+        if v.subtype == 3 and v.owner == me:
+            return k
