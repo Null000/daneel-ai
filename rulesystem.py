@@ -113,7 +113,8 @@ class RuleParser:
                 self.tryRuleMatch(rule,RuleParser.proprule)
         if r is None:
             logging.getLogger("rulesystem.parser").warning("Could not parse rule '%s'"%rule)
-        return NullRule(self.rulesystem)
+            return NullRule(self.rulesystem)
+        return r
 
     def parseFullRule(self,name=None,kepthead=[],removedhead=[],guard="True",body=""):
         RuleParser.uniquecount = RuleParser.uniquecount + 1
