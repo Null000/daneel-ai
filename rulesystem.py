@@ -8,16 +8,20 @@ import re
 import logging
 
 def totype(v,t):
-    strtypes = [str,unicode]
-    if type(v) in strtypes:
-        if t in strtypes and not (v[0] in "'\"" and v[0] == v[-1]):
-            return t(v)
+    try:
+        strtypes = [str,unicode]
+        if type(v) in strtypes:
+            if t in strtypes and not (v[0] in "'\"" and v[0] == v[-1]):
+                return t(v)
+            else:
+                return t(eval(v))
+        elif isinstance(v,t):
+            return v
         else:
-            return t(eval(v))
-    elif isinstance(v,t):
-        return v
-    else:
-        return t(v)
+            return t(v)
+    except TypeError:
+        logging.getLogger("rulesystem.totype").error("Error in type conversion, do your constraints have the right types? Got %s (%s), needed %s" % (v,type(v),t))
+        raise
 
 class RuleSystem:
     def __init__(self,constraints=[],rules=[],functions={},verbosity=0):
@@ -104,9 +108,12 @@ class RuleParser:
     def parseRule(self,rule):
         if isinstance(rule,Rule):
             return rule
-        return self.tryRuleMatch(rule,RuleParser.simplrule) or\
+        r = self.tryRuleMatch(rule,RuleParser.simplrule) or\
                 self.tryRuleMatch(rule,RuleParser.simparule) or\
                 self.tryRuleMatch(rule,RuleParser.proprule)
+        if r is None:
+            logging.getLogger("rulesystem.parser").warning("Could not parse rule '%s'"%rule)
+        return NullRule(self.rulesystem)
 
     def parseFullRule(self,name=None,kepthead=[],removedhead=[],guard="True",body=""):
         RuleParser.uniquecount = RuleParser.uniquecount + 1
@@ -126,10 +133,14 @@ class RuleParser:
             return self.parseFullRule(**d)
 
     def parseHead(self,kepthead,removedhead,rule):
-        kepthead = self.splitHead(kepthead)
-        rule.kepthead = [self.rulesystem.bcfactory.getFreeConstraint(func,args) for (func,args) in kepthead]
-        removedhead = self.splitHead(removedhead)
-        rule.removedhead = [self.rulesystem.bcfactory.getFreeConstraint(func,args) for (func,args) in removedhead]
+        try:
+            kepthead = self.splitHead(kepthead)
+            rule.kepthead = [self.rulesystem.bcfactory.getFreeConstraint(func,args) for (func,args) in kepthead]
+            removedhead = self.splitHead(removedhead)
+            rule.removedhead = [self.rulesystem.bcfactory.getFreeConstraint(func,args) for (func,args) in removedhead]
+        except KeyError:
+            logging.getLogger("rulesystem.parse").error("Constraint not found when parsing rules, did you list all constraints in the [Constraints] section?")
+            raise
         head = kepthead + removedhead
         for (i,(functor,args)) in enumerate(head):
             types = self.rulesystem.bcfactory.getFreeConstraint(functor,args).types
@@ -159,7 +170,7 @@ class RuleParser:
         if isinstance(cons,FreeConstraint):
             return cons
         m = RuleParser.con.match(cons)
-        assert m is not None
+        assert m is not None, "'%s' is not a valid constraint"%cons
         functor = m.group(1)
         types = []
         if(m.group(2) is not None):
@@ -169,7 +180,7 @@ class RuleParser:
 
     def parseConstraint(self,cons):
         m = RuleParser.con.match(cons)
-        assert m is not None
+        assert m is not None, "'%s' is not a valid constraint"%cons
         functor = m.group(1)
         args = []
         if(m.group(2) is not None):
@@ -209,8 +220,10 @@ class Rule:
     * name, string, preferable unique although nothing requires this
     * kepthead, list of free constraints
     * removedhead, list of free constraints
-    * guard, List of Python code evaluating to True or False represented as string
-    * body, a mix of constraints, PythonTerms and unifications, represented as string"""
+    * guard, list of logilab.constraint instances
+    * userguard, Python code evaluating to True or False represented as string
+    * extravars, list of strings representing the variables that appear in the rule
+    * body, Python code represented as string"""
 
     def __init__(self,rulesystem):
         self.rulesystem = rulesystem
@@ -302,14 +315,22 @@ class Rule:
                     for c in removedConstraints:
                         self.rulesystem.removeConstraint(c)
                     self.history.add(tuple(p))
-                    exec(self.body,context)
+                    try:
+                        exec(self.body,context)
+                    except NameError:
+                        logging.getLogger("rulesystem.matchAtPosition").error("Variable, function or constraint not found, please check rule '%s'"%self.name)
+                        raise
 
     def canAcceptAt(self,cons):
         head = self.kepthead + self.removedhead
         return [i for i in range(len(head)) if head[i].unifiesWith(cons)]
 
+class NullRule(Rule):
+    def canAcceptAt(self,cons):
+        return []
+
 class ConstraintStore:
-    """A CHR constraint store is used to hold a collection of facts in the form of predicates."""
+    """A constraint store is used to hold a collection of facts in the form of predicates."""
     def __init__(self):
         self.elems = defaultdict(set)
 
@@ -359,12 +380,14 @@ class ConstraintStore:
         self.elems.clear()
 
 class Constraint:
+    """A peice of information, a fact as kept in the constraint store"""
     def __init__(self,name,arity):
         self.functor = name
         self.arity = arity
 
 class FreeConstraint(Constraint):
-    """A constraint with all arguments unbounded (different variables)."""
+    """A constraint with all arguments unbounded (different variables).
+    A free constraint imposes type restrictions on the values of the arguments"""
     def __init__(self,name,types,longterm=False):
         Constraint.__init__(self,name,len(types))
         self.types = types
@@ -377,7 +400,7 @@ class FreeConstraint(Constraint):
         return "<FreeConstraint: %s at 0x%x>" % (str(self),id(self))
 
     def bind(self,args):
-        assert len(args) == self.arity
+        assert len(args) == self.arity, "%s takes %i arguments, got %i" % (self.name,len(self.arity),len(args))
         return BoundConstraint(self.name,args)
 
     def unifiesWith(self,other):
