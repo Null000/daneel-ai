@@ -53,7 +53,6 @@ def endTurn(cache,rulesystem,connection):
         order = orderd(*args)
         evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
         tp.client.cache.apply(connection,evt,cache)
-    #TODO: Colonization doesn't seem to work yet?
     orders = rulesystem.findConstraint("order_colonise(int,int)")
     planet = selectOwnedPlanet(cache)
     for order in orders:
