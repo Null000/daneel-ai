@@ -28,7 +28,11 @@ def init(cache,rulesystem,connection):
 
 
 def startTurn(cache,store):
-    v = cache.objects[selectOwnedPlanet(cache)]
+    myplanet = selectOwnedPlanet(cache)
+    if myplanet is None:
+        logging.getLogger("daneel.mod-risk").warning("No owned planets found. We're dead, Jim.")
+        return
+    v = cache.objects[myplanet]
     store.addConstraint("reinforcements(%i)"%v.resources[0][2])
 
 def endTurn(cache,rulesystem,connection):
