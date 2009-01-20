@@ -4,6 +4,7 @@ import time
 import random
 import logging
 import sys
+import os
 from optparse import OptionParser
 
 import tp.client.threads
@@ -16,6 +17,8 @@ from rulesystem import RuleSystem,BoundConstraint
 
 version = (0, 0, 1)
 mods = []
+
+installpath = os.path.realpath(os.path.dirname(__file__))
 
 def callback(*args, **kw):
     #print args, kw
@@ -57,7 +60,7 @@ def createRuleSystem(rulesfile,verbosity,cache,connection):
     global mods
     cons,rules = [],[]
     funcs = {}
-    rf = open(rulesfile)
+    rf = open(os.path.join(installpath, 'rules', rulesfile))
     l = stripline(rf.readline())
     while l != "[Modules]":
         l = stripline(rf.readline())
@@ -150,7 +153,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
 
 if __name__ == "__main__":
     parser = OptionParser(version="%prog " + ("%i.%i.%i" % version))
-    parser.add_option("-f", "--file", dest="filename", default="rules-rfts",
+    parser.add_option("-f", "--file", dest="filename", default="rfts",
                       help="read rules from FILENAME [default: %default]")
     parser.add_option("-n", "--numturns", dest="numturns", type="int", default=-1,
                       help="run for NUMTURNS turns [default: unlimited]")
