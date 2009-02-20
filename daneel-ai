@@ -15,7 +15,7 @@ from tp.client.cache import Cache
 
 from rulesystem import RuleSystem,BoundConstraint
 
-version = (0, 0, 1)
+version = (0, 0, 2)
 mods = []
 
 installpath = os.path.realpath(os.path.dirname(__file__))
