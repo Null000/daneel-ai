@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE tpconfig SYSTEM "http://thousandparsec.net/tp/downloads/tpconfig.dtd">
+<tpconfig>
+    <aiclient name="daneel-ai">
+        <longname>daneel-ai</longname>
+        <version>0</version>
+        <description>An advanced rule based AI.</description>
+        <commandstring>daneel-ai -f %(rname)s -u tp://%(user)s:password@localhost:%(port)d</commandstring>
+        <rules>risk</rules>
+        <rules>rfts</rules>
+    </aiclient>
+</tpconfig>
