@@ -14,5 +14,5 @@ setup(
     scripts = ["daneel-ai"],
     packages = ['.'],
     data_files = [(".", ("LICENSE", "COPYING", "README")),
-                  ("rules", ("rfts", "risk"))],
+                  ("rules", ("rules/rfts", "rules/risk"))],
 )
