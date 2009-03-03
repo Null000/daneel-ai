@@ -5,6 +5,7 @@ import random
 import logging
 import sys
 import os
+
 from optparse import OptionParser
 
 import tp.client.threads
@@ -13,7 +14,8 @@ from tp.netlib import Connection
 from tp.netlib import failed, constants, objects
 from tp.client.cache import Cache
 
-from rulesystem import RuleSystem,BoundConstraint
+import daneel
+from daneel.rulesystem import RuleSystem, BoundConstraint
 
 version = (0, 0, 2)
 mods = []
@@ -56,18 +58,27 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     cache = Cache(Cache.key(host, username))
     return connection, cache
 
+def getDataDir():
+	if "site-packages" in daneel.__file__:
+		datadir = os.path.join(os.path.dirname(daneel.__file__), "..", "..", "..", "..", "share", "daneel-ai")
+	else:
+		datadir = os.path.join(os.path.dirname(daneel.__file__), "..")
+	return datadir
+
 def createRuleSystem(rulesfile,verbosity,cache,connection):
     global mods
     cons,rules = [],[]
     funcs = {}
-    rf = open(os.path.join(installpath, 'rules', rulesfile))
+
+    rf = open(os.path.join(getDataDir(), 'rules', rulesfile))
     l = stripline(rf.readline())
     while l != "[Modules]":
         l = stripline(rf.readline())
     l = stripline(rf.readline())
     while l != "[Constraints]":
         if l != "":
-            m = __import__(l)
+            m = getattr(__import__("daneel."+l), l)
+            print l, m
             mods.append(m)
             try:
                 cons.extend(m.constraints)

@@ -1,2 +1,5 @@
 *~
 *.py[co]
+build
+dist
+*egg*
