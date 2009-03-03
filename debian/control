@@ -1,0 +1,15 @@
+Source: daneel-ai
+Section: python
+XS-Python-Version: all
+Priority: optional
+Maintainer: Paul Hampson <Paul.Hampson@Pobox.com>
+Build-Depends-Indep: python-central (>= 0.5.6), python-setuptools (>= 0.6b3-1), python-all
+Build-Depends: debhelper (>= 5.0.38)
+Standards-Version: 3.7.2
+
+Package: daneel-ai
+Architecture: all
+Depends: ${python:Depends}, python-tp-netlib, python-tp-client
+XB-Python-Version: ${python:Versions}
+Description: Thousand Parsec rule based AI.
+ This package provides the an AI for the Thousand Parsec game.
