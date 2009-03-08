@@ -9,7 +9,7 @@ Standards-Version: 3.7.2
 
 Package: daneel-ai
 Architecture: all
-Depends: ${python:Depends}, python-tp-netlib, python-tp-client
+Depends: ${python:Depends}, python-tp-netlib, python-tp-client, python-constraint
 XB-Python-Version: ${python:Versions}
 Description: Thousand Parsec rule based AI.
  This package provides the an AI for the Thousand Parsec game.
