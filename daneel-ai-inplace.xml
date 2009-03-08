@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE tpconfig SYSTEM "http://thousandparsec.net/tp/downloads/tpconfig.dtd">
 <tpconfig>
-    <aiclient name="dev-daneel-ai">
+    <aiclient name="daneel-ai-inplace">
         <longname>daneel-ai (Development)</longname>
         <version>0</version>
         <description>An advanced rule based AI.</description>
