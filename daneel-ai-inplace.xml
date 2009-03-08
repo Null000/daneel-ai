@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE tpconfig SYSTEM "http://thousandparsec.net/tp/downloads/tpconfig.dtd">
-<tpconfig>
+<tpconfig type="inplace">
     <aiclient name="daneel-ai-inplace">
         <longname>daneel-ai (Development)</longname>
         <version>0</version>
