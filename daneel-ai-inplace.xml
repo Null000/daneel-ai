@@ -5,8 +5,10 @@
         <longname>daneel-ai (Development)</longname>
         <version>0</version>
         <description>An advanced rule based AI.</description>
-        <commandstring>./daneel-ai -f %(rname)s -u tp://%(user)s:password@localhost:%(port)d</commandstring>
-		<cwd>../daneel-ai/</cwd>
+        <commandstring>./daneel-ai</commandstring>
+        <cwd>../daneel-ai/</cwd>
+        <forced>-f %(rname)s</forced>
+        <forced>-u tp://%(user)s:password@localhost:%(port)d</forced>
         <rules>risk</rules>
         <rules>rfts</rules>
     </aiclient>
