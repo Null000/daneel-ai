@@ -9,7 +9,7 @@ print sysconfig.get_config_var('prefix')
 
 setup(
     name = "daneel-ai",
-    version = "0.0.2",
+    version = "0.1.0",
     license = "GPL",
     description = "An advanced rule based AI for Thousand Parsec.",
     long_description = "",

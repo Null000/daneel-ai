@@ -17,7 +17,7 @@ from tp.client.cache import Cache
 import daneel
 from daneel.rulesystem import RuleSystem, BoundConstraint
 
-version = (0, 0, 2)
+version = (0, 1, 0)
 mods = []
 
 installpath = os.path.realpath(os.path.dirname(__file__))
