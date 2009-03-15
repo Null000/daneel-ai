@@ -59,11 +59,11 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     return connection, cache
 
 def getDataDir():
-	if "site-packages" in daneel.__file__:
-		datadir = os.path.join(os.path.dirname(daneel.__file__), "..", "..", "..", "..", "share", "daneel-ai")
-	else:
-		datadir = os.path.join(os.path.dirname(daneel.__file__), "..")
-	return datadir
+    if "site-packages" in daneel.__file__:
+        datadir = os.path.join(os.path.dirname(daneel.__file__), "..", "..", "..", "..", "share", "daneel-ai")
+    else:
+        datadir = os.path.join(os.path.dirname(daneel.__file__), "..")
+    return datadir
 
 def createRuleSystem(rulesfile,verbosity,cache,connection):
     global mods
