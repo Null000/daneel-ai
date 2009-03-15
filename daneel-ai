@@ -1,5 +1,10 @@
 #! /usr/bin/python
 
+try:
+	import requirements
+except ImportError:
+	pass
+
 import time
 import random
 import logging
