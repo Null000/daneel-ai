@@ -20,5 +20,5 @@ setup(
     packages = ["daneel"],
     data_files = [("share/daneel-ai", ("LICENSE", "COPYING", "README")),
                   ("share/daneel-ai/rules/", ("rules/rfts", "rules/risk")),
-                  ("share/tp/aiclients/", ("daneel-ai.xml",))],
+                  ("share/tp/", ("daneel-ai.xml",))],
 )
