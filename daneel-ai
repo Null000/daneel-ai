@@ -64,11 +64,11 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     return connection, cache
 
 def getDataDir():
-	if "site-packages" in daneel.__file__:
-		datadir = os.path.join(os.path.dirname(daneel.__file__), "..", "..", "..", "..", "share", "daneel-ai")
-	else:
-		datadir = os.path.join(os.path.dirname(daneel.__file__), "..")
-	return datadir
+    if "site-packages" in daneel.__file__:
+        datadir = os.path.join(os.path.dirname(daneel.__file__), "..", "..", "..", "..", "share", "daneel-ai")
+    else:
+        datadir = os.path.join(os.path.dirname(daneel.__file__), "..")
+    return datadir
 
 def createRuleSystem(rulesfile,verbosity,cache,connection):
     global mods
@@ -153,6 +153,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         turns = turns - 1
         logging.getLogger("daneel").info("Downloading updates")
         cache.update(connection,callback)
+        lastturn = cache.objects[0].turn
 
         startTurn(cache,rulesystem)
         rulesystem.addConstraint("cacheentered")
@@ -162,10 +163,11 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         connection.turnfinished()
         waitfor = connection.time()
         logging.getLogger("daneel").info("Awaiting end of turn (%d s)..." % waitfor)
-        while waitfor > 1:
-            time.sleep(1)
-            waitfor = connection.time()
-        time.sleep(2)
+        while lastturn == connection.get_objects(0)[0].turn:
+            while waitfor > 1:
+                time.sleep(1)
+                waitfor = connection.time()
+            time.sleep(2)
 
 if __name__ == "__main__":
     parser = OptionParser(version="%prog " + ("%i.%i.%i" % version))
