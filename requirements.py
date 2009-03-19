@@ -10,9 +10,7 @@ modules = [("libtpproto-py", "tp.netlib"), ("libtpclient-py", "tp.client")] #, (
 if os.path.exists(".git"):
 	for dir, name in modules:
 		if os.path.exists(dir) and not os.path.exists(os.path.join(dir, ".git")):
-			break
-	else:
-		os.system("git submodule init")
+			os.system("git submodule init")
 	os.system("git submodule update")
 
 for dir, name in modules:
