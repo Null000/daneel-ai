@@ -17,6 +17,14 @@ for dir, name in modules:
 	if os.path.exists(dir):
 		sys.path.insert(0, dir)
 
+# Try and figure out what type of system this computer is running.
+import os
+result = os.system('apt-get --version > /dev/null 2>&1')
+if result == 0:
+	system = "debian-based"
+else:
+	system = "unknown"
+
 # Check for our dependencies.
 notfound = []
 for dir, name in modules:
@@ -36,6 +44,15 @@ for dir, name in modules:
 		print e
 		notfound.append(dir)
 	print
+
+try:
+	import logilab.constraint
+except ImportError, e:
+	print e
+	if system == "debian-based":
+		notfound.append("python-constraint")
+	else:
+		notfound.append("logilab.constraint")
 
 if len(notfound) > 0:
 	print "The following requirements where not met:"
