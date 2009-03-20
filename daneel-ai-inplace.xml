@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!DOCTYPE tpconfig SYSTEM "http://thousandparsec.net/tp/downloads/tpconfig.dtd">
-<tpconfig type="inplace">
+<tpconfig type="inplace" xml:lang="en">
     <aiclient name="daneel-ai-inplace">
-        <longname>daneel-ai (Development)</longname>
+        <longname xml:lang="en">daneel-ai (Development)</longname>
         <version>0</version>
-        <description>An advanced rule based AI.</description>
+        <description xml:lang="en">An advanced rule based AI.</description>
         <commandstring>./daneel-ai</commandstring>
         <cwd>../daneel-ai/</cwd>
         <forced>-f %(rname)s</forced>
