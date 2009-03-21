@@ -10,6 +10,5 @@
         <forced>-f %(rname)s</forced>
         <forced>-u tp://%(user)s:password@localhost:%(port)d</forced>
         <rules>risk</rules>
-        <rules>rfts</rules>
     </aiclient>
 </tpconfig>
