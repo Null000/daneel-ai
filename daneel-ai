@@ -1,6 +1,5 @@
 #! /usr/bin/python
 
-#test
 try:
 	import requirements
 except ImportError:
