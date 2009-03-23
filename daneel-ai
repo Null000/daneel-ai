@@ -164,7 +164,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         waitfor = connection.time()
         logging.getLogger("daneel").info("Awaiting end of turn (%d s)..." % waitfor)
         while lastturn == connection.get_objects(0)[0].turn:
-            while waitfor > 1:
+            while waitfor > 1 or waitfor == -1:
                 time.sleep(1)
                 waitfor = connection.time()
             time.sleep(2)
