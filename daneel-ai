@@ -25,7 +25,10 @@ from daneel.rulesystem import RuleSystem, BoundConstraint
 version = (0, 1, 0)
 mods = []
 
-installpath = os.path.realpath(os.path.dirname(__file__))
+if hasattr(sys, "frozen"):
+    installpath = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding( )))
+else:
+    installpath = os.path.realpath(os.path.dirname(__file__))
 
 def callback(mode, state, message="", todownload=None, total=None, amount=None):
     logging.getLogger("daneel").debug("Downloading %s %s Message:%s", mode, state, message)
@@ -34,6 +37,7 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     debug = False
 
     host, username, game, password = url2bits(uri)
+    print host, username, game, password
     if not game is None:
         username = "%s@%s" % (username, game)
 
@@ -63,6 +67,8 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
     return connection, cache
 
 def getDataDir():
+    if hasattr(sys, "frozen"):
+        return os.path.join(installpath, "share", "daneel-ai")
     if "site-packages" in daneel.__file__:
         datadir = os.path.join(os.path.dirname(daneel.__file__), "..", "..", "..", "..", "share", "daneel-ai")
     else:

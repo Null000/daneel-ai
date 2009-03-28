@@ -9,9 +9,14 @@ import shutil
 import sys
 import os.path
 
+import sys
+print sys.path
+
 print sysconfig.get_config_var('prefix')
 
+extra_arguments = {}
 if sys.platform == 'win32':
+    from setuptools import setup
     import py2exe
  
     if os.path.exists("dist"):
@@ -25,13 +30,12 @@ if sys.platform == 'win32':
     open(os.path.join('tp', "__init__.py"), 'w').close()
  
     extra_arguments = dict(
-        windows=[{
-                "script": "daneel-ai",
-        }],
         options={
                 "py2exe": {
                         "dll_excludes": [],
                         "packages": ["tp.netlib", "tp.client"],
+                        "includes": ["daneel.*"],
+                        "excludes": ["Tkconstants", "Tkinter", "tcl", "pydoc" ],
                         "optimize": 2,
                         "compressed": 0,
                 }
@@ -51,6 +55,7 @@ setup(
     console = ["daneel-ai"],
     packages = ["daneel"],
     data_files = [("share/daneel-ai", ("LICENSE", "COPYING", "README")),
-                  ("share/daneel-ai/rules/", ("rules/rfts", "rules/risk")),
-                  ("share/tp/", ("daneel-ai.xml",))],
+                  ("share/daneel-ai/rules", ("rules/rfts", "rules/risk")),
+                  ("share/tp", ("daneel-ai.xml",))],
+    **extra_arguments
 )
