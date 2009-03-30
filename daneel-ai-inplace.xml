@@ -6,7 +6,7 @@
         <version>0</version>
         <description xml:lang="en">An advanced rule based AI.</description>
         <commandstring>daneel-ai</commandstring>
-		<cwd>.</cwd>
+        <cwd>.</cwd>
         <forced>-f %(rname)s</forced>
         <forced>-u tp://%(user)s:password@localhost:%(port)d</forced>
         <rules>risk</rules>
