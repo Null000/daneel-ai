@@ -14,6 +14,15 @@ print sys.path
 
 print sysconfig.get_config_var('prefix')
 
+# add cwd to installed single player XML file
+import fileinput
+of = open("daneel-ai.xml", 'w')
+for line in fileinput.FileInput("daneel-ai.xml.in"):
+    if 'PREFIX' in line:
+        line = line.replace('PREFIX', sysconfig.get_config_var('prefix'))
+    of.write(line)
+of.close()
+
 extra_arguments = {}
 if sys.platform == 'win32':
     from setuptools import setup
@@ -44,7 +53,7 @@ if sys.platform == 'win32':
 
 setup(
     name = "daneel-ai",
-    version = "0.1.0",
+    version = "0.0.3",
     license = "GPL",
     description = "An advanced rule based AI for Thousand Parsec.",
     long_description = "",
