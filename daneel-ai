@@ -142,7 +142,7 @@ def init(cache,rulesystem,connection):
         except AttributeError:
             pass
 
-def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',verbosity=0):
+def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',verbosity=1):
     try:
         level = {0:logging.WARNING,1:logging.INFO,2:logging.DEBUG}[verbosity]
     except KeyError:
@@ -169,7 +169,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         waitfor = connection.time()
         logging.getLogger("daneel").info("Awaiting end of turn %s (%s s)..." % (lastturn,waitfor))
         while lastturn == connection.get_objects(0)[0].turn:
-            while waitfor > 1 or waitfor == -1:
+            while waitfor > 1:
                 time.sleep(1)
                 waitfor = connection.time()
             time.sleep(2)
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     parser.add_option("-u", "--uri", dest="uri",
                       default='tp://daneel-ai:cannonfodder@localhost/tp',
                       help="Connect to specified URI [default %default]")
-    parser.add_option("-v", action="count", dest="verbosity", default=0,
+    parser.add_option("-v", action="count", dest="verbosity", default=1,
                       help="More verbose output. -vv and -vvv increase output even more.")
 
 
