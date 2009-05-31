@@ -21,6 +21,7 @@ from tp.client.cache import Cache
 
 import daneel
 from daneel.rulesystem import RuleSystem, BoundConstraint
+import picklegamestate
 
 version = (0, 0, 3)
 mods = []
@@ -150,9 +151,18 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
     fmt = "%(asctime)s [%(levelname)s] %(name)s:%(message)s"
     logging.basicConfig(level=level,stream=sys.stdout,format=fmt)
     connection, cache = connect(uri)
+#    state = picklegamestate.GameState(rulesfile,turns,None,None,verbosity)
+#    state.pickle("./states/" + time.time().__str__() + ".gamestate")
+	
+    gameLoopWrapped(rulesfile,turns,connection,cache,verbosity)
+
+def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity):		
     rulesystem = createRuleSystem(rulesfile,verbosity,cache,connection)
     logging.getLogger("daneel").info("Downloading all data")
     cache.update(connection,callback)
+    state = picklegamestate.GameState(rulesfile,turns,None,cache,verbosity)
+    state.pickle("./states/" + time.time().__str__() + ".gamestate")
+
     init(cache,rulesystem,connection)
     while turns != 0:
         turns = turns - 1
