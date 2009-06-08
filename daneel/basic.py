@@ -31,7 +31,7 @@ planettype @ subtype(X,3) ==> planet(X)
 fleettype @ subtype(X,4) ==> fleet(X)
 wormholetype @ subtype(X,5) ==> wormhole(X)""".split('\n')
 
-def startTurn(cache,store):
+def startTurn(cache,store,delta=0):
     for (k,v) in cache.players.items():
         store.addConstraint("player(%i,%s)" % (k,v.name))
     store.addConstraint("whoami(%i)" % cache.players[0].id)

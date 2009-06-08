@@ -27,7 +27,7 @@ def init(cache,rulesystem,connection):
             rulesystem.addConstraint("adjacent(%i,%i)"%(systems[obj.end],systems[obj.start]))
 
 
-def startTurn(cache,store):
+def startTurn(cache,store, delta = 0):
     myplanet = selectOwnedPlanet(cache)
     if myplanet is None:
         logging.getLogger("daneel.mod-risk").warning("No owned planets found. We're dead, Jim.")
@@ -46,7 +46,8 @@ def endTurn(cache,rulesystem,connection):
         args = [0, start, -1, moveorder.subtype, 0, [], ([], [(destination, amount)])]
         order = moveorder(*args)
         evt = cache.apply("orders","create after",start,cache.orders[start].head,order)
-        tp.client.cache.apply(connection,evt,cache)
+        if connection != None:
+            tp.client.cache.apply(connection,evt,cache)
     orders = rulesystem.findConstraint("order_reinforce(int,int)")
     for order in orders:
         objid = order.args[0]
@@ -56,7 +57,8 @@ def endTurn(cache,rulesystem,connection):
         args = [0, objid, -1, orderd.subtype, 0, [], amount, 0]
         order = orderd(*args)
         evt = cache.apply("orders","create after",objid,cache.orders[objid].head,order)
-        tp.client.cache.apply(connection,evt,cache)
+        if connection != None:
+            tp.client.cache.apply(connection,evt,cache)
     orders = rulesystem.findConstraint("order_colonise(int,int)")
     planet = selectOwnedPlanet(cache)
     for order in orders:
@@ -67,7 +69,8 @@ def endTurn(cache,rulesystem,connection):
         args = [0, planet, -1, orderd.subtype, 0, [], ([], [(objid, amount)])]
         o = orderd(*args)
         evt = cache.apply("orders","create after",planet,cache.orders[planet].head,o)
-        tp.client.cache.apply(connection,evt,cache)
+        if connection != None:
+            tp.client.cache.apply(connection,evt,cache)
 
 def findOrderDesc(name):
     name = name.lower()

@@ -7,12 +7,22 @@ import sys
 import StringIO
 import re
 import picklegamestate
+import cPickle
+from daneel_ai import gameLoopBenchMark
+from tp.client.cache import Cache
 
 state_dir = "./states/"
 
 	
 def isGameStateFile(file_name):
 	return re.search('.*gamestate$', file_name)
+	
+
+def unpickle(pickle_location):
+	file = open(pickle_location, 'rb')
+	old = cPickle.load(file)
+	file.close()
+	return old
 	
 	
 def getPickledStates():
@@ -52,25 +62,35 @@ if __name__=='__main__':
 	list_of_states = getPickledStates()
 	
 	# print list_of_states
-
+	
+	# FIXME remove the hard codings here
+	rulesfile='risk'
+	turns = 0
+	connection = None
+	verbosity = 1
 	for state in list_of_states:
 		basename = state.partition('.')
 		output = state_dir + basename[0]  + ".out"
 		profile = state_dir + state  + ".profile"
 		
-		tested_state = picklegamestate.GameState().unpickle(state_dir + state)
-		profiled_func = 'gameLoopWrapped(%s,%s,%s,%s,%s)' %
-		(tested_state.rulesfiles, tested_state.turns, tested_state.connection,
-		tested_state.cache, tested_state.verbosity)
+#		tested_state = picklegamestate.GameState().unpickle(state_dir + state)
 		
-		cProfile.run('', profile)
+		print state_dir + state
+		cache = Cache('test')
+		cache.file = state_dir + state
+		cache.load()
+
+		cProfile.runctx('gameLoopBenchMark(rulesfile,turns,connection,cache,verbosity)', globals(), locals(), profile)	
 		
 		file = FakeStdOut(output, 'w')
 		p = pstats.Stats(profile,stream=file)
 		
-		p.strip_dirs().sort_stats('time').print_stats(15)
+		p.strip_dirs().sort_stats('time').print_stats(100)
 		file.close()
 			
+
+		
+	
 
 		
 	
