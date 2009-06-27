@@ -218,12 +218,10 @@ def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):
         rulesystem.clearStore()
         connection.turnfinished()
         waitfor = connection.time()
-        logging.getLogger("daneel").info("Awaiting end of turn %s (%s s)..." % (lastturn,waitfor))
+        logging.getLogger("daneel").info("Awaiting end of turn %s est: (%s s)..." % (lastturn,waitfor))
         while lastturn == connection.get_objects(0)[0].turn:
-            while waitfor > 1:
-                time.sleep(1)
-                waitfor = connection.time()
-            time.sleep(2)
+            waitfor = connection.time()
+            time.sleep( max(1,waitfor / 10))
 
 def gameLoopBenchMark(rulesfile,turns,connection,cache,verbosity):		
     rulesystem = createRuleSystem(rulesfile,verbosity,cache,connection)
