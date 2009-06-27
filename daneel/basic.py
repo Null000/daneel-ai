@@ -31,30 +31,49 @@ planettype @ subtype(X,3) ==> planet(X)
 fleettype @ subtype(X,4) ==> fleet(X)
 wormholetype @ subtype(X,5) ==> wormhole(X)""".split('\n')
 
+def getLastTurnTime(cache,delta=0):
+    if delta == 0:
+        return -1
+    else:
+        latest_time = cache.objects.times[0]
+        for (num,time) in cache.objects.times.iteritems():
+            if time > latest_time:
+                latest_time = time
+            else:
+                pass
+        return latest_time
+
 def startTurn(cache,store,delta=0):
+    
+        
+    last_time = getLastTurnTime(cache,delta)       
     for (k,v) in cache.players.items():
         store.addConstraint("player(%i,%s)" % (k,v.name))
+        
     store.addConstraint("whoami(%i)" % cache.players[0].id)
     store.addConstraint("turn(%i)"%cache.objects[0].turn)
     for (k,v) in cache.objects.items():
-        store.addConstraint("subtype(%i,%i)"%(k,v.subtype))
-        store.addConstraint("name(%i,%s)"%(k,v.name))
-        store.addConstraint("size(%i,%i)"%(k,v.size))
-        store.addConstraint("pos(%i,%i,%i,%i)"%((k,) + v.pos))
-        store.addConstraint("vel(%i,%i,%i,%i)"%((k,) + v.vel))
-        for child in v.contains:
-            store.addConstraint("contains(%i,%i)"%(k,child))
-        if hasattr(v,"owner"):
-            store.addConstraint("owner(%i,%i)"%(k,v.owner))
-        if hasattr(v,"resources"):
-            for res in v.resources:
-                store.addConstraint("resources(%i,%i,%i,%i,%i)"%((k,)+res))
-        if hasattr(v,"ships"):
-            for (t,num) in v.ships:
-                store.addConstraint("ships(%i,%i,%i)"%(k,t,num))
-        if hasattr(v,"damage"):
-            store.addConstraint("damage(%i,%i)"%(k,v.damage))
-        if hasattr(v,"start"):
-            store.addConstraint("start(%i,%i,%i,%i)"%((k,)+v.start))
-        if hasattr(v,"end"):
-            store.addConstraint("end(%i,%i,%i,%i)"%((k,)+v.end))
+        if delta and cache.objects.times[k] < last_time:
+            pass
+        else:
+            store.addConstraint("subtype(%i,%i)"%(k,v.subtype))
+            store.addConstraint("name(%i,%s)"%(k,v.name))
+            store.addConstraint("size(%i,%i)"%(k,v.size))
+            store.addConstraint("pos(%i,%i,%i,%i)"%((k,) + v.pos))
+            store.addConstraint("vel(%i,%i,%i,%i)"%((k,) + v.vel))
+            for child in v.contains:
+                store.addConstraint("contains(%i,%i)"%(k,child))
+            if hasattr(v,"owner"):
+                store.addConstraint("owner(%i,%i)"%(k,v.owner))
+            if hasattr(v,"resources"):
+                for res in v.resources:
+                    store.addConstraint("resources(%i,%i,%i,%i,%i)"%((k,)+res))
+            if hasattr(v,"ships"):
+                for (t,num) in v.ships:
+                    store.addConstraint("ships(%i,%i,%i)"%(k,t,num))
+            if hasattr(v,"damage"):
+                store.addConstraint("damage(%i,%i)"%(k,v.damage))
+            if hasattr(v,"start"):
+                store.addConstraint("start(%i,%i,%i,%i)"%((k,)+v.start))
+            if hasattr(v,"end"):
+                store.addConstraint("end(%i,%i,%i,%i)"%((k,)+v.end))
