@@ -2,3 +2,4 @@
 * Document AI creation
 * Create more sensible AI
 * Improve performance
+* Fix profiler stuff broken by making daneel-ai standalone again
