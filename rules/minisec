@@ -1,0 +1,12 @@
+[Modules]
+basic
+mod-minisec
+
+[Constraints]
+
+[Rules]
+info @ turn(X) ==> print "Turn %s" % X
+printFleet @ fleet(X) and name(X,N) ==> print "fleet:", X, N
+printPlanet @ planet(X) ==> print "planet:", X
+
+[Functions]

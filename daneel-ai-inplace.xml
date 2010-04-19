@@ -11,5 +11,6 @@
         <forced>-u tp://%(user)s:password@localhost:%(port)d</forced>
         <rules>risk</rules>
         <rules>rfts</rules>
+        <rules>minisec</rules>
     </aiclient>
 </tpconfig>
