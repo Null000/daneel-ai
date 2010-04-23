@@ -10,6 +10,7 @@ import random
 import logging
 import sys
 import os
+import inspect
 
 from optparse import OptionParser
 
@@ -131,17 +132,15 @@ def stripline(line):
 
 def startTurn(cache,store, delta):
     for m in mods:
-        try:
+    	#call startTurn if it exists in m
+        if "startTurn" in [x[0] for x in inspect.getmembers(m)]:
             m.startTurn(cache,store, delta)
-        except AttributeError:
-            pass
 
 def endTurn(cache,rulesystem,connection):
     for m in mods:
-        try:
+    	#call endTurn if it exists in m
+        if "endTurn" in [x[0] for x in inspect.getmembers(m)]:
             m.endTurn(cache,rulesystem,connection)
-        except AttributeError:
-            pass
 
 def saveGame(cache):
 	root_dir = getDataDir()
@@ -171,10 +170,9 @@ def checkSaveFolderWriteable(root_dir, save_dir):
 
 def init(cache,rulesystem,connection):
     for m in mods:
-        try:
+    	#call init if it exists in m
+    	if "init" in [x[0] for x in inspect.getmembers(m)]:
             m.init(cache,rulesystem,connection)
-        except AttributeError:
-            pass
 
 def pickle(variable, file_name):
 	file = open(file_name, 'wb')
@@ -215,7 +213,7 @@ def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):
         cache.update(connection,callback)
         # store the cache
         #saveGame(cache)      
-        lastturn = cache.objects[0].turn
+        lastturn = cache.objects[0].Informational[0][0]
 
         startTurn(cache,rulesystem,delta)
         rulesystem.addConstraint("cacheentered")
@@ -224,11 +222,15 @@ def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):
         rulesystem.clearStore()
         connection.turnfinished()
         waitfor = connection.time()
+        
+        #this is a workaround until I find out where to get the current turn nuber
+        #raw_input('Press enter to start a new turn')
+        
         logging.getLogger("daneel").info("Awaiting end of turn %s est: (%s s)..." % (lastturn,waitfor))
         try:
-            while lastturn == connection.get_objects(0)[0].turn:
+            while lastturn == connection.get_objects(0)[0].Informational[0][0]:
                 waitfor = connection.time()
-                time.sleep(max(1, waitfor / 10))
+                time.sleep(max(1, waitfor / 100))
         except IOError:
             print "Connection lost"
             exit(1)

@@ -31,12 +31,12 @@ for dir, name in modules:
 	try:
 		exec("import %s as module" % name)
 
-		print "%s version" % dir, module.__version__ 
-		print "    (installed at %s)" % module.__installpath__
+		#print "%s version" % dir, module.__version__ 
+		#print "    (installed at %s)" % module.__installpath__
 
 		try:
 			exec("from %s.version import version_git" % name)
-			print "    (git %s)" % version_git
+			#print "    (git %s)" % version_git
 		except ImportError:
 			pass
 

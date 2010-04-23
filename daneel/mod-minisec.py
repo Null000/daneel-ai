@@ -24,10 +24,10 @@ def endTurn(cache, rs, connection):
     orders = rulesystem.findConstraint("order_move(int,tuple)")
     for order in orders:
         objid = int(order.args[0])
-        destination = tuple(order.args[1])
+        destination = [x for x in order.args[1]]
         print "Moving %s to %s" % (objid, destination)
         moveorder = findOrderDesc("Move")
-        args = [0, objid, -1, moveorder.subtype, 0, [], destination]
+        args = [0, objid, -1, moveorder.subtype, 0, [], [destination]]
         order = moveorder(*args)
         evt = cache.apply("orders", "create after", objid, cache.orders[objid].head, order)
         tp.client.cache.apply(connection, evt, cache)
@@ -62,15 +62,15 @@ def nullPythonAddonHack():
     printAboutMe()
     
     ids = allMyFleetIDs()
-    if fleetID == None:
+    if fleetID == None and len(ids)>0:
         fleetID = ids[0]
         fleetStartPosition = getPosition(fleetID)
         print "Fleet chosen:", fleetID, "(", getName(fleetID), ")"
-        if planetID == None:
-            planetID = findNearestPlanetOwnedBy(fleetStartPosition,enemies())
-            if planetID != None:
-                position = getPosition(planetID)
-                print "Nearest planet is", planetID, "(", getName(planetID), ") at", position
+    if fleetID != None and planetID == None:
+        planetID = findNearestPlanetOwnedBy(fleetStartPosition,enemies())
+        if planetID != None:
+            position = getPosition(planetID)
+            print "Nearest planet is", planetID, "(", getName(planetID), ") at", position
     
     if not position == None:
         if position == getPosition(fleetID):
@@ -130,7 +130,7 @@ def getPosition(id):
     pos = rulesystem.findConstraint("pos(int,int,int,int)")
     for x in pos:
         if int(x.args[0]) == id:
-            return (x.args[1], x.args[2], x.args[3]) 
+            return [x.args[1], x.args[2], x.args[3]] 
     return None
 
 def getName(id):
@@ -158,7 +158,7 @@ def turnNumber():
     return rulesystem.findConstraint("turn(int)")[0].args[0]
 
 def allPlayers():
-    return [player.args[0] for player in rulesystem.findConstraint("player(int,unicode)")]
+    return [player.args[0] for player in rulesystem.findConstraint("player(int,unicode)")[1:]]
 
 def playerName(id):
     players = rulesystem.findConstraint("player(int,unicode)")
@@ -174,7 +174,7 @@ def enemies():
 
 def orderMove(id, destination):
     '''
-    Gives the move order to the object (fleet) with given id to move to the given destination (x,y,z) touple.
+    Gives the move order to the object (fleet) with given id to move to the given destination [x,y,z] array.
     '''
     global rulesystem
     rulesystem.addConstraint("order_move(" + str(fleetID) + "," + str(position) + ")")
