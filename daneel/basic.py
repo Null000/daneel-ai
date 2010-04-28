@@ -67,7 +67,6 @@ def startTurn(cache,store,delta=0):
             store.addConstraint("contains(%i,%i)" % (k, child))
         #its probably Ownership[0][1]
         if hasattr(v, "Ownership"):
-            #TODO this is only a guess... (I have no clue what type means)
             store.addConstraint("owner(%i,%i)" % (k, v.Ownership.Owner.id))
         if hasattr(v, "resources"):
             for res in v.resources:

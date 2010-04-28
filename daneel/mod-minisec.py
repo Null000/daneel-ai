@@ -2,8 +2,9 @@ import logging
 import math
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
+import objectutils
 
-constraints = """order_move(int,tuple)
+constraints = """order_move(int,int,int,int)
 order_colonise(int)""".split('\n')
 
 #rules = """""".split('\n')
@@ -21,16 +22,26 @@ def endTurn(cache, rs, connection):
     #update rulesystem
     rulesystem = rs
     nullPythonAddonHack()
-    orders = rulesystem.findConstraint("order_move(int,tuple)")
+    orders = rulesystem.findConstraint("order_move(int,int,int,int)")
     for order in orders:
         objid = int(order.args[0])
-        destination = [x for x in order.args[1]]
+        destination = [x for x in order.args[1:]]
         print "Moving %s to %s" % (objid, destination)
         moveorder = findOrderDesc("Move")
         args = [0, objid, -1, moveorder.subtype, 0, [], [destination]]
         order = moveorder(*args)
-        evt = cache.apply("orders", "create after", objid, cache.orders[objid].head, order)
+        
+        queueid = objectutils.getOrderQueueList(cache,objid)[0][1]
+        queue = cache.orders[queueid]
+        node = queue.last
+
+        # Do some sanity checking
+        assert node in queue
+
+        # Make the change to the cache    
+        evt = cache.apply("orders", "create after", qid, node, order)
         tp.client.cache.apply(connection, evt, cache)
+    
     orders = rulesystem.findConstraint("order_colonise(int)")
     for order in orders:
         objid = order.args[0]
@@ -79,9 +90,12 @@ def nullPythonAddonHack():
             print "It should freeze next turn."
         else:
             orderMove(fleetID, position)
-            (x, y, z) = getPosition(fleetID)
-            (x2, y2, z2) = position
+            [x, y, z] = getPosition(fleetID)
+            [x2, y2, z2] = position
             print "Only", math.sqrt((x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2), "to go"
+            
+    #this is just a froce move
+    orderMove(fleetID, [123,124,125])
     return
 
 def findNearestNeutralPlanet(fleetPosition):
@@ -177,7 +191,9 @@ def orderMove(id, destination):
     Gives the move order to the object (fleet) with given id to move to the given destination [x,y,z] array.
     '''
     global rulesystem
-    rulesystem.addConstraint("order_move(" + str(fleetID) + "," + str(position) + ")")
+    assert len(destination) == 3
+    
+    rulesystem.addConstraint("order_move(" + str(fleetID) + "," + str(destination[0]) + "," + str(destination[1]) + "," + str(destination[2]) + ")")
     return
 
 def orderColonise(fleetID):
