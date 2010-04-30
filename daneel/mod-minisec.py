@@ -3,54 +3,86 @@ import math
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
 import objectutils
+from types import NoneType
 
 constraints = """order_move(int,int,int,int)
-order_colonise(int)""".split('\n')
+order_colonise(int)
+order_none(int)""".split('\n')
 
 #rules = """""".split('\n')
 
 rulesystem = None
-
-def init(cache, rulesystem, connection):
-    return
-
-def startTurn(cache, store, delta=0):
-    return
 
 def endTurn(cache, rs, connection):
     global rulesystem
     #update rulesystem
     rulesystem = rs
     nullPythonAddonHack()
+    executeOrdersMove(cache, connection)
+    executeOrdersColonise(cache, connection)
+    executeOrdersNone(cache, connection)
+            
+def executeOrdersNone(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_none(int)")
+    for orderConstraint in orders:
+        objectId = int(orderConstraint.args[0])
+        executeOrder(cache, connection, objectId, None)
+
+def executeOrdersMove(cache, connection):
+    global rulesystem
     orders = rulesystem.findConstraint("order_move(int,int,int,int)")
-    for order in orders:
-        objid = int(order.args[0])
-        destination = [x for x in order.args[1:]]
-        print "Moving %s to %s" % (objid, destination)
+    for orderConstraint in orders:
+        objectId = int(orderConstraint.args[0])
+        destination = [x for x in orderConstraint.args[1:]]
         moveorder = findOrderDesc("Move")
-        args = [0, objid, -1, moveorder.subtype, 0, [], [destination]]
+        args = [0, objectId, -1, moveorder.subtype, 0, [], [destination]]
         order = moveorder(*args)
+        executeOrder(cache, connection, objectId, order)
         
-        queueid = objectutils.getOrderQueueList(cache,objid)[0][1]
-        queue = cache.orders[queueid]
-        node = queue.last
-
-        # Do some sanity checking
-        assert node in queue
-
-        # Make the change to the cache    
-        evt = cache.apply("orders", "create after", qid, node, order)
-        tp.client.cache.apply(connection, evt, cache)
-    
+def executeOrdersColonise(cache, connection):
     orders = rulesystem.findConstraint("order_colonise(int)")
-    for order in orders:
-        objid = order.args[0]
+    for orderConstraint in orders:
+        objectId = orderConstraint.args[0]
         orderd = findOrderDesc("Colonise")
-        args = [0, objid, -1, orderd.subtype, 0, []]
-        o = orderd(*args)
-        evt = cache.apply("orders", "create after", objid, cache.orders[objid].head, o)
-        if connection != None:
+        args = [0, objectId, -1, orderd.subtype, 0, []]
+        order = orderd(*args)
+        executeOrder(cache, connection, objectId, order)
+
+def executeOrder(cache, connection, objectId, order):
+    # get the queue for the object
+    queueid = objectutils.getOrderQueueList(cache, objectId)[0][1]
+    queue = cache.orders[queueid]
+    node = queue.first
+    
+    #check if there is no existing order
+    if order != None and isinstance(queue.first.CurrentOrder, NoneType):
+        # make a new order   
+        evt = cache.apply("orders", "create after", queueid, node, order)
+        tp.client.cache.apply(connection, evt, cache)
+    #check if the existing order is the same as current order
+    elif not checkIfOrdersSame(node.CurrentOrder, order):
+        if order != None:
+            #replace the current order with the new one
+            evt = cache.apply("orders", "change", queueid, node, order)
             tp.client.cache.apply(connection, evt, cache)
+        #delete order
+        else:
+            nodes = [x for x in queue]
+            evt = cache.apply("orders", "remove", queueid, nodes=nodes)
+            tp.client.cache.apply(connection, evt, cache)
+
+def checkIfOrdersSame(order1, order2):
+    #check the type
+    if type(order1) != type(order2):
+        return False
+    #check the name TODO: might be included in type
+    if order1._name != order2._name:
+        return False
+    #check the order arguments
+    if order1.properties != order2.properties:
+        return False
+    return True
 
 def findOrderDesc(name):
     name = name.lower()
@@ -72,13 +104,15 @@ def nullPythonAddonHack():
     
     printAboutMe()
     
-    ids = allMyFleetIDs()
-    if fleetID == None and len(ids)>0:
+    moveOrderGiven = False
+    
+    ids = allMyFleets()
+    if fleetID == None and len(ids) > 0:
         fleetID = ids[0]
         fleetStartPosition = getPosition(fleetID)
         print "Fleet chosen:", fleetID, "(", getName(fleetID), ")"
     if fleetID != None and planetID == None:
-        planetID = findNearestPlanetOwnedBy(fleetStartPosition,enemies())
+        planetID = findNearestNeutralPlanet(fleetStartPosition)
         if planetID != None:
             position = getPosition(planetID)
             print "Nearest planet is", planetID, "(", getName(planetID), ") at", position
@@ -86,37 +120,52 @@ def nullPythonAddonHack():
     if not position == None:
         if position == getPosition(fleetID):
             print fleetID , " IS HERE!!!!"
-            #orderColonise(fleetID)
+            orderColonise(fleetID)
             print "It should freeze next turn."
         else:
-            orderMove(fleetID, position)
+            if not moveOrderGiven:
+                orderMove(fleetID, position)
+                moveOrderGiven = True
             [x, y, z] = getPosition(fleetID)
             [x2, y2, z2] = position
             print "Only", math.sqrt((x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2), "to go"
-            
-    #this is just a froce move
-    orderMove(fleetID, [123,124,125])
+    for fleet in ids:
+        orderNone(fleet)
     return
 
-def findNearestNeutralPlanet(fleetPosition):
-    return findNearestPlanetOwnedBy(fleetPosition, [-1])
-
-def findNearestPlanetOwnedBy(fleetPosition,owners):
+def findNearestPlanetOwnedBy(fleetPosition, owners):
     global rulesystem
-    (x,y,z) = fleetPosition
+    if type(owners) == int:
+        owners = [owners] 
+    (x, y, z) = fleetPosition
     planets = allPlanetsOwnedBy(owners)
     nearestPlanet = None
     minDistance = 1e300
     for planet in planets:
         (x2, y2, z2) = getPosition(planet)
-        tempDistance = (x-x2)**2+(y-y2)**2+(z-z2)**2 #no need for sqrt
+        tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
         #find nearest
         if tempDistance < minDistance:
             minDistance = tempDistance
             nearestPlanet = planet
     return nearestPlanet
 
-def allMyFleetIDs():
+def findNearestNeutralPlanet(fleetPosition):
+    global rulesystem
+    (x, y, z) = fleetPosition
+    planets = allNeutralPlanets()
+    nearestPlanet = None
+    minDistance = 1e300
+    for planet in planets:
+        (x2, y2, z2) = getPosition(planet)
+        tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
+        #find nearest
+        if tempDistance < minDistance:
+            minDistance = tempDistance
+            nearestPlanet = planet
+    return nearestPlanet
+
+def allMyFleets():
     global rulesystem
     fleets = rulesystem.findConstraint("fleet(int)")
     list = []
@@ -125,7 +174,7 @@ def allMyFleetIDs():
             list += [int(x.args[0])]
     return list
 
-def allStarIDs():
+def allStars():
     global rulesystem
     stars = rulesystem.findConstraint("star(int)")
     return [int(x.args[0]) for x in stars]
@@ -174,6 +223,15 @@ def turnNumber():
 def allPlayers():
     return [player.args[0] for player in rulesystem.findConstraint("player(int,unicode)")[1:]]
 
+def allPlayersWithoutGuest():
+    players = allPlayers()
+    #remove guest (a player who is always present and has no objects)
+    for player in players:
+        if getName(player) == "guest":
+            players.remove(player)
+            break
+    return players
+
 def playerName(id):
     players = rulesystem.findConstraint("player(int,unicode)")
     for player in players:
@@ -182,9 +240,17 @@ def playerName(id):
     return None
 
 def enemies():
-    players = allPlayers()
+    players = allPlayersWithoutGuest()
     players.remove(whoami())
     return players
+
+def orderNone(id):
+    '''
+    Removes orders from the object.
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_none(" + str(id) + ")")
+    return
 
 def orderMove(id, destination):
     '''
@@ -205,13 +271,13 @@ def orderColonise(fleetID):
     return
 
 def printAboutMe():
-    print "I am", whoami(),". My name is",playerName(whoami())
+    print "I am", whoami(), ". My name is", playerName(whoami())
     for x in enemies():
-        print x ,"("+playerName(x)+") is my enemy"
-    for x in allMyFleetIDs():
-        print x ,"(" +getName(x) +") is my fleet"
+        print x , "(" + playerName(x) + ") is my enemy"
+    for x in allMyFleets():
+        print x , "(" + getName(x) + ") is my fleet"
     for x in allPlanetsOwnedBy([whoami()]):
-        print x,"(" + getName(x) + ") is my planet"
+        print x, "(" + getName(x) + ") is my planet"
     
 
 def allPlanets():
@@ -224,6 +290,14 @@ def allPlanetsOwnedBy(owners):
 		if getOwner(planet) in owners:
 			planetList += [planet]
 	return planetList
+    
+def allNeutralPlanets():
+    planets = allPlanets()
+    planetList = []
+    for planet in planets:
+        if not getOwner(planet) in allPlayers():
+            planetList += [planet]
+    return planetList
 
 def allPlanetsOfStar(starid):
 	planets = allPlanets()
