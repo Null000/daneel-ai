@@ -5,7 +5,7 @@ Created on 30.4.2010
 '''
 rulesystem = None
 
-def findNearestPlanetOwnedBy(fleetPosition, owners):
+def findNearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
     if type(owners) == int:
         owners = [owners] 
     (x, y, z) = fleetPosition
@@ -13,26 +13,28 @@ def findNearestPlanetOwnedBy(fleetPosition, owners):
     nearestPlanet = None
     minDistance = 1e300
     for planet in planets:
-        (x2, y2, z2) = getPosition(planet)
-        tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
-        #find nearest
-        if tempDistance < minDistance:
-            minDistance = tempDistance
-            nearestPlanet = planet
+        if not planet in ignore:
+            (x2, y2, z2) = getPosition(planet)
+            tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
+            #find nearest
+            if tempDistance < minDistance:
+                minDistance = tempDistance
+                nearestPlanet = planet
     return nearestPlanet
 
-def findNearestNeutralPlanet(fleetPosition):
+def findNearestNeutralPlanet(fleetPosition, ignore=[]):
     (x, y, z) = fleetPosition
     planets = allNeutralPlanets()
     nearestPlanet = None
     minDistance = 1e300
     for planet in planets:
-        (x2, y2, z2) = getPosition(planet)
-        tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
-        #find nearest
-        if tempDistance < minDistance:
-            minDistance = tempDistance
-            nearestPlanet = planet
+        if not planet in ignore:
+            (x2, y2, z2) = getPosition(planet)
+            tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
+            #find nearest
+            if tempDistance < minDistance:
+                minDistance = tempDistance
+                nearestPlanet = planet
     return nearestPlanet
 
 def allMyFleets():
@@ -130,7 +132,12 @@ def allPlanets():
     global rulesystem
     return [planet.args[0] for planet in rulesystem.findConstraint("planet(int)")]
 
+def allMyPlanets():
+    return allPlanetsOwnedBy(whoami())
+
 def allPlanetsOwnedBy(owners):
+    if isinstance(owners, int):
+        owners = [owners]
     planets = allPlanets()
     planetList = []
     for planet in planets:

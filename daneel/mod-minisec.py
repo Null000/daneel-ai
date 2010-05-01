@@ -7,7 +7,8 @@ import helper
 
 constraints = """order_move(int,int,int,int)
 order_colonise(int)
-order_none(int)""".split('\n')
+order_none(int)
+order_build(int,list,str)""".split('\n')
 
 #rules = """""".split('\n')
 
@@ -17,9 +18,10 @@ def endTurn(cache, rs, connection):
     global rulesystem
     #update rulesystem
     rulesystem = rs
-    nullPythonAddonHack()
+    AICode()
     executeOrdersMove(cache, connection)
     executeOrdersColonise(cache, connection)
+    executeOrdersBuild(cache, connection)
     executeOrdersNone(cache, connection)
             
 def executeOrdersNone(cache, connection):
@@ -28,6 +30,18 @@ def executeOrdersNone(cache, connection):
     for orderConstraint in orders:
         objectId = int(orderConstraint.args[0])
         executeOrder(cache, connection, objectId, None)
+
+def executeOrdersBuild(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_build(int,list,str)")
+    for orderConstraint in orders:
+        objectId = int(orderConstraint.args[0])
+        ships = [[],orderConstraint.args[1]]
+        name = orderConstraint.args[2]
+        buildOrder = findOrderDesc("Build Fleet")
+        args = [0, objectId, -1, buildOrder.subtype, 0, [], ships, [len(name), name]]
+        order = buildOrder(*args)
+        executeOrder(cache, connection, objectId, order)
 
 def executeOrdersMove(cache, connection):
     global rulesystem
@@ -99,7 +113,7 @@ position = None
 fleetID = None
 fleetStartPosition = None
 
-def nullPythonAddonHack():
+def AICode():
     print "Now in python mode!"
     global rulesystem
     global position
@@ -130,11 +144,24 @@ def nullPythonAddonHack():
             [x, y, z] = helper.getPosition(fleetID)
             [x2, y2, z2] = position
             print "Only", math.sqrt((x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2), "to go"
+    #clear all fleet orders
     for fleet in ids:
         orderNone(fleet)
+    #build one frigate    
+    myPlanet = helper.allMyPlanets()[0]
+    orderBuild(myPlanet, 2, 1, "Leet Fleet")
+        
     return
 
 
+def orderBuild(id, what, howMany, name):
+    '''
+    Give the order to build a given number of ships with the given fleet name
+    No support for different ships in one fleet.
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_build(" + str(id) + ", " + str([(what, howMany)]) + ", " + name + ")")
+    return
 
 def orderNone(id):
     '''
