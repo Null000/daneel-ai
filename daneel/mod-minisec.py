@@ -3,7 +3,6 @@ import math
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
 import objectutils
-from types import NoneType
 import helper
 
 constraints = """order_move(int,int,int,int)
@@ -57,7 +56,7 @@ def executeOrder(cache, connection, objectId, order):
     node = queue.first
     
     #check if there is no existing order
-    if order != None and isinstance(queue.first.CurrentOrder, NoneType):
+    if order != None and queue.first.CurrentOrder is None:
         # make a new order   
         evt = cache.apply("orders", "create after", queueid, node, order)
         tp.client.cache.apply(connection, evt, cache)
