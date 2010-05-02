@@ -223,9 +223,6 @@ def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):
         connection.turnfinished()
         waitfor = connection.time()
         
-        #this is a workaround until I find out where to get the current turn nuber
-        #raw_input('Press enter to start a new turn')
-        
         logging.getLogger("daneel").info("Awaiting end of turn %s est: (%s s)..." % (lastturn,waitfor))
         try:
             while lastturn == connection.get_objects(0)[0].Informational[0][0]:

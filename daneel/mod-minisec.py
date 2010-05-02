@@ -2,7 +2,7 @@ import logging
 import math
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
-import objectutils
+import extra.objectutils
 import helper
 
 constraints = """order_move(int,int,int,int)
@@ -65,7 +65,7 @@ def executeOrdersColonise(cache, connection):
 
 def executeOrder(cache, connection, objectId, order):
     # get the queue for the object
-    queueid = objectutils.getOrderQueueList(cache, objectId)[0][1]
+    queueid = extra.objectutils.getOrderQueueList(cache, objectId)[0][1]
     queue = cache.orders[queueid]
     node = queue.first
     
@@ -113,45 +113,6 @@ position = None
 fleetID = None
 fleetStartPosition = None
 
-def AICode():
-    print "Now in python mode!"
-    global rulesystem
-    global position
-    global planetID
-    global fleetID
-    helper.rulesystem = rulesystem
-    
-    helper.printAboutMe()
-    
-    ids = helper.allMyFleets()
-    if fleetID == None and len(ids) > 0:
-        fleetID = ids[0]
-        fleetStartPosition = helper.getPosition(fleetID)
-        print "Fleet chosen:", fleetID, "(", helper.getName(fleetID), ")"
-    if fleetID != None and planetID == None:
-        planetID = helper.findNearestNeutralPlanet(fleetStartPosition)
-        if planetID != None:
-            position = helper.getPosition(planetID)
-            print "Nearest planet is", planetID, "(", helper.getName(planetID), ") at", position
-    
-    if not position == None:
-        if position == helper.getPosition(fleetID):
-            print fleetID , " IS HERE!!!!"
-            orderColonise(fleetID)
-            print "It should freeze next turn."
-        else:
-            orderMove(fleetID, position)
-            [x, y, z] = helper.getPosition(fleetID)
-            [x2, y2, z2] = position
-            print "Only", math.sqrt((x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2), "to go"
-    #clear all fleet orders
-    for fleet in ids:
-        orderNone(fleet)
-    #build one frigate    
-    myPlanet = helper.allMyPlanets()[0]
-    orderBuild(myPlanet, 2, 1, "Leet Fleet")
-        
-    return
 
 
 def orderBuild(id, what, howMany, name):
@@ -178,7 +139,7 @@ def orderMove(id, destination):
     global rulesystem
     assert len(destination) == 3
     
-    rulesystem.addConstraint("order_move(" + str(fleetID) + "," + str(destination[0]) + "," + str(destination[1]) + "," + str(destination[2]) + ")")
+    rulesystem.addConstraint("order_move(" + str(id) + "," + str(destination[0]) + "," + str(destination[1]) + "," + str(destination[2]) + ")")
     return
 
 def orderColonise(fleetID):
@@ -189,6 +150,32 @@ def orderColonise(fleetID):
     rulesystem.addConstraint("order_colonise(" + str(fleetID) + ")")
     return
 
+
+def AICode():
+    print "Now in python mode!"
+    global rulesystem
+    global position
+    global planetID
+    global fleetID
+    helper.rulesystem = rulesystem
+    
+    helper.printAboutMe()
+    planets = []
+    
+    for fleet in helper.allMyFleets():
+        planet = helper.findNearestNeutralPlanet(helper.getPosition(fleet),planets)
+        planets += [planet]
+        if helper.getPosition(fleet) != helper.getPosition(planet):
+            print "moving",helper.getName(fleet)
+            orderMove(fleet, helper.getPosition(planet))
+        else:
+            print "colonising",helper.getName(fleet)
+            orderColonise(fleet)
+    
+    #build one frigate
+    for myPlanet in helper.allMyPlanets():
+        orderBuild(myPlanet, 2, 1, "Leet Fleet")
+    return
 """
 Name: No Operation
 Code: 0
