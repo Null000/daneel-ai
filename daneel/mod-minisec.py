@@ -1,66 +1,167 @@
 import logging
-import math
 import tp.client.cache
 from tp.netlib.objects import OrderDescs
 import extra.objectutils
 import helper
 
-constraints = """order_move(int,int,int,int)
-order_colonise(int)
-order_none(int)
-order_build(int,list,str)""".split('\n')
-
-#rules = """""".split('\n')
-
 rulesystem = None
+
+constraints = """order_no_operation(int,int)
+order_move(int,int,int,int)
+order_build_fleet(int,list,str)
+order_colonise(int)
+order_split_fleet(int,list)
+order_merge_fleet(int)
+order_none(int)""".split('\n')
 
 def endTurn(cache, rs, connection):
     global rulesystem
     #update rulesystem
     rulesystem = rs
     AICode()
+    executeOrdersNoOperation(cache, connection)
     executeOrdersMove(cache, connection)
+    executeOrdersBuildFleet(cache, connection)
     executeOrdersColonise(cache, connection)
-    executeOrdersBuild(cache, connection)
-    executeOrdersNone(cache, connection)
-            
-def executeOrdersNone(cache, connection):
-    global rulesystem
-    orders = rulesystem.findConstraint("order_none(int)")
-    for orderConstraint in orders:
-        objectId = int(orderConstraint.args[0])
-        executeOrder(cache, connection, objectId, None)
+    executeOrdersSplitFleet(cache, connection)
+    executeOrdersMergeFleet(cache, connection)
 
-def executeOrdersBuild(cache, connection):
+def orderNoOperation(id, wait):
+    '''
+    Object does nothing for a given number of turns
+    id is for the object the order is for
+     Arg name: wait    Arg type: Time (code:1)    Arg desc: The number of turns to wait
+    '''
     global rulesystem
-    orders = rulesystem.findConstraint("order_build(int,list,str)")
+    rulesystem.addConstraint("order_no_operation(" + str(id) + ", " + str(wait) + ")")
+    return
+
+def orderMove(id, pos):
+    '''
+    Move to a given position absolute in space
+    id is for the object the order is for
+     Arg name: pos    Arg type: Absolute Space Coordinates (code:0)    Arg desc: The position in space to move to
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_move(" + str(id) + ", " + str(pos[0]) + "," + str(pos[1])+"," + str(pos[2]) + ")")
+    return
+
+def orderBuildFleet(id, ships, name):
+    '''
+    Build a fleet
+    id is for the object the order is for
+     Arg name: ships    Arg type: List (code:6)    Arg desc: The type of ship to build
+     Arg name: name    Arg type: String (code:7)    Arg desc: The name of the new fleet being built
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_build_fleet(" + str(id) + ", " + str(ships) + ", " + name + ")")
+    return
+
+def orderColonise(id):
+    '''
+    Attempt to colonise a planet at the current location
+    id is for the object the order is for
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_colonise(" + str(id) + ")")
+    return
+
+def orderSplitFleet(id, ships):
+    '''
+    Split the fleet into two
+    id is for the object the order is for
+     Arg name: ships    Arg type: List (code:6)    Arg desc: The ships to be transferred
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_split_fleet(" + str(id) + ", " + str(ships) + ")")
+    return
+
+def orderMergeFleet(id):
+    '''
+    Merge this fleet into another one
+    id is for the object the order is for
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_merge_fleet(" + str(id) + ")")
+    return
+
+def orderNone(id):
+    '''
+    Removes orders from the object.
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_none(" + str(id) + ")")
+    return
+
+def executeOrdersNoOperation(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_no_operation(int,int)")
     for orderConstraint in orders:
-        objectId = int(orderConstraint.args[0])
-        ships = [[],orderConstraint.args[1]]
-        name = orderConstraint.args[2]
-        buildOrder = findOrderDesc("Build Fleet")
-        args = [0, objectId, -1, buildOrder.subtype, 0, [], ships, [len(name), name]]
-        order = buildOrder(*args)
+        args = orderConstraint.args
+        objectId = int(args[0])
+        wait = int(args[1])
+        ordertype = findOrderDesc("No Operation")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], wait]
+        order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
 def executeOrdersMove(cache, connection):
     global rulesystem
     orders = rulesystem.findConstraint("order_move(int,int,int,int)")
     for orderConstraint in orders:
-        objectId = int(orderConstraint.args[0])
-        destination = [x for x in orderConstraint.args[1:]]
-        moveorder = findOrderDesc("Move")
-        args = [0, objectId, -1, moveorder.subtype, 0, [], [destination]]
-        order = moveorder(*args)
+        args = orderConstraint.args
+        objectId = int(args[0])
+        pos = [[int(args[1]), int(args[2]), int(args[3])]]
+        ordertype = findOrderDesc("Move")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], pos]
+        order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
-        
+
+def executeOrdersBuildFleet(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_build_fleet(int,list,str)")
+    for orderConstraint in orders:
+        args = orderConstraint.args
+        objectId = int(args[0])
+        ships = [[], args[1]]
+        name = [len(args[2]), args[2]]
+        ordertype = findOrderDesc("Build Fleet")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], ships, name]
+        order = ordertype(*args)
+        executeOrder(cache, connection, objectId, order)
+
 def executeOrdersColonise(cache, connection):
+    global rulesystem
     orders = rulesystem.findConstraint("order_colonise(int)")
     for orderConstraint in orders:
-        objectId = orderConstraint.args[0]
-        orderd = findOrderDesc("Colonise")
-        args = [0, objectId, -1, orderd.subtype, 0, []]
-        order = orderd(*args)
+        args = orderConstraint.args
+        objectId = int(args[0])
+        ordertype = findOrderDesc("Colonise")
+        args = [0, objectId, -1, ordertype.subtype, 0, []]
+        order = ordertype(*args)
+        executeOrder(cache, connection, objectId, order)
+
+def executeOrdersSplitFleet(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_split_fleet(int,list)")
+    for orderConstraint in orders:
+        args = orderConstraint.args
+        objectId = int(args[0])
+        ships = [[], args[1]]
+        ordertype = findOrderDesc("Split Fleet")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], ships]
+        order = ordertype(*args)
+        executeOrder(cache, connection, objectId, order)
+
+def executeOrdersMergeFleet(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_merge_fleet(int)")
+    for orderConstraint in orders:
+        args = orderConstraint.args
+        objectId = int(args[0])
+        ordertype = findOrderDesc("Merge Fleet")
+        args = [0, objectId, -1, ordertype.subtype, 0, []]
+        order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
 def executeOrder(cache, connection, objectId, order):
@@ -108,106 +209,24 @@ def findOrderDesc(name):
         if d._name.lower() == name:
             return d
 
-planetID = None
-position = None
-fleetID = None
-fleetStartPosition = None
-
-
-
-def orderBuild(id, what, howMany, name):
-    '''
-    Give the order to build a given number of ships with the given fleet name
-    No support for different ships in one fleet.
-    '''
-    global rulesystem
-    rulesystem.addConstraint("order_build(" + str(id) + ", " + str([(what, howMany)]) + ", " + name + ")")
-    return
-
-def orderNone(id):
-    '''
-    Removes orders from the object.
-    '''
-    global rulesystem
-    rulesystem.addConstraint("order_none(" + str(id) + ")")
-    return
-
-def orderMove(id, destination):
-    '''
-    Gives the move order to the object (fleet) with given id to move to the given destination [x,y,z] array.
-    '''
-    global rulesystem
-    assert len(destination) == 3
-    
-    rulesystem.addConstraint("order_move(" + str(id) + "," + str(destination[0]) + "," + str(destination[1]) + "," + str(destination[2]) + ")")
-    return
-
-def orderColonise(fleetID):
-    '''
-    Gives the colonise order to the object (fleet) to colonise the planet at its current location
-    '''
-    global rulesystem
-    rulesystem.addConstraint("order_colonise(" + str(fleetID) + ")")
-    return
-
-
 def AICode():
     print "Now in python mode!"
     global rulesystem
-    global position
-    global planetID
-    global fleetID
     helper.rulesystem = rulesystem
     
     helper.printAboutMe()
     planets = []
     
     for fleet in helper.allMyFleets():
-        planet = helper.findNearestNeutralPlanet(helper.getPosition(fleet),planets)
+        planet = helper.findNearestNeutralPlanet(helper.getPosition(fleet), planets)
         planets += [planet]
         if helper.getPosition(fleet) != helper.getPosition(planet):
-            print "moving",helper.getName(fleet)
+            print "moving", helper.getName(fleet)
             orderMove(fleet, helper.getPosition(planet))
         else:
-            print "colonising",helper.getName(fleet)
+            print "colonising", helper.getName(fleet)
             orderColonise(fleet)
-    
     #build one frigate
     for myPlanet in helper.allMyPlanets():
-        orderBuild(myPlanet, 2, 1, "Leet Fleet")
+        orderBuild(myPlanet, [(2, 1)], "Leet Fleet")
     return
-"""
-Name: No Operation
-Code: 0
-Desc: Object does nothing for a given number of turns
-Arguments: 
-Arg name: wait    Arg type: ARG_TIME    Arg desc: The number of turns to wait 
-
-Name: Move
-Code: 1
-Desc: Move to a given position absolute in space
-Arguments: 
-Arg name: pos    Arg type: ARG_ABS_COORD    Arg desc: The position in space to move to 
-
-Name: Build Fleet
-Code: 2
-Desc: Build a fleet
-Arguments: 
-Arg name: ships    Arg type: ARG_LIST    Arg desc: The type of ship to build
-Arg name: name    Arg type: ARG_STRING    Arg desc: The name of the new fleet being built 
-
-Name: Colonise
-Code: 3
-Desc: Attempt to colonise a planet at the current location
-No arguments
-Name: Split Fleet
-Code: 4
-Desc: Split the fleet into two
-Arguments: 
-Arg name: ships    Arg type: ARG_LIST    Arg desc: The ships to be transferred 
-
-Name: Merge Fleet
-Code: 5
-Desc: Merge this fleet into another one
-No arguments
-"""

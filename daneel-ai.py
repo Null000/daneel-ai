@@ -191,6 +191,7 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
         connection, cache = connect(uri)
     except Exception, e: #TODO Null make the exception more specific
         print "Connection failed."
+        print e
         return
     
 #    state = picklegamestate.GameState(rulesfile,turns,None,None,verbosity)
@@ -227,7 +228,7 @@ def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):
         try:
             while lastturn == connection.get_objects(0)[0].Informational[0][0]:
                 waitfor = connection.time()
-                time.sleep(max(1, waitfor / 100))
+                time.sleep(max(1, min(10,waitfor / 100)))
         except IOError:
             print "Connection lost"
             exit(1)
