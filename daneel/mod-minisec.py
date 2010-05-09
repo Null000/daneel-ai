@@ -228,6 +228,9 @@ def AICode():
 
     helper.printAboutMe()
     
+    if helper.turnNumber() == 4:
+        exit(0)
+    
     if helper.playerName(helper.whoami()) != "ai":
         return
     
