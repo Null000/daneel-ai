@@ -12,25 +12,32 @@ rulesystem = None
 constraints = """order_no_operation(int,int)
 order_move(int,int,int,int)
 order_build_fleet(int,list,str)
+order_build_weapon(int,list)
 order_colonise(int)
 order_split_fleet(int,list)
 order_merge_fleet(int)
+order_enhance(int,int)
+order_send_points(int,list)
+order_load_armament(int,list)
+order_unload_armament(int,list)
 order_none(int)""".split('\n')
 
-def endTurn(cache2, rulesystem2, connection):
+def endTurn(cache, rs, connection):
     global rulesystem
-    global cache
-    #update global stuff
-    rulesystem = rulesystem2
-    cache = cache2
-    
+    #update rulesystem
+    rulesystem = rs
     AICode()
     executeOrdersNoOperation(cache, connection)
     executeOrdersMove(cache, connection)
     executeOrdersBuildFleet(cache, connection)
+    executeOrdersBuildWeapon(cache, connection)
     executeOrdersColonise(cache, connection)
     executeOrdersSplitFleet(cache, connection)
     executeOrdersMergeFleet(cache, connection)
+    executeOrdersEnhance(cache, connection)
+    executeOrdersSendPoints(cache, connection)
+    executeOrdersLoadArmament(cache, connection)
+    executeOrdersUnloadArmament(cache, connection)
 
 def orderNoOperation(id, wait):
     '''
@@ -56,11 +63,21 @@ def orderBuildFleet(id, ships, name):
     '''
     Build a fleet
     id is for the object the order is for
-     Arg name: ships    Arg type: List (code:6)    Arg desc: The type of ship to build
-     Arg name: name    Arg type: String (code:7)    Arg desc: The name of the new fleet being built
+     Arg name: Ships    Arg type: List (code:6)    Arg desc: The type of ship to build
+     Arg name: Name    Arg type: String (code:7)    Arg desc: The name of the new fleet being built
     '''
     global rulesystem
     rulesystem.addConstraint("order_build_fleet(" + str(id) + ", " + str(ships) + ", " + name + ")")
+    return
+
+def orderBuildWeapon(id, weapons):
+    '''
+    Build a Weapon
+    id is for the object the order is for
+     Arg name: Weapons    Arg type: List (code:6)    Arg desc: The type of weapon to build
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_build_weapon(" + str(id) + ", " + str(weapons) + ")")
     return
 
 def orderColonise(id):
@@ -89,6 +106,46 @@ def orderMergeFleet(id):
     '''
     global rulesystem
     rulesystem.addConstraint("order_merge_fleet(" + str(id) + ")")
+    return
+
+def orderEnhance(id, points):
+    '''
+    Enhance your Production
+    id is for the object the order is for
+     Arg name: Points    Arg type: Time (code:1)    Arg desc: The number of points you want to enhance with.
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_enhance(" + str(id) + ", " + str(points) + ")")
+    return
+
+def orderSendPoints(id, planet):
+    '''
+    Send Production Points
+    id is for the object the order is for
+     Arg name: Planet    Arg type: List (code:6)    Arg desc: The Planet to send points to.
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_send_points(" + str(id) + ", " + str(planet) + ")")
+    return
+
+def orderLoadArmament(id, weapons):
+    '''
+    Load a weapon onto your ships
+    id is for the object the order is for
+     Arg name: Weapons    Arg type: List (code:6)    Arg desc: The weapon to load
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_load_armament(" + str(id) + ", " + str(weapons) + ")")
+    return
+
+def orderUnloadArmament(id, weapons):
+    '''
+    Unload a weapon onto your ships
+    id is for the object the order is for
+     Arg name: Weapons    Arg type: List (code:6)    Arg desc: The weapon to unload
+    '''
+    global rulesystem
+    rulesystem.addConstraint("order_unload_armament(" + str(id) + ", " + str(weapons) + ")")
     return
 
 def orderNone(id):
@@ -132,7 +189,19 @@ def executeOrdersBuildFleet(cache, connection):
         ships = [[], args[1]]
         name = [len(args[2]), args[2]]
         ordertype = findOrderDesc("Build Fleet")
-        args = [0, objectId, -1, ordertype.subtype, 0, [], ships, name]
+        args = [0, objectId, -1, ordertype.subtype, 0, [], Ships, Name]
+        order = ordertype(*args)
+        executeOrder(cache, connection, objectId, order)
+
+def executeOrdersBuildWeapon(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_build_weapon(int,list)")
+    for orderConstraint in orders:
+        args = orderConstraint.args
+        objectId = int(args[0])
+        weapons = [[], args[1]]
+        ordertype = findOrderDesc("Build Weapon")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], Weapons]
         order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
@@ -167,6 +236,54 @@ def executeOrdersMergeFleet(cache, connection):
         objectId = int(args[0])
         ordertype = findOrderDesc("Merge Fleet")
         args = [0, objectId, -1, ordertype.subtype, 0, []]
+        order = ordertype(*args)
+        executeOrder(cache, connection, objectId, order)
+
+def executeOrdersEnhance(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_enhance(int,int)")
+    for orderConstraint in orders:
+        args = orderConstraint.args
+        objectId = int(args[0])
+        points = int(args[1])
+        ordertype = findOrderDesc("Enhance")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], Points]
+        order = ordertype(*args)
+        executeOrder(cache, connection, objectId, order)
+
+def executeOrdersSendPoints(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_send_points(int,list)")
+    for orderConstraint in orders:
+        args = orderConstraint.args
+        objectId = int(args[0])
+        planet = [[], args[1]]
+        ordertype = findOrderDesc("Send Points")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], Planet]
+        order = ordertype(*args)
+        executeOrder(cache, connection, objectId, order)
+
+def executeOrdersLoadArmament(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_load_armament(int,list)")
+    for orderConstraint in orders:
+        args = orderConstraint.args
+        objectId = int(args[0])
+        weapons = [[], args[1]]
+        ordertype = findOrderDesc("Load Armament")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], Weapons]
+        order = ordertype(*args)
+        executeOrder(cache, connection, objectId, order)
+
+def executeOrdersUnloadArmament(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_unload_armament(int,list)")
+    for orderConstraint in orders:
+        args = orderConstraint.args
+        objectId = int(args[0])
+        weapons = [[], args[1]]
+        ordertype = findOrderDesc("Unload Armament")
+        args = [0, objectId, -1, ordertype.subtype, 0, [], Weapons]
         order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
@@ -214,58 +331,7 @@ def findOrderDesc(name):
     for d in OrderDescs().values():
         if d._name.lower() == name:
             return d
-        
-def findDesignByName(name):
-    global cache
-    for designNumber in cache.designs:
-        if cache.designs[designNumber].name.lower() == name.lower() and cache.designs[designNumber].owner == helper.whoami():
-            return cache.designs[designNumber].id
-    return None
-
-def buildScout(planetID):
-    orderBuildFleet(planetID, [(findDesignByName("scout"), 1)], "Scout Fleet")
-    
-def buildFrigate(planetID):
-    orderBuildFleet(planetID, [(findDesignByName("frigate"), 1)], "Frigate Fleet")
-    
-def buildBattleship(planetID):
-    orderBuildFleet(planetID, [(findDesignByName("battleship"), 1)], "Battleship Fleet")
 
 def AICode():
-    print "Now in python mode!"
-    global rulesystem
-    helper.rulesystem = rulesystem
-    
-    helper.printAboutMe()
-    planets = []
-    
-    fleetsWithOrders = []
-    
-    for planet in helper.allNeutralPlanets():
-        fleet = helper.findNearestMyFleet(helper.getPosition(planet),fleetsWithOrders)
-        
-        if fleet == None:
-            break
-        
-        if helper.getPosition(fleet) != helper.getPosition(planet):
-            print "moving", helper.getName(fleet)
-            orderMove(fleet, helper.getPosition(planet))
-        else:
-            print "colonising", helper.getName(fleet)
-            orderColonise(fleet)
-        
-        fleetsWithOrders += [fleet]
-        
-    fleetsWithoutOrders = helper.allMyFleets()
-    
-    for fleet in fleetsWithOrders:
-        fleetsWithOrders.remove(fleet)
-    #make all other fleets stop    
-    for fleet in fleetsWithoutOrders:
-        orderNone(fleet)
-    
-    #build one frigate
-    for myPlanet in helper.allMyPlanets():
-        print "building fleet at",helper.getName(myPlanet)
-        buildFrigate(myPlanet)
+    #TODO your AI code comes here
     return
