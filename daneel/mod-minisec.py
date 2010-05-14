@@ -14,10 +14,13 @@ order_split_fleet(int,list)
 order_merge_fleet(int)
 order_none(int)""".split('\n')
 
-def endTurn(cache, rs, connection):
+def endTurn(cache2, rulesystem2, connection):
     global rulesystem
-    #update rulesystem
-    rulesystem = rs
+    global cache
+    #update global stuff
+    rulesystem = rulesystem2
+    cache = cache2
+    
     AICode()
     executeOrdersNoOperation(cache, connection)
     executeOrdersMove(cache, connection)
@@ -208,6 +211,22 @@ def findOrderDesc(name):
     for d in OrderDescs().values():
         if d._name.lower() == name:
             return d
+        
+def findDesignByName(name):
+    global cache
+    for designNumber in cache.designs:
+        if cache.designs[designNumber].name.lower() == name.lower() and cache.designs[designNumber].owner == helper.whoami():
+            return cache.designs[designNumber].id
+    return None
+
+def buildScout(planetID):
+    orderBuildFleet(planetID, [(findDesignByName("scout"), 1)], "Scout Fleet")
+    
+def buildFrigate(planetID):
+    orderBuildFleet(planetID, [(findDesignByName("frigate"), 1)], "Frigate Fleet")
+    
+def buildBattleship(planetID):
+    orderBuildFleet(planetID, [(findDesignByName("battleship"), 1)], "Battleship Fleet")
 
 def AICode():
     print "Now in python mode!"
@@ -228,5 +247,6 @@ def AICode():
             orderColonise(fleet)
     #build one frigate
     for myPlanet in helper.allMyPlanets():
-        orderBuild(myPlanet, [(2, 1)], "Leet Fleet")
+        print "building fleet at",helper.getName(myPlanet)
+        buildFrigate(myPlanet)
     return
