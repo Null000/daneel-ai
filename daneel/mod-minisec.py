@@ -236,15 +236,31 @@ def AICode():
     helper.printAboutMe()
     planets = []
     
-    for fleet in helper.allMyFleets():
-        planet = helper.findNearestNeutralPlanet(helper.getPosition(fleet), planets)
-        planets += [planet]
+    fleetsWithOrders = []
+    
+    for planet in helper.allNeutralPlanets():
+        fleet = helper.findNearestMyFleet(helper.getPosition(planet),fleetsWithOrders)
+        
+        if fleet == None:
+            break
+        
         if helper.getPosition(fleet) != helper.getPosition(planet):
             print "moving", helper.getName(fleet)
             orderMove(fleet, helper.getPosition(planet))
         else:
             print "colonising", helper.getName(fleet)
             orderColonise(fleet)
+        
+        fleetsWithOrders += [fleet]
+        
+    fleetsWithoutOrders = helper.allMyFleets()
+    
+    for fleet in fleetsWithOrders:
+        fleetsWithOrders.remove(fleet)
+    #make all other fleets stop    
+    for fleet in fleetsWithoutOrders:
+        orderNone(fleet)
+    
     #build one frigate
     for myPlanet in helper.allMyPlanets():
         print "building fleet at",helper.getName(myPlanet)

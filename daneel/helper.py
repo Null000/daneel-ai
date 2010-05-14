@@ -5,6 +5,26 @@ Created on 30.4.2010
 '''
 rulesystem = None
 
+def findNearestMyFleet(position,ignore=[]):
+    return findNearestFleetOwnedBy(position, whoami(), ignore)
+
+def findNearestFleetOwnedBy(position,owners,ignore=[]):
+    if type(owners) == int:
+        owners = [owners] 
+    (x, y, z) = position
+    fleets = allFleetsOwnedBy(owners)
+    nearestFleet = None
+    minDistance = 1e300
+    for fleet in fleets:
+        if not fleet in ignore:
+            (x2, y2, z2) = getPosition(fleet)
+            tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
+            #find nearest
+            if tempDistance < minDistance:
+                minDistance = tempDistance
+                nearestFleet = fleet
+    return nearestFleet
+
 def findNearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
     if type(owners) == int:
         owners = [owners] 
@@ -43,6 +63,15 @@ def allMyFleets():
     list = []
     for x in fleets:
         if getOwner(x.args[0]) == whoami():
+            list += [int(x.args[0])]
+    return list
+
+def allFleetsOwnedBy(owners):
+    global rulesystem
+    fleets = rulesystem.findConstraint("fleet(int)")
+    list = []
+    for x in fleets:
+        if getOwner(x.args[0]) in owners:
             list += [int(x.args[0])]
     return list
 
