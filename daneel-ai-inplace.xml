@@ -12,5 +12,6 @@
         <rules>risk</rules>
         <rules>rfts</rules>
         <rules>minisec</rules>
+        <rules>mtsec</rules>
     </aiclient>
 </tpconfig>
