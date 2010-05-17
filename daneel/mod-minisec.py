@@ -23,6 +23,8 @@ def endTurn(cache2, rulesystem2, connection):
     #update global stuff
     rulesystem = rulesystem2
     cache = cache2
+    helper.rulesystem = rulesystem
+    helper.cache = cache
     
     AICode()
     executeOrdersNoOperation(cache, connection)
@@ -214,27 +216,19 @@ def findOrderDesc(name):
     for d in OrderDescs().values():
         if d._name.lower() == name:
             return d
-        
-def findDesignByName(name):
-    global cache
-    for designNumber in cache.designs:
-        if cache.designs[designNumber].name.lower() == name.lower() and cache.designs[designNumber].owner == helper.whoami():
-            return cache.designs[designNumber].id
-    return None
 
 def buildScout(planetID):
-    orderBuildFleet(planetID, [(findDesignByName("scout"), 1)], "Scout Fleet")
+    orderBuildFleet(planetID, [(helper.findDesignByName("scout"), 1)], "Scout Fleet")
     
 def buildFrigate(planetID):
-    orderBuildFleet(planetID, [(findDesignByName("frigate"), 1)], "Frigate Fleet")
+    orderBuildFleet(planetID, [(helper.findDesignByName("frigate"), 1)], "Frigate Fleet")
     
 def buildBattleship(planetID):
-    orderBuildFleet(planetID, [(findDesignByName("battleship"), 1)], "Battleship Fleet")
+    orderBuildFleet(planetID, [(helper.findDesignByName("battleship"), 1)], "Battleship Fleet")
 
 def AICode():
     print "Now in python mode!"
     global rulesystem
-    helper.rulesystem = rulesystem
     
     helper.printAboutMe()
     planets = []
@@ -242,14 +236,14 @@ def AICode():
     fleetsWithOrders = []
     
     for planet in helper.allNeutralPlanets():
-        fleet = helper.findNearestMyFleet(helper.getPosition(planet),fleetsWithOrders)
+        fleet = helper.findNearestMyFleet(helper.position(planet),fleetsWithOrders)
         
         if fleet == None:
             break
         
-        if helper.getPosition(fleet) != helper.getPosition(planet):
+        if helper.position(fleet) != helper.position(planet):
             print "moving", helper.getName(fleet)
-            orderMove(fleet, helper.getPosition(planet))
+            orderMove(fleet, helper.position(planet))
         else:
             print "colonising", helper.getName(fleet)
             orderColonise(fleet)
@@ -263,7 +257,7 @@ def AICode():
     #make all other fleets stop    
     for fleet in fleetsWithoutOrders:
         orderNone(fleet)
-    
+      
     #build one frigate
     for myPlanet in helper.allMyPlanets():
         print "building fleet at",helper.getName(myPlanet)

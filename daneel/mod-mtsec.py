@@ -22,10 +22,15 @@ order_load_armament(int,list)
 order_unload_armament(int,list)
 order_none(int)""".split('\n')
 
-def endTurn(cache, rs, connection):
+def endTurn(cache2, rs, connection):
     global rulesystem
-    #update rulesystem
+    global cache
+    #update globals
     rulesystem = rs
+    cache = cache2
+    helper.rulesystem = rulesystem
+    helper.cache = cache
+    
     AICode()
     executeOrdersNoOperation(cache, connection)
     executeOrdersMove(cache, connection)
@@ -332,6 +337,34 @@ def findOrderDesc(name):
         if d._name.lower() == name:
             return d
 
-def AICode():
-    #TODO your AI code comes here
+def waitingAI():
+    print "I am lazy."
     return
+
+def commandoAI():
+    print "I am Rambo."
+    return
+    
+def rushAI():
+    print "I am Zerg."
+    return
+    
+def randomAI():
+    print "I am confused."
+    return
+    
+def bunkerAI():
+    print "I am paranoid"
+    return
+
+def greedyAI():
+    print "I am "
+    return
+    
+def multipleAI():
+    print "I am a shapeshifter."
+    return
+
+def AICode():
+	findDesignByName("aldfjaslcdfj")
+	return

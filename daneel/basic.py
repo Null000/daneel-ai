@@ -63,7 +63,6 @@ def startTurn(cache, store, delta=0):
         store.addConstraint("vel(%i,%i,%i,%i)" % ((k, v.Positional.Velocity.vector.x, v.Positional.Velocity.vector.y, v.Positional.Velocity.vector.z)))
         for child in v.contains:
             store.addConstraint("contains(%i,%i)" % (k, child))
-        #its probably Ownership[0][1]
         if hasattr(v, "Ownership"):
             store.addConstraint("owner(%i,%i)" % (k, v.Ownership.Owner.id))
         if hasattr(v, "resources"):
@@ -143,8 +142,12 @@ rulesystem = None"""
     print
     print "def endTurn(cache, rs, connection):"
     print "    global rulesystem"
-    print "    #update rulesystem"
+    print "    #update globals"
     print "    rulesystem = rs"
+    print "    cache = cache2"
+    print "    helper.rulesystem = rulesystem"
+    print "    helper.cache = cache"
+    print "    "
     print "    AICode()"
     for i in range(len(orderList)):
         tempOrder = orderList[i]

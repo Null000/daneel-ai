@@ -4,20 +4,21 @@ Created on 30.4.2010
 @author: Damjan 'Null' Kosir
 '''
 rulesystem = None
+cache = None
 
 def findNearestMyFleet(position,ignore=[]):
     return findNearestFleetOwnedBy(position, whoami(), ignore)
 
-def findNearestFleetOwnedBy(position,owners,ignore=[]):
+def findNearestFleetOwnedBy(targetPosition,owners,ignore=[]):
     if type(owners) == int:
         owners = [owners] 
-    (x, y, z) = position
+    (x, y, z) = targetPosition
     fleets = allFleetsOwnedBy(owners)
     nearestFleet = None
     minDistance = 1e300
     for fleet in fleets:
         if not fleet in ignore:
-            (x2, y2, z2) = getPosition(fleet)
+            (x2, y2, z2) = position(fleet)
             tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
             #find nearest
             if tempDistance < minDistance:
@@ -34,7 +35,7 @@ def findNearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
     minDistance = 1e300
     for planet in planets:
         if not planet in ignore:
-            (x2, y2, z2) = getPosition(planet)
+            (x2, y2, z2) = position(planet)
             tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
             #find nearest
             if tempDistance < minDistance:
@@ -49,7 +50,7 @@ def findNearestNeutralPlanet(fleetPosition, ignore=[]):
     minDistance = 1e300
     for planet in planets:
         if not planet in ignore:
-            (x2, y2, z2) = getPosition(planet)
+            (x2, y2, z2) = position(planet)
             tempDistance = (x - x2) ** 2 + (y - y2) ** 2 + (z - z2) ** 2 #no need for sqrt
             #find nearest
             if tempDistance < minDistance:
@@ -89,7 +90,7 @@ def allContainsIDs(id):
             list += [x.args[1]] 
     return list
 
-def getPosition(id):
+def position(id):
     global rulesystem
     pos = rulesystem.findConstraint("pos(int,int,int,int)")
     for x in pos:
@@ -181,3 +182,10 @@ def allNeutralPlanets():
         if not getOwner(planet) in allPlayers():
             planetList += [planet]
     return planetList
+
+def findDesignByName(name):
+    global cache
+    for designNumber in cache.designs:
+        if cache.designs[designNumber].name.lower() == name.lower() and cache.designs[designNumber].owner == whoami():
+            return cache.designs[designNumber].id
+    return None
