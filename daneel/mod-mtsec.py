@@ -22,14 +22,17 @@ order_load_armament(int,list)
 order_unload_armament(int,list)
 order_none(int)""".split('\n')
 
-def endTurn(cache2, rs, connection):
+def endTurn(cache2, rs, connection2):
     global rulesystem
     global cache
+    global connection
     #update globals
     rulesystem = rs
     cache = cache2
+    connection = connection2
     helper.rulesystem = rulesystem
     helper.cache = cache
+    helper.connection = connection
     
     AICode()
     executeOrdersNoOperation(cache, connection)
@@ -61,7 +64,7 @@ def orderMove(id, pos):
      Arg name: pos    Arg type: Absolute Space Coordinates (code:0)    Arg desc: The position in space to move to
     '''
     global rulesystem
-    rulesystem.addConstraint("order_move(" + str(id) + ", " + str(pos[0]) + "," + str(pos[1])+"," + str(pos[2]) + ")")
+    rulesystem.addConstraint("order_move(" + str(id) + ", " + str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + ")")
     return
 
 def orderBuildFleet(id, ships, name):
@@ -358,7 +361,7 @@ def bunkerAI():
     return
 
 def greedyAI():
-    print "I am "
+    print "I am not wealthy enough"
     return
     
 def multipleAI():
@@ -366,5 +369,5 @@ def multipleAI():
     return
 
 def AICode():
-	findDesignByName("aldfjaslcdfj")
-	return
+    helper.addDesign("name","description",helper.findCategoryByName("ships"),[])
+    return

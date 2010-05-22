@@ -3,8 +3,12 @@ Created on 30.4.2010
 
 @author: Damjan 'Null' Kosir
 '''
+from tp.netlib.objects import Design
+import tp.client.cache
+
 rulesystem = None
 cache = None
+conection = None
 
 def findNearestMyFleet(position,ignore=[]):
     return findNearestFleetOwnedBy(position, whoami(), ignore)
@@ -182,6 +186,22 @@ def allNeutralPlanets():
         if not getOwner(planet) in allPlayers():
             planetList += [planet]
     return planetList
+
+def addDesign(name,description,categories,componentList):
+    global cache
+    global connection
+    if type(categories) == int:
+        categories = [categories]
+    design = Design(-1, -1, 0, categories, name, description,-1,-1, componentList, "", [])
+    evt = cache.CacheDirtyEvent("designs", "create", -1, design)
+    tp.client.cache.apply(connection, evt, cache)
+
+def findCategoryByName(name):
+    global cache
+    for categoryNumber in cache.categories:
+        if cache.categories[categoryNumber].name.lower() == name.lower():
+            return cache.categories[categoryNumber].id
+    return None
 
 def findDesignByName(name):
     global cache
