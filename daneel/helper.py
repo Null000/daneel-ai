@@ -203,6 +203,13 @@ def findCategoryByName(name):
             return cache.categories[categoryNumber].id
     return None
 
+def findComponentByName(name):
+    global cache
+    for componentNumber in cache.components:
+        if cache.components[componentNumber].name.lower() == name.lower():
+            return cache.components[componentNumber].id
+    return None
+
 def findDesignByName(name):
     global cache
     for designNumber in cache.designs:

@@ -369,5 +369,5 @@ def multipleAI():
     return
 
 def AICode():
-    helper.addDesign("name","description",helper.findCategoryByName("ships"),[])
+    helper.addDesign("name","description",helper.findCategoryByName("ships"),[[helper.findComponentByName("scout hull"),1]])
     return
