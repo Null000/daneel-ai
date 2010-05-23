@@ -10,10 +10,10 @@ rulesystem = None
 cache = None
 conection = None
 
-def findNearestMyFleet(position,ignore=[]):
+def findNearestMyFleet(position, ignore=[]):
     return findNearestFleetOwnedBy(position, whoami(), ignore)
 
-def findNearestFleetOwnedBy(targetPosition,owners,ignore=[]):
+def findNearestFleetOwnedBy(targetPosition, owners, ignore=[]):
     if type(owners) == int:
         owners = [owners] 
     (x, y, z) = targetPosition
@@ -187,32 +187,50 @@ def allNeutralPlanets():
             planetList += [planet]
     return planetList
 
-def addDesign(name,description,categories,componentList):
+def addDesign(name, description, categories, componentList, replaceOnDuplicate=False):
+    current = findDesignByName(name)
+    if current != None and not replaceOnDuplicate:
+        #design already exists and we don't want to replace it
+        return
     global cache
     global connection
     if type(categories) == int:
         categories = [categories]
-    design = Design(-1, -1, 0, categories, name, description,-1,-1, componentList, "", [])
-    evt = cache.CacheDirtyEvent("designs", "create", -1, design)
+    #prepare design
+    design = Design(-1, -1, 0, categories, name, description, 0, whoami(), componentList, "", [])
+    if current == None:
+        #create a new design
+        evt = cache.CacheDirtyEvent("designs", "create", -1, design)
+    else:
+        #replace the existing design
+        evt = cache.CacheDirtyEvent("designs", "create", current, design)
+        
+    #apply changes
     tp.client.cache.apply(connection, evt, cache)
 
 def findCategoryByName(name):
     global cache
-    for categoryNumber in cache.categories:
-        if cache.categories[categoryNumber].name.lower() == name.lower():
-            return cache.categories[categoryNumber].id
+    #loop through all categories
+    for category in cache.categories.values():
+        if category.name.lower() == name.lower():
+            #return on match
+            return category.id
     return None
 
 def findComponentByName(name):
     global cache
-    for componentNumber in cache.components:
-        if cache.components[componentNumber].name.lower() == name.lower():
-            return cache.components[componentNumber].id
+    #loop through all components
+    for component in cache.components.values():
+        if component.name.lower() == name.lower():
+            #return on match
+            return component.id
     return None
 
 def findDesignByName(name):
     global cache
-    for designNumber in cache.designs:
-        if cache.designs[designNumber].name.lower() == name.lower() and cache.designs[designNumber].owner == whoami():
-            return cache.designs[designNumber].id
+    #loop through all designs
+    for design in cache.designs.values():
+        if design.name.lower() == name.lower() and design.owner == whoami():
+            #return on match
+            return design.id
     return None

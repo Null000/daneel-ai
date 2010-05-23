@@ -369,5 +369,85 @@ def multipleAI():
     return
 
 def AICode():
-    helper.addDesign("name","description",helper.findCategoryByName("ships"),[[helper.findComponentByName("scout hull"),1]])
+    components = []
+    components += [[helper.findComponentByName("advanced battle scout hull"), 1]]
+    components += [[helper.findComponentByName("colonisation module"), 1]]
+    components += [[helper.findComponentByName("delta missile tube"), 1]]
+    components += [[helper.findComponentByName("delta missile rack"), 1]]
+    
+    helper.addDesign("name", "description", helper.findCategoryByName("ships"), components)
+    newDesign = helper.findDesignByName("name")
+    if newDesign == None or newDesign == -1:
+        print "!!!!!!!!!!!!!!!!! It's gone! !!!!!!!!!!!!!!!!!!!"
+        newDesign = helper.findDesignByName("name")
+        return
+    printDesign(newDesign)
     return
+
+def printDesign(design):
+    global cache
+    if type(design) != int:
+        design = helper.findDesignByName(design)
+    for (id, value) in cache.designs[design].properties:
+        print cache.properties[id].name, ":", value
+    
+"""\
+list of possible components
+
+scout hull
+battle scout hull
+advanced battle scout hull
+frigate
+battle frigate
+destroyer
+battle destroyer
+battleship
+dreadnought
+argonaut
+
+uranium explosives
+thorium explosives
+cerium explosives
+enriched uranium
+massivium
+antiparticle explosives
+antimatter explosives
+
+alpha missile tube
+alpha missile rack
+alpha missile hull
+beta missile tube
+beta missile rack
+beta missile hull
+gamma missile tube
+gamma missile rack
+gamma missile hull
+delta missile tube
+delta missile rack
+delta missile hull
+epsilon missile tube
+epsilon missile rack
+epsilon missile hull
+
+omega torpedoe tube
+omega torpedoe rack
+omega torpedoe hull
+upsilon torpedoe tube
+upsilon torpedoe rack
+upsilon torpedoe hull
+tau torpedoe tube
+tau torpedoe rack
+tau torpedoe hull
+sigma torpedoe tube
+sigma torpedoe rack
+sigma torpedoe hull
+rho torpedoe tube
+rho torpedoe rack
+rho torpedoe hull
+xi torpedoe tube
+xi torpedoe rack
+xi torpedoe hull
+
+armor
+colonisation module
+"""
