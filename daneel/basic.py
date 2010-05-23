@@ -217,7 +217,7 @@ rulesystem = None"""
         print "        ordertype = findOrderDesc(\"" + tempOrder._name + "\")"
         sys.stdout.write("        args = [0, objectId, -1, ordertype.subtype, 0, []")
         for arg in argumentList:
-            sys.stdout.write(", " + arg[0])
+            sys.stdout.write(", " + pascalCase(arg[0]))
         print "]"
         print "        order = ordertype(*args)"
         print "        executeOrder(cache, connection, objectId, order)"
