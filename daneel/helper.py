@@ -260,3 +260,20 @@ def findDesignByName(name):
             #return on match
             return design.id
     return None
+
+def generateDesignName(components):
+    '''
+    Generate an unique name based on components.
+    '''
+    #sort the components by id
+    components.sort()
+    name = ""
+    for component in components:
+        #find the component with the given id
+        for tempComponent in cache.components.values():
+            if tempComponent.id == component[0]:
+                #add component information to name
+                name += str(component[1]) + "x " + tempComponent.name + " "
+                break
+    return name.strip()
+    

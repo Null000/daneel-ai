@@ -375,12 +375,8 @@ def AICode():
     components += [[helper.findComponentByName("delta missile tube"), 1]]
     components += [[helper.findComponentByName("delta missile rack"), 1]]
     
-    helper.addDesign("name", "description", helper.findCategoryByName("ships"), components)
-    newDesign = helper.findDesignByName("name")
-    if newDesign == None or newDesign == -1:
-        print "!!!!!!!!!!!!!!!!! It's gone! !!!!!!!!!!!!!!!!!!!"
-        newDesign = helper.findDesignByName("name")
-        return
+    helper.addDesign(helper.generateDesignName(components), "", helper.findCategoryByName("ships"), components)
+    newDesign = helper.findDesignByName(helper.generateDesignName(components))
     printDesign(newDesign)
     return
 
@@ -388,6 +384,7 @@ def printDesign(design):
     global cache
     if type(design) != int:
         design = helper.findDesignByName(design)
+    print cache.designs[design].name
     for (id, value) in cache.designs[design].properties:
         print cache.properties[id].name, ":", value
     
