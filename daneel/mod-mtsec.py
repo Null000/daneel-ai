@@ -6,6 +6,7 @@ import tp.client.cache
 from tp.netlib.objects import OrderDescs
 import extra.objectutils
 import helper
+from time import sleep
 
 rulesystem = None
 
@@ -197,7 +198,7 @@ def executeOrdersBuildFleet(cache, connection):
         ships = [[], args[1]]
         name = [len(args[2]), args[2]]
         ordertype = findOrderDesc("Build Fleet")
-        args = [0, objectId, -1, ordertype.subtype, 0, [], Ships, Name]
+        args = [0, objectId, -1, ordertype.subtype, 0, [], ships, Name]
         order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
@@ -209,7 +210,7 @@ def executeOrdersBuildWeapon(cache, connection):
         objectId = int(args[0])
         weapons = [[], args[1]]
         ordertype = findOrderDesc("Build Weapon")
-        args = [0, objectId, -1, ordertype.subtype, 0, [], Weapons]
+        args = [0, objectId, -1, ordertype.subtype, 0, [], weapons]
         order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
@@ -347,9 +348,50 @@ def waitingAI():
 def commandoAI():
     print "I am Rambo."
     return
+
+def addShipDesign(components):
+    helper.addDesign(helper.generateDesignName(components), "", helper.findCategoryByName("ships"), components)
     
+def addWeaponDesing(components):
+    helper.addDesign(helper.generateDesignName(components), "", helper.findCategoryByName("weapons"), components)
+
+def buildShip(planet, ship):
+    orderBuildFleet(planet, [(ship, 1)], "Some fleet")
+
 def rushAI():
     print "I am Zerg."
+    #construct a design for a simple attack/colonisation ship
+    ship = []
+    ship += [[helper.findComponentByName("advanced battle scout hull"), 1]]
+    ship += [[helper.findComponentByName("colonisation module"), 1]]
+    ship += [[helper.findComponentByName("delta missile tube"), 1]]
+    ship += [[helper.findComponentByName("delta missile rack"), 1]]
+    #add the design
+    addShipDesign(ship)
+    ship = helper.findDesignByName(helper.generateDesignName(ship))
+    
+    #TODO make a weapon design
+    
+    #build ships on all planets
+    for myPlanet in helper.allPlayers():
+        buildShip(myPlanet, ship)
+        
+    #move ships to neutral planets and colonise them
+    planetsToIgnore = []
+    for myFleet in helper.allMyFleets():
+        nearestPlanet = helper.findNearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
+        planetPosition = helper.position(nearestPlanet)
+        
+        planetsToIgnore += [nearestPlanet]
+        
+        if helper.position(myFleet) == planetPosition:
+            #colonise if there
+            orderColonise(myFleet)
+        else:
+            #move to planet
+            orderMove(myFleet, planetPosition)
+            
+    #TODO make weapons, attack the enemy, stuff like that
     return
     
 def randomAI():
@@ -369,15 +411,8 @@ def multipleAI():
     return
 
 def AICode():
-    components = []
-    components += [[helper.findComponentByName("advanced battle scout hull"), 1]]
-    components += [[helper.findComponentByName("colonisation module"), 1]]
-    components += [[helper.findComponentByName("delta missile tube"), 1]]
-    components += [[helper.findComponentByName("delta missile rack"), 1]]
-    
-    helper.addDesign(helper.generateDesignName(components), "", helper.findCategoryByName("ships"), components)
-    newDesign = helper.findDesignByName(helper.generateDesignName(components))
-    printDesign(newDesign)
+    rushAI()
+    sleep(10)
     return
 
 def printDesign(design):
