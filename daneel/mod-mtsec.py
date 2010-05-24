@@ -198,7 +198,7 @@ def executeOrdersBuildFleet(cache, connection):
         ships = [[], args[1]]
         name = [len(args[2]), args[2]]
         ordertype = findOrderDesc("Build Fleet")
-        args = [0, objectId, -1, ordertype.subtype, 0, [], ships, Name]
+        args = [0, objectId, -1, ordertype.subtype, 0, [], ships, name]
         order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
@@ -323,7 +323,6 @@ def checkIfOrdersSame(order1, order2):
     #check if both are None
     if order1 is None and order2 is None:
         return True
-    
     #check the type
     if type(order1) != type(order2):
         return False
@@ -350,36 +349,40 @@ def commandoAI():
     return
 
 def addShipDesign(components):
-    helper.addDesign(helper.generateDesignName(components), "", helper.findCategoryByName("ships"), components)
+    helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("ships"), components)
     
 def addWeaponDesing(components):
-    helper.addDesign(helper.generateDesignName(components), "", helper.findCategoryByName("weapons"), components)
+    helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("weapons"), components)
 
 def buildShip(planet, ship):
-    orderBuildFleet(planet, [(ship, 1)], "Some fleet")
+    orderBuildFleet(planet, [(ship, 1)], helper.name(helper.whoami()) + "'s fleet")
 
 def rushAI():
     print "I am Zerg."
+    
+    #number of ships and weapons needed to start an invasion
+    invasionShips = 50
+    invasionWeapons = 100
+    
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship += [[helper.findComponentByName("advanced battle scout hull"), 1]]
-    ship += [[helper.findComponentByName("colonisation module"), 1]]
-    ship += [[helper.findComponentByName("delta missile tube"), 1]]
-    ship += [[helper.findComponentByName("delta missile rack"), 1]]
+    ship += [[helper.componentByName("scout hull"), 1]]
+    ship += [[helper.componentByName("delta missile tube"), 1]]
+    ship += [[helper.componentByName("delta missile rack"), 1]]
     #add the design
     addShipDesign(ship)
-    ship = helper.findDesignByName(helper.generateDesignName(ship))
+    ship = helper.designByName(helper.generateDesignName(ship))
     
     #TODO make a weapon design
     
     #build ships on all planets
-    for myPlanet in helper.allPlayers():
+    for myPlanet in helper.myPlanets():
         buildShip(myPlanet, ship)
         
     #move ships to neutral planets and colonise them
     planetsToIgnore = []
-    for myFleet in helper.allMyFleets():
-        nearestPlanet = helper.findNearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
+    for myFleet in helper.myFleets():
+        nearestPlanet = helper.nearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
         planetPosition = helper.position(nearestPlanet)
         
         planetsToIgnore += [nearestPlanet]
@@ -411,18 +414,18 @@ def multipleAI():
     return
 
 def AICode():
+    helper.printDesigns()
     rushAI()
-    sleep(10)
     return
 
 def printDesign(design):
     global cache
     if type(design) != int:
-        design = helper.findDesignByName(design)
+        design = helper.designByName(design)
     print cache.designs[design].name
     for (id, value) in cache.designs[design].properties:
         print cache.properties[id].name, ":", value
-    
+
 """\
 list of possible components
 

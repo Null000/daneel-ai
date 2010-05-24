@@ -218,13 +218,13 @@ def findOrderDesc(name):
             return d
 
 def buildScout(planetID):
-    orderBuildFleet(planetID, [(helper.findDesignByName("scout"), 1)], "Scout Fleet")
+    orderBuildFleet(planetID, [(helper.designByName("scout"), 1)], "Scout Fleet")
     
 def buildFrigate(planetID):
-    orderBuildFleet(planetID, [(helper.findDesignByName("frigate"), 1)], "Frigate Fleet")
+    orderBuildFleet(planetID, [(helper.designByName("frigate"), 1)], "Frigate Fleet")
     
 def buildBattleship(planetID):
-    orderBuildFleet(planetID, [(helper.findDesignByName("battleship"), 1)], "Battleship Fleet")
+    orderBuildFleet(planetID, [(helper.designByName("battleship"), 1)], "Battleship Fleet")
 
 def AICode():
     print "Now in python mode!"
@@ -235,22 +235,22 @@ def AICode():
     
     fleetsWithOrders = []
     
-    for planet in helper.allNeutralPlanets():
-        fleet = helper.findNearestMyFleet(helper.position(planet),fleetsWithOrders)
+    for planet in helper.neutralPlanets():
+        fleet = helper.nearestMyFleet(helper.position(planet),fleetsWithOrders)
         
         if fleet == None:
             break
         
         if helper.position(fleet) != helper.position(planet):
-            print "moving", helper.getName(fleet)
+            print "moving", helper.name(fleet)
             orderMove(fleet, helper.position(planet))
         else:
-            print "colonising", helper.getName(fleet)
+            print "colonising", helper.name(fleet)
             orderColonise(fleet)
         
         fleetsWithOrders += [fleet]
         
-    fleetsWithoutOrders = helper.allMyFleets()
+    fleetsWithoutOrders = helper.myFleets()
     
     for fleet in fleetsWithOrders:
         fleetsWithOrders.remove(fleet)
@@ -259,7 +259,7 @@ def AICode():
         orderNone(fleet)
       
     #build one frigate
-    for myPlanet in helper.allMyPlanets():
-        print "building fleet at",helper.getName(myPlanet)
+    for myPlanet in helper.myPlanets():
+        print "building fleet at",helper.name(myPlanet)
         buildFrigate(myPlanet)
     return
