@@ -166,6 +166,14 @@ def printDesigns():
     for design in cache.designs.values():
         print design.id, design.name     
 
+def printDesign(design):
+    global cache
+    if type(design) != int:
+        design = designByName(design)
+    print cache.designs[design].name
+    for (id, value) in cache.designs[design].properties:
+        print cache.properties[id].name, ":", value
+
 def planets():
     global rulesystem
     return [planet.args[0] for planet in rulesystem.findConstraint("planet(int)")]
