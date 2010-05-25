@@ -214,24 +214,27 @@ def addDesign(name, description, categories, componentList, replaceOnDuplicate=F
     
     #update the cache by force or the new design won't be available
     #TODO there must be a more elegant way to do this (this way is a bit scary)
-    if current == None:
-        #find the new design id
-        oldDesignIDs = [tempDesign.id for tempDesign in cache.designs.values()]
-        oldDesignIDs.remove(-1)
-        allDesignIDs = [x[0] for x in connection.get_design_ids(iter=True)]
-        for x in oldDesignIDs:
-            allDesignIDs.remove(x)
-        #there should be only one left
-        assert len(allDesignIDs) == 1
-        
-        newDesign = connection.get_designs(allDesignIDs[0])[0]
-            
-        #find the design to be replaced
-        for designNumber in cache.designs:
-            if cache.designs[designNumber].id == -1:
-                #replace the design
-                cache.designs[designNumber] = newDesign
-                break
+    
+    #TODO Null: commented out for debugging purposes
+    
+#    if current == None:
+#        #find the new design id
+#        oldDesignIDs = [tempDesign.id for tempDesign in cache.designs.values()]
+#        oldDesignIDs.remove(-1)
+#        allDesignIDs = [x[0] for x in connection.get_design_ids(iter=True)]
+#        for x in oldDesignIDs:
+#            allDesignIDs.remove(x)
+#        #there should be only one left
+#        assert len(allDesignIDs) == 1
+#        
+#        newDesign = connection.get_designs(allDesignIDs[0])[0]
+#            
+#        #find the design to be replaced
+#        for designNumber in cache.designs:
+#            if cache.designs[designNumber].id == -1:
+#                #replace the design
+#                cache.designs[designNumber] = newDesign
+#                break
      
     
 def nop(group=None, state=None, message=None, todownload=None, amount=None):

@@ -351,11 +351,21 @@ def commandoAI():
 def addShipDesign(components):
     helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("ships"), components)
     
-def addWeaponDesing(components):
+def addWeaponDesign(components):
     helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("weapons"), components)
 
 def buildShip(planet, ship):
     orderBuildFleet(planet, [(ship, 1)], helper.name(helper.whoami()) + "'s fleet")
+    
+def buildWeapon(planet,weapon):
+    orderBuildWeapon(planet, [(weapon, 1)])
+    
+def orderOfID(objectId):
+    # get the queue for the object
+    queueid = extra.objectutils.getOrderQueueList(cache, objectId)[0][1]
+    queue = cache.orders[queueid]
+    #return current order
+    return queue.first.CurrentOrder
 
 def rushAI():
     print "I am Zerg."
@@ -373,11 +383,33 @@ def rushAI():
     addShipDesign(ship)
     ship = helper.designByName(helper.generateDesignName(ship))
     
-    #TODO make a weapon design
+    #construct a design for a missile that fits the ship
+    weapon = []
+    weapon += [[helper.componentByName("delta missile hull"), 1]]
+    weapon += [[helper.componentByName("uranium explosives"), 2]]
+    #add the design
+    addWeaponDesign(weapon)
+    weapon = helper.designByName(helper.generateDesignName(weapon))
+    
+    #debugging only, skip turn to add designs
+    if ship == -1 or weapon == -1:
+        return
     
     #build ships on all planets
     for myPlanet in helper.myPlanets():
-        buildShip(myPlanet, ship)
+        currentOrder = orderOfID(myPlanet) 
+        #check if there is already something being build on this planet
+        if currentOrder == None:
+            #decide what to build depending on the ship:weapong ratio
+            optimalRatio = float(invasionWeapons)/float(invasionShips)
+            
+            stuffOnPlanet = helper.contains(myPlanet)
+            
+            if stuffOnPlanet != []:
+                pass
+            
+            buildWeapon(myPlanet, weapon)
+            #buildShip(myPlanet, ship)
         
     #move ships to neutral planets and colonise them
     planetsToIgnore = []
@@ -389,7 +421,9 @@ def rushAI():
         
         if helper.position(myFleet) == planetPosition:
             #colonise if there
-            orderColonise(myFleet)
+            #there is something wrong here
+            #orderColonise(myFleet)
+            pass
         else:
             #move to planet
             orderMove(myFleet, planetPosition)
@@ -414,8 +448,8 @@ def multipleAI():
     return
 
 def AICode():
-    helper.printDesigns()
-    rushAI()
+    #helper.printDesigns()
+    #rushAI()
     return
 
 def printDesign(design):
