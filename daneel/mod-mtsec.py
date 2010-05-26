@@ -405,8 +405,6 @@ def rushAI():
             
             stuffOnPlanet = helper.contains(myPlanet)
             
-            if stuffOnPlanet != []:
-                pass
             
             buildWeapon(myPlanet, weapon)
             #buildShip(myPlanet, ship)
@@ -421,7 +419,7 @@ def rushAI():
         
         if helper.position(myFleet) == planetPosition:
             #colonise if there
-            #there is something wrong here
+            #Null: there is something wrong here
             #orderColonise(myFleet)
             pass
         else:
@@ -448,17 +446,9 @@ def multipleAI():
     return
 
 def AICode():
-    #helper.printDesigns()
-    #rushAI()
+    helper.printDesigns()
+    rushAI()
     return
-
-def printDesign(design):
-    global cache
-    if type(design) != int:
-        design = helper.designByName(design)
-    print cache.designs[design].name
-    for (id, value) in cache.designs[design].properties:
-        print cache.properties[id].name, ":", value
 
 """\
 list of possible components
