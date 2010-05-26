@@ -11,9 +11,15 @@ cache = None
 conection = None
 
 def nearestMyFleet(position, ignore=[]):
+    '''
+    Finds the nearest fleet owned by you. List of fleets to ignore is optional.
+    '''
     return nearestFleetOwnedBy(position, whoami(), ignore)
 
 def nearestFleetOwnedBy(targetPosition, owners, ignore=[]):
+    '''
+    Finds the nearest fleet owned by one of the players in the owners list (can also be an int). List of fleets to ignore is optional.
+    '''
     if type(owners) == int:
         owners = [owners] 
     (x, y, z) = targetPosition
@@ -30,7 +36,10 @@ def nearestFleetOwnedBy(targetPosition, owners, ignore=[]):
                 nearestFleet = fleet
     return nearestFleet
 
-def cearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
+def nearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
+    '''
+    Finds the nearest planet owned by one of the players in the owners list (can be an int). List of planets to ignore is optional.
+    '''
     if type(owners) == int:
         owners = [owners] 
     (x, y, z) = fleetPosition
@@ -48,6 +57,9 @@ def cearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
     return nearestPlanet
 
 def nearestNeutralPlanet(fleetPosition, ignore=[]):
+    '''
+    Finds the nearest neutral planet (not owned by anyone). List of planets to ignore is optional.
+    '''
     (x, y, z) = fleetPosition
     planets = neutralPlanets()
     nearestPlanet = None
@@ -63,6 +75,9 @@ def nearestNeutralPlanet(fleetPosition, ignore=[]):
     return nearestPlanet
 
 def myFleets():
+    '''
+    Returns a list of all fleets owned by you.
+    '''
     global rulesystem
     fleets = rulesystem.findConstraint("fleet(int)")
     list = []
@@ -72,6 +87,9 @@ def myFleets():
     return list
 
 def fleetsOwnedBy(owners):
+    '''
+    Returns a list of all fleets owned by any player in the owners list (can be an int).
+    '''
     global rulesystem
     fleets = rulesystem.findConstraint("fleet(int)")
     list = []
@@ -81,11 +99,17 @@ def fleetsOwnedBy(owners):
     return list
 
 def stars():
+    '''
+    Returns a list of all the stars.
+    '''
     global rulesystem
     stars = rulesystem.findConstraint("star(int)")
     return [int(x.args[0]) for x in stars]
 
 def contains(id):
+    '''
+    Returns a list of all the object the object with the given object contains.
+    '''
     global rulesystem
     things = rulesystem.findConstraint("contains(int,int)")
     list = []
@@ -95,6 +119,9 @@ def contains(id):
     return list
 
 def position(id):
+    '''
+    Returns the position of the object with the given id.
+    '''
     global rulesystem
     pos = rulesystem.findConstraint("pos(int,int,int,int)")
     for x in pos:
@@ -103,6 +130,9 @@ def position(id):
     return None
 
 def name(id):
+    '''
+    Returns the name of the object with the given id. (not to be used for player names)
+    '''
     global rulesystem
     name = rulesystem.findConstraint("name(int,str)")
     for x in name:
@@ -111,6 +141,9 @@ def name(id):
     return None
 
 def owner(id):
+    '''
+    Returns the owner (player) of the object with the given id.
+    '''
     global rulesystem
     things = rulesystem.findConstraint("owner(int,int)")
     for x in things:
@@ -119,18 +152,30 @@ def owner(id):
     return None
 
 def whoami():
+    '''
+    Returns your player id.
+    '''
     global rulesystem
     return rulesystem.findConstraint("whoami(int)")[0].args[0]
 
 def turnNumber():
+    '''
+    Returns the number of the current turn.
+    '''
     global rulesystem
     return rulesystem.findConstraint("turn(int)")[0].args[0]
 
 def players():
+    '''
+    Returns a list of all the players. (including guest)
+    '''
     global rulesystem
     return [player.args[0] for player in rulesystem.findConstraint("player(int,unicode)")[1:]]
 
 def playersWithoutGuest():
+    '''
+    Returns a list of all the real players. (without guest)
+    '''
     allPlayers = players()
     #remove guest (a player who is always present and has no objects)
     for player in allPlayers:
@@ -140,6 +185,9 @@ def playersWithoutGuest():
     return allPlayers
 
 def playerName(id):
+    '''
+    Returns the name of the player with the given id.
+    '''
     global rulesystem
     players = rulesystem.findConstraint("player(int,unicode)")
     for player in players:
@@ -148,11 +196,17 @@ def playerName(id):
     return None
 
 def enemies():
+    '''
+    Returns a list of all the enemy playes.
+    '''
     players = playersWithoutGuest()
     players.remove(whoami())
     return players
 
 def printAboutMe():
+    '''
+    Prints information about you. (name, enemies, fleets and planets owned)
+    '''
     print "I am", whoami(), ". My name is", playerName(whoami())
     for x in enemies():
         print x , "(" + playerName(x) + ") is my enemy"
@@ -162,11 +216,17 @@ def printAboutMe():
         print x, "(" + name(x) + ") is my planet"
 
 def printDesigns():
+    '''
+    Prints all of the available designs. (id, name)
+    '''
     global cache
     for design in cache.designs.values():
         print design.id, design.name     
 
 def printDesign(design):
+    '''
+    Prints information about the design (name or id). (name, list of components)
+    '''
     global cache
     if type(design) != int:
         design = designByName(design)
@@ -175,13 +235,22 @@ def printDesign(design):
         print cache.properties[id].name, ":", value
 
 def planets():
+    '''
+    Returns a list of all planets.
+    '''
     global rulesystem
     return [planet.args[0] for planet in rulesystem.findConstraint("planet(int)")]
 
 def myPlanets():
+    '''
+    Returns a list of all planest owned by you.
+    '''
     return planetsOwnedBy(whoami())
 
 def planetsOwnedBy(owners):
+    '''
+    Returns a list of all planets owned by any of the players in the owners list (can be an int).
+    '''
     if isinstance(owners, int):
         owners = [owners]
     allPlanets = planets()
@@ -192,6 +261,9 @@ def planetsOwnedBy(owners):
     return planetList
     
 def neutralPlanets():
+    '''
+    Returns a list of all neutral planets.
+    '''
     allPlanets = planets()
     planetList = []
     for planet in allPlanets:
@@ -200,6 +272,12 @@ def neutralPlanets():
     return planetList
 
 def addDesign(name, description, categories, componentList, replaceOnDuplicate=False):
+    '''
+    Adds a new design.
+    Categories can be a list or an int.
+    Component list must be in format [(partId,numberOfParts),(...),...]
+    Replace on duplicate must be set to true if you want to overwrite the existing design with the same name. 
+    '''
     current = designByName(name)
     if current != None and not replaceOnDuplicate:
         #design already exists and we don't want to replace it
@@ -246,10 +324,15 @@ def addDesign(name, description, categories, componentList, replaceOnDuplicate=F
      
     
 def nop(group=None, state=None, message=None, todownload=None, amount=None):
-    print group, state, message
+    '''
+    It does nothing and is used internaly.
+    '''
     return
 
 def categoryByName(name):
+    '''
+    Returns the id of the category with a given name.
+    '''
     global cache
     #loop through all categories
     for category in cache.categories.values():
@@ -259,6 +342,9 @@ def categoryByName(name):
     return None
 
 def componentByName(name):
+    '''
+    Returns the id of the component with the given name.
+    '''
     global cache
     #loop through all components
     for component in cache.components.values():
@@ -267,7 +353,34 @@ def componentByName(name):
             return component.id
     return None
 
+def resourceByName(name):
+    '''
+    Returns the id of the resource with the given name.
+    '''
+    global cache
+    for resource in cache.resources.values():
+        if resource.name.lower() == name.lower():
+            return resource.id
+    return None
+
+def resourceAvailable(id,resource):
+    '''
+    Returns the number of units of the resource that are available at the object with the given id.
+    Resource can be the name or the id of the resource.
+    '''
+    global cache
+    if type(resource) != int:
+        resource = resourceByName(resource)
+    
+    for tempResource in cache.objects[id].__Resources[0]:
+        if tempResource[0] == resource:
+            return tempResource[1]
+    return 0
+
 def designByName(name):
+    '''
+    Returns the id of the design with the given name.
+    '''
     global cache
     #loop through all designs
     for design in cache.designs.values():
