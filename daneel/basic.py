@@ -79,8 +79,8 @@ def startTurn(cache, store, delta=0):
             store.addConstraint("end(%i,%i,%i,%i)" % ((k,) + v.end))
 
 def init(cache, rulesystem, connection):
-    printPossibleOrders(cache)
-    printPossibleOrdersCode(cache)
+    #printPossibleOrders(cache)
+    #printPossibleOrdersCode(cache)
     return
    
 

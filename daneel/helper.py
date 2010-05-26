@@ -106,6 +106,13 @@ def stars():
     stars = rulesystem.findConstraint("star(int)")
     return [int(x.args[0]) for x in stars]
 
+def containedBy(id):
+    '''
+    Return the object id that contains (is parent of) the object with the given id
+    '''
+    global cache
+    return cache.objects[id].parent 
+
 def contains(id):
     '''
     Returns a list of all the object the object with the given object contains.
@@ -363,7 +370,7 @@ def resourceByName(name):
             return resource.id
     return None
 
-def resourceAvailable(id,resource):
+def resourceAvailable(id, resource):
     '''
     Returns the number of units of the resource that are available at the object with the given id.
     Resource can be the name or the id of the resource.

@@ -357,7 +357,7 @@ def addWeaponDesign(components):
 def buildShip(planet, ship):
     orderBuildFleet(planet, [(ship, 1)], helper.name(helper.whoami()) + "'s fleet")
     
-def buildWeapon(planet,weapon):
+def buildWeapon(planet, weapon):
     orderBuildWeapon(planet, [(weapon, 1)])
     
 def orderOfID(objectId):
@@ -381,7 +381,9 @@ def rushAI():
     ship += [[helper.componentByName("delta missile rack"), 1]]
     #add the design
     addShipDesign(ship)
-    ship = helper.designByName(helper.generateDesignName(ship))
+    shipName = helper.generateDesignName(ship)
+    #replace the list of components with the id
+    ship = helper.designByName(shipName)
     
     #construct a design for a missile that fits the ship
     weapon = []
@@ -389,7 +391,10 @@ def rushAI():
     weapon += [[helper.componentByName("uranium explosives"), 2]]
     #add the design
     addWeaponDesign(weapon)
-    weapon = helper.designByName(helper.generateDesignName(weapon))
+    weaponName = helper.generateDesignName(weapon)
+    #replace the list of components with the id
+    weapon = helper.designByName(weaponName)
+    
     
     #debugging only, skip turn to add designs
     if ship == -1 or weapon == -1:
@@ -401,20 +406,36 @@ def rushAI():
         #check if there is already something being build on this planet
         if currentOrder == None:
             #decide what to build depending on the ship:weapong ratio
-            optimalRatio = float(invasionWeapons)/float(invasionShips)
+            #+1 is added so we can't divide with 0
+            optimalRatio = float(invasionWeapons + 1) / float(invasionShips + 1)
             
             stuffOnPlanet = helper.contains(myPlanet)
+            numOfShips = len (stuffOnPlanet)
+            numOfWeaopns = helper.resourceAvailable(myPlanet, weaponName)
             
+            #+1 is added so we can't divide with 0
+            ratio = float(numOfWeaopns + 1) / float(numOfShips + 1)
             
-            buildWeapon(myPlanet, weapon)
-            #buildShip(myPlanet, ship)
+            #decide what to build
+            if (ratio < optimalRatio):
+                buildWeapon(myPlanet, weapon)
+            else:
+                buildShip(myPlanet, ship)
         
-    #move ships to neutral planets and colonise them
+    #move ships to neutral planets and colonise them (leave two ships on every planet for defence)
+    defenceShips = 2
     planetsToIgnore = []
+    allMyPlanets = helper.myPlanets()
     for myFleet in helper.myFleets():
+        parent = helper.containedBy(myFleet)
+        
+        #if the fleet is on one of our planets and the number of ships on that planet
+        #is less than the minimum don't send the ships away
+        if parent in allMyPlanets and len(helper.constraints(parent)) <= defenceShips:
+            continue
+
         nearestPlanet = helper.nearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
         planetPosition = helper.position(nearestPlanet)
-        
         planetsToIgnore += [nearestPlanet]
         
         if helper.position(myFleet) == planetPosition:
