@@ -344,10 +344,6 @@ def waitingAI():
     print "I am lazy."
     return
 
-def commandoAI():
-    print "I am Rambo."
-    return
-
 def addShipDesign(components):
     helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("ships"), components)
     
@@ -361,11 +357,17 @@ def buildWeapon(planet, weapon):
     orderBuildWeapon(planet, [(weapon, 1)])
     
 def orderOfID(objectId):
+    #TODO think about adding this to helper
     # get the queue for the object
     queueid = extra.objectutils.getOrderQueueList(cache, objectId)[0][1]
     queue = cache.orders[queueid]
     #return current order
     return queue.first.CurrentOrder
+
+def commandoAI():
+    print "I am Rambo."
+    #this code will be very similar to rushAI (only with stronger ships)
+    return
 
 def rushAI():
     print "I am Zerg."
@@ -418,12 +420,16 @@ def rushAI():
             
             #decide what to build
             if (ratio < optimalRatio):
+                #TODO build weapons depending on the type of ship that is on this planet
+                #(what size of missile/torpedo it uses)
                 buildWeapon(myPlanet, weapon)
             else:
                 buildShip(myPlanet, ship)
+                
+    #TODO attack the enemy if invasion numbers reached (leave 1 ship on every planet)
         
-    #move ships to neutral planets and colonise them (leave two ships on every planet for defence)
-    defenceShips = 2
+    #move ships to neutral planets and colonise them (leave four ships on every planet for defense)
+    defenceShips = 4
     planetsToIgnore = []
     allMyPlanets = helper.myPlanets()
     for myFleet in helper.myFleets():
@@ -434,6 +440,10 @@ def rushAI():
         if parent in allMyPlanets and len(helper.constraints(parent)) <= defenceShips:
             continue
 
+        #TODO move only ships that can colonise other planets
+        #TODO find out how to get this information
+        #helper.propertyValue(myFleet,"collonisation")
+        
         nearestPlanet = helper.nearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
         planetPosition = helper.position(nearestPlanet)
         planetsToIgnore += [nearestPlanet]
@@ -447,7 +457,6 @@ def rushAI():
             #move to planet
             orderMove(myFleet, planetPosition)
             
-    #TODO make weapons, attack the enemy, stuff like that
     return
     
 def randomAI():
@@ -460,6 +469,7 @@ def bunkerAI():
 
 def greedyAI():
     print "I am not wealthy enough"
+    #this code will be very similar to rushAI (only without attacking)
     return
     
 def multipleAI():

@@ -412,3 +412,17 @@ def generateDesignName(components):
                 break
     return name.strip()
     
+def propertyByName(name):
+    global cache
+    for property in cache.properties.values():
+        if property.name.lower() == name.lower():
+            return property.id
+    return None
+    
+def propertyValue(objectid, property):
+    global cache
+    if type(property) != int:
+        property = propertyByName(property)
+        
+    #this bit is a bit tricky because fleets and ships are not the same
+    return None
