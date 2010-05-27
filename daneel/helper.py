@@ -426,3 +426,8 @@ def propertyValue(objectid, property):
         
     #this bit is a bit tricky because fleets and ships are not the same
     return None
+
+def printProperties():
+    global cache
+    for property in cache.properties.values():
+        print property.id, property.name, "(" + property.description + ")"    

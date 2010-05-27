@@ -442,7 +442,12 @@ def rushAI():
 
         #TODO move only ships that can colonise other planets
         #TODO find out how to get this information
-        #helper.propertyValue(myFleet,"collonisation")
+        #TODO make heler function to get ship info out of fleet
+        #helper.printProperties()
+        
+        #helper.propertyValue(myFleet,"colonise")
+        
+        
         
         nearestPlanet = helper.nearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
         planetPosition = helper.position(nearestPlanet)
