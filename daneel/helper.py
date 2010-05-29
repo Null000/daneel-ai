@@ -36,7 +36,7 @@ def nearestFleetOwnedBy(targetPosition, owners, ignore=[]):
                 nearestFleet = fleet
     return nearestFleet
 
-def nearestEnemyPlanet(position,ignore=[]):
+def nearestEnemyPlanet(position, ignore=[]):
     '''
     Finds the nearest planet owned by one of the enemies. List of planets to ignore is optional.
     '''
@@ -234,7 +234,19 @@ def printDesigns():
     '''
     global cache
     for design in cache.designs.values():
-        print design.id, design.name     
+        print design.id, design.name
+        
+def printDesignsWithProperties():
+    '''
+    Prints all of the available designs. (id, name)
+    '''
+    global cache
+    for design in cache.designs.values():
+        print design.id, design.name
+        for (id, value) in design.properties:
+            print id, propertyName(id), ":", value
+        print
+                 
 
 def printDesign(design):
     '''
@@ -424,6 +436,10 @@ def propertyByName(name):
         if property.name.lower() == name.lower():
             return property.id
     return None
+
+def propertyName(property):
+    global cache
+    return cache.properties[property].name
    
 def designProperties(design):
     global cache
@@ -436,7 +452,7 @@ def designPropertyValue(design, property):
     if type(property) != int:
         property = propertyByName(property)
     properties = designProperties(design)
-    for (id,value) in properties:
+    for (id, value) in properties:
         if id == property:
             return value
     return None

@@ -347,7 +347,7 @@ def findOrderDesc(name):
             return d
            
 def canColonise(fleet):
-    listOfShips = helper.getShips(myFleet)
+    listOfShips = helper.getShips(fleet)
     for (type, design, number) in listOfShips:
         helper.printDesign(design)
         if helper.designPropertyValue(design, "colonise") == "Yes":
@@ -365,7 +365,7 @@ def addWeaponDesign(components):
     helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("weapons"), components)
 
 def buildShip(planet, ship):
-    orderBuildFleet(planet, [(ship, 1)], helper.name(helper.whoami()) + "'s fleet")
+    orderBuildFleet(planet, [(ship, 1)], helper.playerName(helper.whoami()) + "'s fleet")
     
 def buildWeapon(planet, weapon):
     orderBuildWeapon(planet, [(weapon, 1)])
@@ -422,6 +422,8 @@ def rushAI():
         currentOrder = orderOfID(myPlanet) 
         #check if there is already something being build on this planet
         if currentOrder == None:
+            #TODO load ships with weapons and build more ships if all ships are fully loaded
+            #TODO find out how to check if a ship is loaded with weapons and how much can it carry 
             #decide what to build depending on the ship:weapong ratio
             #+1 is added so we can't divide with 0
             optimalRatio = float(invasionWeapons + 1) / float(invasionShips + 1)
@@ -453,6 +455,7 @@ def rushAI():
             nearestPlanet = helper.nearestEnemyPlanet()
             #move to that planet
             orderMove(fleet, helper.position(nearestPlanet))
+            #TODO find out if you have to colonise a planet to take it over
         
     #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
     defenceShips = 3
@@ -463,8 +466,8 @@ def rushAI():
         
         #if the fleet is on one of our planets and the number of ships on that planet
         #is less than the minimum don't send the ships away
-        #if parent in allMyPlanets and len(helper.constraints(parent)) <= defenceShips:
-        #    continue
+        if parent in allMyPlanets and len(helper.constraints(parent)) <= defenceShips:
+            continue
 
         #move only ships that can colonise other planets
         if canColonise(myFleet):                
@@ -500,7 +503,8 @@ def multipleAI():
     return
 
 def AICode():
-    helper.printDesigns()
+    helper.printAboutMe()
+    helper.printDesignsWithProperties()
     rushAI()
     return
 
