@@ -57,7 +57,11 @@ def startTurn(cache, store, delta=0):
 #            pass
 #        else:
         store.addConstraint("subtype(%i,%i)" % (k, v.subtype))
-        store.addConstraint("name(%i,%s)" % (k, v.name.replace(",", "'")))
+        #Null this prevents errors when there is a semicolon in the name and when the name is empty
+        if v.name == "":
+            store.addConstraint("name(%i,%s)" % (k, "no name"))
+        else:
+            store.addConstraint("name(%i,%s)" % (k, v.name.replace(",", "'")))
         store.addConstraint("size(%i,%i)" % (k, v.size))
         store.addConstraint("pos(%i,%i,%i,%i)" % ((k, v.Positional.Position.vector.x, v.Positional.Position.vector.y, v.Positional.Position.vector.z)))
         store.addConstraint("vel(%i,%i,%i,%i)" % ((k, v.Positional.Velocity.vector.x, v.Positional.Velocity.vector.y, v.Positional.Velocity.vector.z)))
@@ -193,6 +197,12 @@ rulesystem = None"""
     print "    global rulesystem"
     print "    rulesystem.addConstraint(\"order_none(\" + str(id) + \")\")"
     print "    return"
+    print
+    print "def executeOrdersNone(cache, connection):"
+    print "    global rulesystem"
+    print "    orders = rulesystem.findConstraint(\"order_none(int)\")"
+    print "    for orderConstraint in orders:"
+    print "        executeOrder(cache, connection, objectId, None)"
     print
     
     #order function execution generation

@@ -101,6 +101,12 @@ def orderNone(id):
     rulesystem.addConstraint("order_none(" + str(id) + ")")
     return
 
+def executeOrdersNone(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_none(int)")
+    for orderConstraint in orders:
+        executeOrder(cache, connection, objectId, None)
+
 def executeOrdersNoOperation(cache, connection):
     global rulesystem
     orders = rulesystem.findConstraint("order_no_operation(int,int)")

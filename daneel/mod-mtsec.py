@@ -164,6 +164,12 @@ def orderNone(id):
     global rulesystem
     rulesystem.addConstraint("order_none(" + str(id) + ")")
     return
+   
+def executeOrdersNone(cache, connection):
+    global rulesystem
+    orders = rulesystem.findConstraint("order_none(int)")
+    for orderConstraint in orders:
+        executeOrder(cache, connection, objectId, None)
 
 def executeOrdersNoOperation(cache, connection):
     global rulesystem
@@ -412,18 +418,20 @@ def rushAI():
             optimalRatio = float(invasionWeapons + 1) / float(invasionShips + 1)
             
             stuffOnPlanet = helper.contains(myPlanet)
-            numOfShips = len (stuffOnPlanet)
+            numOfShips = len(stuffOnPlanet)
             numOfWeaopns = helper.resourceAvailable(myPlanet, weaponName)
             
             #+1 is added so we can't divide with 0
-            ratio = float(numOfWeaopns + 1) / float(numOfShips + 1)
+            ratio = float(numOfShips + 1) / float(numOfWeaopns + 1)
             
             #decide what to build
-            if (ratio < optimalRatio):
+            if (ratio > optimalRatio):
                 #TODO build weapons depending on the type of ship that is on this planet
                 #(what size of missile/torpedo it uses)
+                print "building weapons on", helper.name(myPlanet)
                 buildWeapon(myPlanet, weapon)
             else:
+            	print "building ships on", helper.name(myPlanet)
                 buildShip(myPlanet, ship)
                 
     #TODO attack the enemy if invasion numbers reached (leave 1 ship on every planet)
@@ -437,15 +445,15 @@ def rushAI():
         
         #if the fleet is on one of our planets and the number of ships on that planet
         #is less than the minimum don't send the ships away
-        if parent in allMyPlanets and len(helper.constraints(parent)) <= defenceShips:
-            continue
+        #if parent in allMyPlanets and len(helper.constraints(parent)) <= defenceShips:
+        #    continue
 
         #TODO move only ships that can colonise other planets
         #TODO find out how to get this information
         #TODO make heler function to get ship info out of fleet
-        #helper.printProperties()
+        helper.printAboutMe()
+        helper.propertyValue(myFleet, "colonise")
         
-        #helper.propertyValue(myFleet,"colonise")
         
         
         
