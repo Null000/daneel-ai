@@ -36,6 +36,12 @@ def nearestFleetOwnedBy(targetPosition, owners, ignore=[]):
                 nearestFleet = fleet
     return nearestFleet
 
+def nearestEnemyPlanet(position,ignore=[]):
+    '''
+    Finds the nearest planet owned by one of the enemies. List of planets to ignore is optional.
+    '''
+    return nearestPlanetOwnedBy(position, enemies(), ignore)
+
 def nearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
     '''
     Finds the nearest planet owned by one of the players in the owners list (can be an int). List of planets to ignore is optional.

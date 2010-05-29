@@ -443,10 +443,19 @@ def rushAI():
                 print "building ships on", helper.name(myPlanet)
                 buildShip(myPlanet, ship)
                 
-    #TODO attack the enemy if invasion numbers reached (leave 1 ship on every planet)
+    #attack the enemy if invasion numbers reached
+    #TODO check weapon numbers (and types)
+    if invasionShips <= len(helper.myFleets()):
+        #all fleets attack nearest enemy planet
+        #TODO leave 1 ship on each planet for defense
+        for fleet in helper.myFleets():
+            #find a planet to attack
+            nearestPlanet = helper.nearestEnemyPlanet()
+            #move to that planet
+            orderMove(fleet, helper.position(nearestPlanet))
         
-    #move ships to neutral planets and colonise them (leave four ships on every planet for defense)
-    defenceShips = 4
+    #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
+    defenceShips = 3
     planetsToIgnore = []
     allMyPlanets = helper.myPlanets()
     for myFleet in helper.myFleets():
