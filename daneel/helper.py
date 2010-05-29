@@ -418,14 +418,26 @@ def propertyByName(name):
         if property.name.lower() == name.lower():
             return property.id
     return None
+   
+def designProperties(design):
+    global cache
+    if type(design) != int:
+        design = designByName(design)
+    return cache.designs[design].properties    
     
-def propertyValue(objectid, property):
+def designPropertyValue(design, property):
     global cache
     if type(property) != int:
         property = propertyByName(property)
-        
-    #this bit is a bit tricky because fleets and ships are not the same
+    properties = designProperties(design)
+    for (id,value) in properties:
+        if id == property:
+            return value
     return None
+   
+def getShips(fleetid):
+    global cache
+    return cache.objects[fleetid].Ships[0][0]
 
 def printProperties():
     global cache

@@ -345,6 +345,14 @@ def findOrderDesc(name):
     for d in OrderDescs().values():
         if d._name.lower() == name:
             return d
+           
+def canColonise(fleet):
+    listOfShips = helper.getShips(myFleet)
+    for (type, design, number) in listOfShips:
+        helper.printDesign(design)
+        if helper.designPropertyValue(design, "colonise") == "Yes":
+            return True
+    return False
 
 def waitingAI():
     print "I am lazy."
@@ -384,7 +392,8 @@ def rushAI():
     
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship += [[helper.componentByName("scout hull"), 1]]
+    ship += [[helper.componentByName("frigate"), 1]]
+    ship += [[helper.componentByName("colonisation module"), 1]]
     ship += [[helper.componentByName("delta missile tube"), 1]]
     ship += [[helper.componentByName("delta missile rack"), 1]]
     #add the design
@@ -431,7 +440,7 @@ def rushAI():
                 print "building weapons on", helper.name(myPlanet)
                 buildWeapon(myPlanet, weapon)
             else:
-            	print "building ships on", helper.name(myPlanet)
+                print "building ships on", helper.name(myPlanet)
                 buildShip(myPlanet, ship)
                 
     #TODO attack the enemy if invasion numbers reached (leave 1 ship on every planet)
@@ -448,27 +457,19 @@ def rushAI():
         #if parent in allMyPlanets and len(helper.constraints(parent)) <= defenceShips:
         #    continue
 
-        #TODO move only ships that can colonise other planets
-        #TODO find out how to get this information
-        #TODO make heler function to get ship info out of fleet
-        helper.printAboutMe()
-        helper.propertyValue(myFleet, "colonise")
-        
-        
-        
-        
-        nearestPlanet = helper.nearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
-        planetPosition = helper.position(nearestPlanet)
-        planetsToIgnore += [nearestPlanet]
-        
-        if helper.position(myFleet) == planetPosition:
-            #colonise if there
-            #Null: there is something wrong here
-            #orderColonise(myFleet)
-            pass
-        else:
-            #move to planet
-            orderMove(myFleet, planetPosition)
+        #move only ships that can colonise other planets
+        if canColonise(myFleet):                
+            nearestPlanet = helper.nearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
+            planetPosition = helper.position(nearestPlanet)
+            planetsToIgnore += [nearestPlanet]
+            
+            if helper.position(myFleet) == planetPosition:
+                #colonise if there
+                orderColonise(myFleet)
+                pass
+            else:
+                #move to planet
+                orderMove(myFleet, planetPosition)
             
     return
     
