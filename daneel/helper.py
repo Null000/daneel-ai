@@ -408,7 +408,7 @@ def resourceAvailable(id, resource):
     if type(resource) != int:
         resource = resourceByName(resource)
     
-    for tempResource in cache.objects[id].__Resources[0]:
+    for tempResource in cache.objects[id].Resources[0][0]:
         if tempResource[0] == resource:
             return tempResource[1]
     return 0

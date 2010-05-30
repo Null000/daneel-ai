@@ -274,7 +274,7 @@ def executeOrdersSendPoints(cache, connection):
         objectId = int(args[0])
         planet = [[], args[1]]
         ordertype = findOrderDesc("Send Points")
-        args = [0, objectId, -1, ordertype.subtype, 0, [], Planet]
+        args = [0, objectId, -1, ordertype.subtype, 0, [], planet]
         order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
@@ -286,7 +286,7 @@ def executeOrdersLoadArmament(cache, connection):
         objectId = int(args[0])
         weapons = [[], args[1]]
         ordertype = findOrderDesc("Load Armament")
-        args = [0, objectId, -1, ordertype.subtype, 0, [], Weapons]
+        args = [0, objectId, -1, ordertype.subtype, 0, [], weapons]
         order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
@@ -298,7 +298,7 @@ def executeOrdersUnloadArmament(cache, connection):
         objectId = int(args[0])
         weapons = [[], args[1]]
         ordertype = findOrderDesc("Unload Armament")
-        args = [0, objectId, -1, ordertype.subtype, 0, [], Weapons]
+        args = [0, objectId, -1, ordertype.subtype, 0, [], weapons]
         order = ordertype(*args)
         executeOrder(cache, connection, objectId, order)
 
@@ -388,12 +388,12 @@ def rushAI():
     
     #number of ships and weapons needed to start an invasion
     invasionShips = 50
-    invasionWeaponsPreShip = 3
+    invasionWeaponsPerShip = 3
     
     #construct a design for a simple attack/colonisation ship
     ship = []
     ship += [[helper.componentByName("frigate"), 1]]
-    ship += [[helper.componentByName("colonisation module"), 1]]
+    #ship += [[helper.componentByName("colonisation module"), 1]]
     ship += [[helper.componentByName("delta missile tube"), 1]]
     ship += [[helper.componentByName("delta missile rack"), 1]]
     #add the design
@@ -426,12 +426,12 @@ def rushAI():
             orderGiven = False
             weaponsLoaded = 0
             for thingOnPlanet in helper.contains(myPlanet):
-                if isMyFleet(thingOnPlanet):
+                if helper.isMyFleet(thingOnPlanet):
                     #check if it's rushAI design
                     listOfShips = helper.shipsOfFleet(thingOnPlanet)
                     #TODO take care of all ships not just rushAI design
                     if listOfShips == [(9, ship, 1)]:
-                        weaponsNeeded = invasionWeaponsPreShip - helper.resourceAvailable(thingOnPlanet, helper.designName(weapon))
+                        weaponsNeeded = invasionWeaponsPerShip - helper.resourceAvailable(thingOnPlanet, helper.designName(weapon))
                         if weaponsNeeded > 0:
                             #check if there is weapons available on the planet to load
                             weaponsOnPlanet = helper.resourceAvailable(myPlanet, helper.designName(weapon)) - weaponsLoaded 
@@ -469,7 +469,8 @@ def rushAI():
         
         #if the fleet is on one of our planets and the number of ships on that planet
         #is less than the minimum don't send the ships away
-        if parent in allMyPlanets and len(helper.constraints(parent)) <= defenceShips:
+        #TODO count only ships
+        if parent in allMyPlanets and len(helper.contains(parent)) <= defenceShips:
             continue
 
         #move only ships that can colonise other planets
