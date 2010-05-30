@@ -92,6 +92,17 @@ def myFleets():
             list += [int(x.args[0])]
     return list
 
+def fleets():
+    '''
+    Returns a list of all fleets.
+    '''
+    global rulesystem
+    fleets = rulesystem.findConstraint("fleet(int)")
+    list = []
+    for x in fleets:
+        list += [int(x.args[0])]
+    return list
+
 def fleetsOwnedBy(owners):
     '''
     Returns a list of all fleets owned by any player in the owners list (can be an int).
@@ -414,6 +425,15 @@ def designByName(name):
             return design.id
     return None
 
+def designName(id):
+    global cache
+    #loop through all designs
+    for design in cache.designs.values():
+        if design.id == id and design.owner == whoami():
+            #return on match
+            return design.name
+    return None
+
 def generateDesignName(components):
     '''
     Generate an unique name based on components.
@@ -456,8 +476,14 @@ def designPropertyValue(design, property):
         if id == property:
             return value
     return None
+
+def isFleet(id):
+    return id in fleets()
+
+def isMyFleet(id):
+    return id in myFleets()
    
-def getShips(fleetid):
+def shipsOfFleet(fleetid):
     global cache
     return cache.objects[fleetid].Ships[0][0]
 

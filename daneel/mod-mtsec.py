@@ -347,7 +347,7 @@ def findOrderDesc(name):
             return d
            
 def canColonise(fleet):
-    listOfShips = helper.getShips(fleet)
+    listOfShips = helper.shipsOfFleet(fleet)
     for (type, design, number) in listOfShips:
         helper.printDesign(design)
         if helper.designPropertyValue(design, "colonise") == "Yes":
@@ -388,7 +388,7 @@ def rushAI():
     
     #number of ships and weapons needed to start an invasion
     invasionShips = 50
-    invasionWeapons = 100
+    invasionWeaponsPreShip = 3
     
     #construct a design for a simple attack/colonisation ship
     ship = []
@@ -422,27 +422,30 @@ def rushAI():
         currentOrder = orderOfID(myPlanet) 
         #check if there is already something being build on this planet
         if currentOrder == None:
-            #TODO load ships with weapons and build more ships if all ships are fully loaded
-            #TODO find out how to check if a ship is loaded with weapons and how much can it carry 
-            #decide what to build depending on the ship:weapong ratio
-            #+1 is added so we can't divide with 0
-            optimalRatio = float(invasionWeapons + 1) / float(invasionShips + 1)
-            
-            stuffOnPlanet = helper.contains(myPlanet)
-            numOfShips = len(stuffOnPlanet)
-            numOfWeaopns = helper.resourceAvailable(myPlanet, weaponName)
-            
-            #+1 is added so we can't divide with 0
-            ratio = float(numOfShips + 1) / float(numOfWeaopns + 1)
-            
-            #decide what to build
-            if (ratio > optimalRatio):
-                #TODO build weapons depending on the type of ship that is on this planet
-                #(what size of missile/torpedo it uses)
-                print "building weapons on", helper.name(myPlanet)
-                buildWeapon(myPlanet, weapon)
-            else:
-                print "building ships on", helper.name(myPlanet)
+            #load ships with weapons and build more weapons if nesessary
+            orderGiven = False
+            weaponsLoaded = 0
+            for thingOnPlanet in helper.contains(myPlanet):
+                if isMyFleet(thingOnPlanet):
+                    #check if it's rushAI design
+                    listOfShips = helper.shipsOfFleet(thingOnPlanet)
+                    #TODO take care of all ships not just rushAI design
+                    if listOfShips == [(9, ship, 1)]:
+                        weaponsNeeded = invasionWeaponsPreShip - helper.resourceAvailable(thingOnPlanet, helper.designName(weapon))
+                        if weaponsNeeded > 0:
+                            #check if there is weapons available on the planet to load
+                            weaponsOnPlanet = helper.resourceAvailable(myPlanet, helper.designName(weapon)) - weaponsLoaded 
+                            if weaponsOnPlanet > 0:
+                                #load as much as possible
+                                orderLoadArmament(thingOnPlanet, [(weapon, min(weaponsNeeded, weaponsOnPlanet))])
+                                weaponsLoaded += min(weaponsNeeded, weaponsOnPlanet)
+                            else:
+                                #build more weapons
+                                buildWeapon(myPlanet, weapon)
+                                orderGiven = True
+                                break
+            #build a new ship if there is no orders to build weapons
+            if not orderGiven:
                 buildShip(myPlanet, ship)
                 
     #attack the enemy if invasion numbers reached
