@@ -397,8 +397,8 @@ def rushAI():
     print "I am Zerg."
     
     #number of ships and weapons needed to start an invasion
-    invasionShips = 20
-    invasionWeaponsPerShip = 3
+    invasionShips = 10
+    invasionWeaponsPerShip = 2
     
     #construct a design for a simple attack/colonisation ship
     ship = []
@@ -462,18 +462,30 @@ def rushAI():
             if not orderGiven:
                 buildShip(myPlanet, ship)
                 
-    #check if it's time for invasion
-    freeFleets = helper.myFleets()
+    #check how many fleets are available for the invasion
+    potentialInvasionFleets = helper.myFleets()
+    #remove all of the fleets that are already marked for the invasion
     for fleet in invasionFleets:
-        freeFleets.remove(fleet)
+        potentialInvasionFleets.remove(fleet)
+    #remove all of the fleets that are not fully loaded with weapons
+    for fleet in potentialInvasionFleets:
+        #TODO make this work for all designs
+        if helper.shipsOfFleet(fleet) != [(9, ship, 1)]:
+            potentialInvasionFleets.remove(fleet)
+            continue
+        #remove ship if its not loaded with weapons
+        if helper.resourceAvailable(fleet, helper.designName(weapon)) < invasionWeaponsPerShip:
+            potentialInvasionFleets.remove(fleet)
+            continue
+        
         
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
     defenceShips = 1
     #mark fleets for invasion
-    print "there are", len(freeFleets), "fleets"
-    if len(freeFleets) >= invasionShips:
-        for fleet in freeFleets:
+    print "there are", len(potentialInvasionFleets), "fleets ready for invasion"
+    if len(potentialInvasionFleets) >= invasionShips:
+        for fleet in potentialInvasionFleets:
             parent = helper.containedBy(fleet)        
             #if the fleet is on one of our planets and the number of fleets on that planet
             #is less than the minimum don't send the ships away
@@ -541,10 +553,12 @@ def rushAI():
             
             if helper.position(fleet) == planetPosition:
                 #colonise if there
+                print helper.name(fleet), "is colonising", helper.name(nearestPlanet)
                 orderColonise(fleet)
                 pass
             else:
                 #move to planet
+                print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
                 orderMove(fleet, planetPosition)
     return
     
