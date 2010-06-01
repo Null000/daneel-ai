@@ -369,7 +369,7 @@ fleetSerialNumber = 0
 def buildShip(planet, ship):
     global fleetSerialNumber
     print "building ships on", helper.name(planet)
-    orderBuildFleet(planet, [(ship, 1)], helper.playerName(helper.whoami()) + "'s fleet #" + fleetSerialNumber)
+    orderBuildFleet(planet, [(ship, 1)], helper.playerName(helper.whoami()) + "'s fleet #" + str(fleetSerialNumber))
     fleetSerialNumber += 1
     
 def buildWeapon(planet, weapon):
@@ -389,13 +389,15 @@ def commandoAI():
     #this code will be very similar to rushAI (only with stronger ships)
     return
 
+#TODO think about what if another object gets the same id after the fleet was destroyed
 invasionFleets = []
 
 def rushAI():
+    global invasionFleets
     print "I am Zerg."
     
     #number of ships and weapons needed to start an invasion
-    invasionShips = 50
+    invasionShips = 20
     invasionWeaponsPerShip = 3
     
     #construct a design for a simple attack/colonisation ship
@@ -425,13 +427,13 @@ def rushAI():
     if ship == -1 or weapon == -1:
         return
     
-    #build ships on all planets (and load them with wapons)
+    #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
         currentOrder = orderOfID(myPlanet) 
         print "checking what to do with", helper.name(myPlanet)
         #check if there is already something being build on this planet
         if currentOrder == None:
-            #load ships with weapons and build more weapons if nesessary
+            #load ships with weapons and build more weapons if necessary
             orderGiven = False
             weaponsLoaded = 0
             for thingOnPlanet in helper.contains(myPlanet):
@@ -449,7 +451,7 @@ def rushAI():
                             if weaponsOnPlanet > 0:
                                 #load as much as possible
                                 print "loading weapons onto", helper.name(thingOnPlanet)
-                                orderLoadArmament(thingOnPlanet, [(weapon, min(weaponsNeeded, weaponsOnPlanet))])
+                                orderLoadArmament(thingOnPlanet, [(helper.resourceByName(helper.designName(weapon)), min(weaponsNeeded, weaponsOnPlanet))])
                                 weaponsLoaded += min(weaponsNeeded, weaponsOnPlanet)
                             else:
                                 #build more weapons
@@ -465,14 +467,14 @@ def rushAI():
     for fleet in invasionFleets:
         freeFleets.remove(fleet)
         
-        
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
     defenceShips = 1
     #mark fleets for invasion
+    print "there are", len(freeFleets), "fleets"
     if len(freeFleets) >= invasionShips:
         for fleet in freeFleets:
-            parent = helper.containedBy(myFleet)        
+            parent = helper.containedBy(fleet)        
             #if the fleet is on one of our planets and the number of fleets on that planet
             #is less than the minimum don't send the ships away
             if parent in allMyPlanets:
@@ -487,13 +489,21 @@ def rushAI():
             #mark it for invasion
             invasionFleets += [fleet]
         
+    allMyFleets = helper.myFleets()
     #attack the enemy with ships marked for invasion
     for fleet in invasionFleets:
+        if not fleet in allMyFleets:
+            #this is not my fleet anymore... remove it
+            invasionFleets.remove(fleet)
         print helper.name(fleet), "is invading (beware!)"
         #find a planet to attack
-        nearestPlanet = helper.nearestEnemyPlanet()
+        nearestPlanet = helper.nearestEnemyPlanet(helper.position(fleet))
         #move to that planet
-        orderMove(fleet, helper.position(nearestPlanet))
+        if nearestPlanet != None:
+            print helper.name(fleet), "is attacking", helper.name(nearestPlanet) 
+            orderMove(fleet, helper.position(nearestPlanet))
+        else:
+            print helper.name(fleet), "has nothing to attack"
         #TODO find out if you have to colonise a planet to take it over
     
     #make a list of fleets not marked for invasion
@@ -507,7 +517,7 @@ def rushAI():
     planetsToIgnore = []
     guardOnPlanets = {}
     for fleet in freeFleets:  
-        parent = helper.containedBy(myFleet)        
+        parent = helper.containedBy(fleet)        
         #if the fleet is on one of our planets and the number of fleets on that planet
         #is less than the minimum don't send the ships away
         if parent in allMyPlanets:
@@ -524,18 +534,18 @@ def rushAI():
                 continue
 
         #move only ships that can colonise other planets
-        if canColonise(myFleet):                
-            nearestPlanet = helper.nearestNeutralPlanet(helper.position(myFleet), planetsToIgnore)
+        if canColonise(fleet):                
+            nearestPlanet = helper.nearestNeutralPlanet(helper.position(fleet), planetsToIgnore)
             planetPosition = helper.position(nearestPlanet)
             planetsToIgnore += [nearestPlanet]
             
-            if helper.position(myFleet) == planetPosition:
+            if helper.position(fleet) == planetPosition:
                 #colonise if there
-                orderColonise(myFleet)
+                orderColonise(fleet)
                 pass
             else:
                 #move to planet
-                orderMove(myFleet, planetPosition)
+                orderMove(fleet, planetPosition)
     return
     
 def randomAI():
@@ -557,7 +567,7 @@ def multipleAI():
 
 def AICode():
     print "It's turn", helper.turnNumber()
-    helper.printAboutMe()
+    #helper.printAboutMe()
     #helper.printDesignsWithProperties()
     rushAI()
     return

@@ -40,7 +40,7 @@ class RuleSystem:
             logging.getLogger("rulesystem").setLevel(logging.INFO)
 
     def addConstraint(self,constraint):
-        logging.getLogger("rulesystem.addconstraint").info(str(constraint))
+        #logging.getLogger("rulesystem.addconstraint").info(str(constraint))
         parsedcon = self.parser.parseBoundConstraint(constraint)
         self.store.add(parsedcon)
         self.activestore.add(parsedcon)
@@ -112,7 +112,7 @@ class RuleParser:
                 self.tryRuleMatch(rule,RuleParser.simparule) or\
                 self.tryRuleMatch(rule,RuleParser.proprule)
         if r is None:
-            logging.getLogger("rulesystem.parser").warning("Could not parse rule '%s'"%rule)
+            #logging.getLogger("rulesystem.parser").warning("Could not parse rule '%s'"%rule)
             return NullRule(self.rulesystem)
         return r
 
@@ -283,9 +283,9 @@ class Rule:
         constraints.extend(self.guard)
 
         try:
-            logging.getLogger("rulesystem.matchAtPosition").debug("vars " + str(variables))
-            logging.getLogger("rulesystem.matchAtPosition").debug("domains " + str(domains))
-            logging.getLogger("rulesystem.matchAtPosition").debug("cons " + str(constraints))
+            #logging.getLogger("rulesystem.matchAtPosition").debug("vars " + str(variables))
+            #logging.getLogger("rulesystem.matchAtPosition").debug("domains " + str(domains))
+            #logging.getLogger("rulesystem.matchAtPosition").debug("cons " + str(constraints))
             r = Repository(variables, domains, constraints)
             solutions = Solver().solve(r, self.rulesystem.verbosity > 2 and self.rulesystem.verbosity - 2)
         except ConsistencyFailure:
@@ -308,7 +308,7 @@ class Rule:
                 for v in self.extravars:
                     context[v] = solution[v]
                 if eval(self.userguard,context):
-                    logging.getLogger("rulesystem.matchAtPosition").info("Fired:%s" % self.name)
+                    #logging.getLogger("rulesystem.matchAtPosition").info("Fired:%s" % self.name)
                     if self.removedhead == []:
                         removedConstraints = []
                     else:
@@ -319,7 +319,7 @@ class Rule:
                     try:
                         exec(self.body,context)
                     except NameError:
-                        logging.getLogger("rulesystem.matchAtPosition").error("Variable, function or constraint not found, please check rule '%s'"%self.name)
+                        #logging.getLogger("rulesystem.matchAtPosition").error("Variable, function or constraint not found, please check rule '%s'"%self.name)
                         raise
 
     def canAcceptAt(self,cons):
