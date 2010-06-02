@@ -265,7 +265,7 @@ def checkIfOrdersSame(order1, order2):
     #check the type
     if type(order1) != type(order2):
         return False
-    #check the name TODO: might be included in type
+    #check the name
     if order1._name != order2._name:
         return False
     #check the order arguments

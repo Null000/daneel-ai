@@ -402,7 +402,7 @@ def rushAI():
     
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship += [[helper.componentByName("frigate"), 1]]
+    ship += [[helper.componentByName("scout hull"), 1]]
     #ship += [[helper.componentByName("colonisation module"), 1]]
     ship += [[helper.componentByName("delta missile tube"), 1]]
     ship += [[helper.componentByName("delta missile rack"), 1]]
@@ -421,11 +421,6 @@ def rushAI():
     weaponName = helper.generateDesignName(weapon)
     #replace the list of components with the id
     weapon = helper.designByName(weaponName)
-    
-    #TODO make this go away
-    #debugging only, skip turn to add designs
-    if ship == -1 or weapon == -1:
-        return
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
@@ -513,10 +508,13 @@ def rushAI():
         #move to that planet
         if nearestPlanet != None:
             print helper.name(fleet), "is attacking", helper.name(nearestPlanet) 
-            orderMove(fleet, helper.position(nearestPlanet))
+            planetPosition = helper.position(nearestPlanet)
+            if helper.position(fleet) != planetPosition:
+                #TODO: I think you can't attack a planet if you're moving there (even if you are there)
+                orderMove(fleet, planetPosition)
+                #TODO find out if you have to colonise a planet to take it over (I think so)
         else:
             print helper.name(fleet), "has nothing to attack"
-        #TODO find out if you have to colonise a planet to take it over
     
     #make a list of fleets not marked for invasion
     freeFleets = helper.myFleets()
@@ -583,6 +581,7 @@ def AICode():
     print "It's turn", helper.turnNumber()
     #helper.printAboutMe()
     #helper.printDesignsWithProperties()
+    #helper.printResources()
     rushAI()
     return
 

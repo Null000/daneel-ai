@@ -336,27 +336,25 @@ def addDesign(name, description, categories, componentList, replaceOnDuplicate=F
     
     #update the cache by force or the new design won't be available
     #TODO there must be a more elegant way to do this (this way is a bit scary)
-    
-    #TODO Null: commented out for debugging purposes
-    
-#    if current == None:
-#        #find the new design id
-#        oldDesignIDs = [tempDesign.id for tempDesign in cache.designs.values()]
-#        oldDesignIDs.remove(-1)
-#        allDesignIDs = [x[0] for x in connection.get_design_ids(iter=True)]
-#        for x in oldDesignIDs:
-#            allDesignIDs.remove(x)
-#        #there should be only one left
-#        assert len(allDesignIDs) == 1
-#        
-#        newDesign = connection.get_designs(allDesignIDs[0])[0]
-#            
-#        #find the design to be replaced
-#        for designNumber in cache.designs:
-#            if cache.designs[designNumber].id == -1:
-#                #replace the design
-#                cache.designs[designNumber] = newDesign
-#                break
+        
+    if current == None:
+        #find the new design id
+        oldDesignIDs = [tempDesign.id for tempDesign in cache.designs.values()]
+        oldDesignIDs.remove(-1)
+        allDesignIDs = [x[0] for x in connection.get_design_ids(iter=True)]
+        for x in oldDesignIDs:
+            allDesignIDs.remove(x)
+        #there should be only one left
+        assert len(allDesignIDs) == 1
+        
+        newDesign = connection.get_designs(allDesignIDs[0])[0]
+            
+        #find the design to be replaced
+        for designNumber in cache.designs:
+            if cache.designs[designNumber].id == -1:
+                #replace the design
+                cache.designs[designNumber] = newDesign
+                break
      
     
 def nop(group=None, state=None, message=None, todownload=None, amount=None):
@@ -413,6 +411,29 @@ def resourceAvailable(id, resource):
             return tempResource[1]
     return 0
 
+def printResources():
+    '''
+    Prints all resources (id, name).
+    '''
+    global cache
+    for resource in cache.resources.values():
+        print resource.id, resource.name
+
+def printResourcesOfId(id):
+    '''
+    Prints all resources of the object with the given id (stored, minamble, inacc., name, id).
+    '''
+    global cache
+    print "Resources of", name(id), "(id:", id, ")"
+    for tempResource in cache.objects[id].Resources[0][0]:
+        (resourceID, stored, minable, inacc) = tempResource
+        resourceName = ""    
+        for resource in cache.resources.values():
+            if resource.id == resourceID:
+                resourceName = resource.name
+                break;
+        print stored, minable, inacc, resourceName, "(id:", resourceID, ")"
+
 def designByName(name):
     '''
     Returns the id of the design with the given name.
@@ -426,6 +447,9 @@ def designByName(name):
     return None
 
 def designName(id):
+    '''
+    Returns the name of the design with the given id.
+    '''
     global cache
     #loop through all designs
     for design in cache.designs.values():
@@ -451,6 +475,9 @@ def generateDesignName(components):
     return name.strip()
     
 def propertyByName(name):
+    '''
+    Returns the id of the property with the given name. 
+    '''
     global cache
     for property in cache.properties.values():
         if property.name.lower() == name.lower():
@@ -458,16 +485,25 @@ def propertyByName(name):
     return None
 
 def propertyName(property):
+    '''
+    Returns the name of the property with the given id.
+    '''
     global cache
     return cache.properties[property].name
    
 def designProperties(design):
+    '''
+    Returns a list of properties of the given design (name or id). [(propertyID,propertyValue),(...,...),...]
+    '''
     global cache
     if type(design) != int:
         design = designByName(design)
     return cache.designs[design].properties    
     
 def designPropertyValue(design, property):
+    '''
+    Returns the value of the property (id or name) in the design (name or id).
+    '''
     global cache
     if type(property) != int:
         property = propertyByName(property)
@@ -478,16 +514,28 @@ def designPropertyValue(design, property):
     return None
 
 def isFleet(id):
+    '''
+    Returns True if the object with the given id is a fleet and False otherwise.
+    '''
     return id in fleets()
 
 def isMyFleet(id):
+    '''
+    Returns True if the object with the given id is a fleet owned by you and False otherwise.
+    '''
     return id in myFleets()
    
 def shipsOfFleet(fleetid):
+    '''
+    Returns a list of ships of the fleet with the given id.
+    '''
     global cache
     return cache.objects[fleetid].Ships[0][0]
 
 def printProperties():
+    '''
+    Prints all existing properties. (id, name, description)
+    '''
     global cache
     for property in cache.properties.values():
         print property.id, property.name, "(" + property.description + ")"    
