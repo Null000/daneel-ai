@@ -238,6 +238,8 @@ def printAboutMe():
         print x , "(" + name(x) + ") is my fleet"
     for x in planetsOwnedBy([whoami()]):
         print x, "(" + name(x) + ") is my planet"
+    for x in planetsOwnedBy(enemies()):
+        print x, "(" + name(x) + ") is my enemies planet"
 
 def printDesigns():
     '''

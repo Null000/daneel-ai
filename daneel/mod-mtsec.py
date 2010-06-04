@@ -579,9 +579,7 @@ def multipleAI():
 
 def AICode():
     print "It's turn", helper.turnNumber()
-    #helper.printAboutMe()
-    #helper.printDesignsWithProperties()
-    #helper.printResources()
+    helper.printAboutMe()
     rushAI()
     return
 
