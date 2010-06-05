@@ -12,14 +12,17 @@ conection = None
 
 def nearestMyFleet(position, ignore=[]):
     '''
-    Finds the nearest fleet owned by you. List of fleets to ignore is optional.
+    Finds the nearest fleet owned by you (position or object id). List of fleets to ignore is optional.
     '''
     return nearestFleetOwnedBy(position, whoami(), ignore)
 
 def nearestFleetOwnedBy(targetPosition, owners, ignore=[]):
     '''
-    Finds the nearest fleet owned by one of the players in the owners list (can also be an int). List of fleets to ignore is optional.
+    Finds the fleet owned by one of the players in the owners list (can also be an int) nearest to the position (position or object id). List of fleets to ignore is optional.
     '''
+    if type(targetPosition) == int:
+        targetPosition = position(targetPosition)
+    
     if type(owners) == int:
         owners = [owners] 
     (x, y, z) = targetPosition
@@ -38,17 +41,26 @@ def nearestFleetOwnedBy(targetPosition, owners, ignore=[]):
 
 def nearestEnemyPlanet(position, ignore=[]):
     '''
-    Finds the nearest planet owned by one of the enemies. List of planets to ignore is optional.
+    Finds a planet owned by one of the enemies nearest to the position (position or object id). List of planets to ignore is optional.
     '''
     return nearestPlanetOwnedBy(position, enemies(), ignore)
 
-def nearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
+def nearestMyPlanet(position, ignore=[]):
     '''
-    Finds the nearest planet owned by one of the players in the owners list (can be an int). List of planets to ignore is optional.
+    Finds my planet nearest to the position (position or object id). List of planets to ignore is optional.
     '''
+    return nearestPlanetOwnedBy(position, whoami(), ignore)
+
+def nearestPlanetOwnedBy(targetPosition, owners, ignore=[]):
+    '''
+    Finds the planet owned by one of the players in the owners list (can be an int) nearest to the position (position or objectid). List of planets to ignore is optional.
+    '''
+    if type(targetPosition) == int:
+        targetPosition = position(targetPosition)
+    
     if type(owners) == int:
         owners = [owners] 
-    (x, y, z) = fleetPosition
+    (x, y, z) = targetPosition
     planets = planetsOwnedBy(owners)
     nearestPlanet = None
     minDistance = 1e300
@@ -62,11 +74,14 @@ def nearestPlanetOwnedBy(fleetPosition, owners, ignore=[]):
                 nearestPlanet = planet
     return nearestPlanet
 
-def nearestNeutralPlanet(fleetPosition, ignore=[]):
+def nearestNeutralPlanet(targetPosition, ignore=[]):
     '''
-    Finds the nearest neutral planet (not owned by anyone). List of planets to ignore is optional.
+    Finds the neutral(not owned by anyone) planet nearest to the position (position or objectid). List of planets to ignore is optional.
     '''
-    (x, y, z) = fleetPosition
+    if type(targetPosition) == int:
+        targetPosition = position(targetPosition)
+    
+    (x, y, z) = targetPosition
     planets = neutralPlanets()
     nearestPlanet = None
     minDistance = 1e300

@@ -6,6 +6,7 @@ import tp.client.cache
 from tp.netlib.objects import OrderDescs
 import extra.objectutils
 import helper
+import random
 from time import sleep
 
 rulesystem = None
@@ -375,9 +376,12 @@ def buildShip(planet, ship):
 def buildWeapon(planet, weapon):
     print "building weapons on" , helper.name(planet)
     orderBuildWeapon(planet, [(weapon, 1)])
+
+def moveToObject(objectToMove, objectToMoveTo):
+    orderMove(objectToMove, helper.position(objectToMoveTo))
     
 def orderOfID(objectId):
-    #TODO think about adding this to helper
+    #TODO think about adding this to helper or at least a has order function
     # get the queue for the object
     queueid = extra.objectutils.getOrderQueueList(cache, objectId)[0][1]
     queue = cache.orders[queueid]
@@ -389,10 +393,12 @@ def commandoAI():
     #this code will be very similar to rushAI (only with stronger ships)
     return
 
-#TODO think about what if another object gets the same id after the fleet was destroyed
 invasionFleets = []
 
 def rushAI():
+    '''
+    AI player that builds large armies of cheap units and attacks in waves.
+    '''
     global invasionFleets
     print "I am Zerg."
     
@@ -402,8 +408,8 @@ def rushAI():
     
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship += [[helper.componentByName("scout hull"), 1]]
-    #ship += [[helper.componentByName("colonisation module"), 1]]
+    ship += [[helper.componentByName("advanced battle scout hull"), 1]]
+    #ship += [[helper.componentByName("colonisation module"), 1]] #TODO uncomment this when the design bug is fixed
     ship += [[helper.componentByName("delta missile tube"), 1]]
     ship += [[helper.componentByName("delta missile rack"), 1]]
     #add the design
@@ -561,7 +567,120 @@ def rushAI():
     return
     
 def randomAI():
+    '''
+    AI player that selects randomly from a set of predefined actions.
+    '''
     print "I am confused."
+    #construct a design for a simple attack/colonisation ship
+    ship = []
+    ship += [[helper.componentByName("scout hull"), 1]]
+    #ship += [[helper.componentByName("colonisation module"), 1]] 
+    ship += [[helper.componentByName("delta missile tube"), 1]]
+    ship += [[helper.componentByName("delta missile rack"), 1]]
+    #add the design
+    addShipDesign(ship)
+    shipName = helper.generateDesignName(ship)
+    #replace the list of components with the id
+    ship = helper.designByName(shipName)
+    
+    #construct a design for a missile that fits the ship
+    weapon = []
+    weapon += [[helper.componentByName("delta missile hull"), 1]]
+    weapon += [[helper.componentByName("uranium explosives"), 2]]
+    #add the design
+    addWeaponDesign(weapon)
+    weaponName = helper.generateDesignName(weapon)
+    #replace the list of components with the id
+    weapon = helper.designByName(weaponName)
+    
+    #give orders to planets
+    for myPlanet in helper.myPlanets():
+        #only give orders if the planet has none
+        if orderOfID(myPlanet) != None:
+            continue
+        #list available actions
+        actionList = ["wait", "buildShip", "buildWeapon"]
+        
+        #pick an action
+        action = random.choice(actionList)
+        if action == "buildShip":
+            print "building ship on", helper.name(myPlanet)
+            buildShip(myPlanet, ship)
+            continue
+        if action == "buildWeapon":
+            print "building weapon on", helper.name(myPlanet)
+            buildWeapon(myPlanet, weapon)
+            continue
+        print "doing nothing on", helper.name(myPlanet)
+        
+    #give orders to fleets
+    for fleet in helper.myFleets():
+        #only give orders if the fleet has none
+        if orderOfID(fleet) != None:
+            continue
+        #TODO add the automatic weapon loading if on friendly planet with weapons
+        #list available cations
+        actionList = ["wait", "colonise", "attack", "move to friendly planet", "move to neutral planet"]
+        #remove colonise option if the fleet can't colonise planets
+        if not canColonise(fleet):
+            actionList.remove("colonise")
+        #remove the colonise option if the fleet is not on an neutral planet
+        elif helper.position(fleet) != helper.position(helper.nearestNeutralPlanet(fleet)):            
+            actionList.remove("colonise")
+        #remove attack option if the fleet has no weapons on board 
+        if not helper.resourceAvailable(fleet, helper.designName(weapon)) > 0:
+             actionList.remove("attack")
+        
+        #pick an action
+        action = random.choice(actionList)
+        if action == "colonise":
+            print helper.name(fleet), "is colonising", helper.name(helper.targetPosition(fleet))
+            orderColonise(fleet)
+            continue
+        if action == "attack":
+            #find 3 nearest enemy planets
+            nearestEnemyPlanets = [helper.nearestEnemyPlanet(fleet)]
+            nearestEnemyPlanets += [helper.nearestEnemyPlanet(fleet, nearestEnemyPlanets)]
+            nearestEnemyPlanets += [helper.nearestEnemyPlanet(fleet, nearestEnemyPlanets)]
+            #remove Nones
+            while None in nearestEnemyPlanets:
+                nearestEnemyPlanets.remove(None)
+            #pick one to attack
+            planetToAttack = random.choice(nearestEnemyPlanets) 
+            #attack it
+            moveToObject(fleet, planetToAttack)
+            print helper.name(fleet), "is attacking", helper.name(planetToAttack)
+            continue
+        if action == "move to friendly planet":
+            #find 3 nearest enemy planets
+            nearestMyPlanets = [helper.nearestMyPlanet(fleet)]
+            nearestMyPlanets += [helper.nearestMyPlanet(fleet, nearestMyPlanets)]
+            nearestMyPlanets += [helper.nearestMyPlanet(fleet, nearestMyPlanets)]
+            #remove Nones
+            while None in nearestMyPlanets:
+                nearestMyPlanets.remove(None)
+            #pick one to attack
+            planetToMoveTo = random.choice(nearestMyPlanets)
+                        
+            #attack it
+            moveToObject(fleet, planetToMoveTo)
+            print helper.name(fleet), "is moving to a friendly planet", helper.name(planetToMoveTo)
+            continue
+        if action == "move to neutral planet":
+            #find 3 nearest enemy planets
+            nearestNeutralPlanets = [helper.nearestNeutralPlanet(fleet)]
+            nearestNeutralPlanets += [helper.nearestNeutralPlanet(fleet, nearestNeutralPlanets)]
+            nearestNeutralPlanets += [helper.nearestNeutralPlanet(fleet, nearestNeutralPlanets)]
+            #remove Nones
+            while None in nearestNeutralPlanets:
+                nearestNeutralPlanets.remove(None)
+            #pick one to attack
+            planetToMoveTo = random.choice(nearestNeutralPlanets) 
+            #attack it
+            moveToObject(fleet, planetToMoveTo)
+            print helper.name(fleet), "is moving to a neutral planet", helper.name(planetToMoveTo)
+            continue
+        print helper.name(fleet), "is doing nothing"    
     return
     
 def bunkerAI():
@@ -580,7 +699,9 @@ def multipleAI():
 def AICode():
     print "It's turn", helper.turnNumber()
     helper.printAboutMe()
-    rushAI()
+    #helper.printDesignsWithProperties()
+    #rushAI()
+    randomAI()
     return
 
 """\
