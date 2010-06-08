@@ -388,7 +388,100 @@ def orderOfID(objectId):
     #return current order
     return queue.first.CurrentOrder
 
+def designWeapon(type, explosive):
+    '''
+    Creates a design for a weapon of specified type using the maximum amount of specified explosives. Returns the id of the design.
+    Example: for delta missile with uranium explosives use designWeapon("delta","uranium explosives")
+    '''
+    #TODO this could be global
+    weaponSize = {"alpha":3.0, "beta":6.0, "gamma":8.0, "delta":12.0, "epsilon":24.0, "omega":40.0, "upsilon":60.0, "tau":80.0, "sigma":110.0, "rho":150.0, "xi":200.0}
+    explosiveSize = {"uranium explosives":4.0, "thorium explosives":4.5, "cerium explosives":3.0, "enriched uranium":2.0, "massivium":12.0, "antiparticle explosives":0.8, "antimatter explosives":0.5}
+    weaponHullDict = {"alpha":helper.componentByName("alpha missile hull"), "beta":helper.componentByName("beta missile hull"), "gamma":helper.componentByName("gamma missile hull"), "delta":helper.componentByName("delta missile hull"), "epsilon":helper.componentByName("epsilon missile hull"), "omega":helper.componentByName("omega torpedoe hull"), "upsilon":helper.componentByName("upsilon torpedoe hull"), "tau":helper.componentByName("tau torpedoe hull"), "sigma":helper.componentByName("sigma torpedoe hull"), "rho":helper.componentByName("rho torpedoe hull"), "xi":helper.componentByName("xi torpedoe hull")}
+    
+    #make a list of components to use (and calculate the max amount of explosives)
+    components = [weaponHullDict[type], int(floor(weaponSize[type] / explosiveSize[explosive]))]
+    addWeaponDesign(components)
+    return helper.designByName(helper.generateDesignName(components)) 
+
+def maxfWeaponsOfDesign(design):
+    '''
+    Returns a dictionary of types of weapons the design (name or id) can carry. {"alpha":4,"beta":1,...}
+    '''
+    global cache
+    if isinstance(design, str):
+        design = helper.designByName(design)
+
+    #TODO this could be made global
+    tubeDict = {helper.componentByName("alpha missile tube"):"alpha", helper.componentByName("beta missile tube"):"beta", helper.componentByName("gamma missile tube"):"gamma", helper.componentByName("delta missile tube"):"delta", helper.componentByName("epsilon missile tube"):"epsilon", helper.componentByName("omega torpedoe tube"):"omega", helper.componentByName("upsilon torpedoe tube"):"upsilon", helper.componentByName("tau torpedoe tube"):"tau", helper.componentByName("sigma torpedoe tube"):"sigma", helper.componentByName("rho torpedoe tube"):"rho", helper.componentByName("xi torpedoe tube"):"xi"}
+    missileRackDict = {helper.componentByName("alpha missile rack"):"alpha", helper.componentByName("beta missile rack"):"beta", helper.componentByName("gamma missile rack"):"gamma", helper.componentByName("delta missile rack"):"delta", helper.componentByName("epsilon missile rack"):"epsilon"}
+    torpedoRackDict = {helper.componentByName("omega torpedoe rack"):"omega", helper.componentByName("upsilon torpedoe rack"):"upsilon", helper.componentByName("tau torpedoe rack"):"tau", helper.componentByName("sigma torpedoe rack"):"sigma", helper.componentByName("rho torpedoe rack"):"rho", helper.componentByName("xi torpedoe rack"):"xi"}
+        
+    weapons = {}
+    for (component, numberOfUnits) in cache.designs[design].components:
+        #is the component a tube?
+        #each tube can carry 1 weapon
+        if component in tubeDict.keys():
+            type = tubeDict[component]
+            if type in weapons.keys():
+                weapons[type] += numberOfUnits 
+            else:
+                weapons[type] = numberOfUnits
+            continue
+        #is the component a missile rack?
+        #each missile rack can carry 2 weapons
+        if component in tubeDict.keys():
+            type = tubeDict[component]
+            if type in weapons.keys():
+                weapons[type] += numberOfUnits * 2 
+            else:
+                weapons[type] = numberOfUnits * 2
+            continue
+        #is the component a torpedo rack?
+        #each torpedo rack can carry 4 weapons
+        if component in tubeDict.keys():
+            type = tubeDict[component]
+            if type in weapons.keys():
+                weapons[type] += numberOfUnits * 4 
+            else:
+                weapons[type] = numberOfUnits * 4
+            continue
+        #this component doesn't affect the number of weapons directly
+    return weapons
+
+def maxWeaponsOfFleet(fleetid):
+    maxWeapons = {}
+    #find out the sum of weapons all the ships in this fleet can hold (and ther types)
+    for (something, design, number) in helerp.shipsOfFleet(fleetid):
+        tempMaxWeapons = maxWeaponsOfDesign(design)
+        #add all the weapons to the sum
+        for weaponType in tempMaxWeapons.keys():
+            if weaponType in maxWeapons.keys():
+                maxWeapons[weaponType] += tempMaxWeapons * number
+            else:
+                maxWeapons[weaponType] = tempMaxWeapons * number
+    return maxWeapons
+
+def typeOfWeapon(design):
+    '''
+    Returns the type of weapon. Example if the design contains an alpha missile hull the function returns "alpha"
+    '''
+    #TODO make this global and initialse it only once
+    reverseWeaponHullDict = {helper.componentByName("alpha missile hull"):"alpha", helper.componentByName("beta missile hull"):"beta", helper.componentByName("gamma missile hull"):"gamma", helper.componentByName("delta missile hull"):"delta", helper.componentByName("epsilon missile hull"):"epsilon", helper.componentByName("omega torpedoe hull"):"omega", helper.componentByName("upsilon torpedoe hull"):"upsilon", helper.componentByName("tau torpedoe hull"):"tau", helper.componentByName("sigma torpedoe hull"):"sigma", helper.componentByName("rho torpedoe hull"):"rho", helper.componentByName("xi torpedoe hull"):"xi"}
+    components = helper.designComponents()
+    #loop through all components and look for a match
+    for (id, value) in component:
+        if id in reverseWeaponHullDict.keys():
+            return reverseWeaponHullDict[id]
+    return None
+
+def weaponsNeeded(fleetid):
+    maxWeapons = maxWeaponsOfFleet(fleetid)
+    #TODO finish
+    
+
+
 def commandoAI():
+
     print "I am Rambo."
     #this code will be very similar to rushAI (only with stronger ships)
     return
@@ -419,14 +512,8 @@ def rushAI():
     ship = helper.designByName(shipName)
     
     #construct a design for a missile that fits the ship
-    weapon = []
-    weapon += [[helper.componentByName("delta missile hull"), 1]]
-    weapon += [[helper.componentByName("uranium explosives"), 2]]
-    #add the design
-    addWeaponDesign(weapon)
-    weaponName = helper.generateDesignName(weapon)
-    #replace the list of components with the id
-    weapon = helper.designByName(weaponName)
+    weapon = designWeapon("delta", "uranium explosives")
+    weaponName = helper.designName(weapon)
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
@@ -443,7 +530,7 @@ def rushAI():
                     listOfShips = helper.shipsOfFleet(thingOnPlanet)
                     #TODO take care of all ships not just rushAI design
                     if listOfShips == [(9, ship, 1)]:
-                        weaponsNeeded = invasionWeaponsPerShip - helper.resourceAvailable(thingOnPlanet, helper.designName(weapon))
+                        weaponsNeeded = invasionWeaponsPerShip - helper.resourceAvailable(thingOnPlanet, weaponName)
                         print helper.name(thingOnPlanet), "needs", weaponsNeeded, "more weapons"
                         if weaponsNeeded > 0:
                             #check if there is weapons available on the planet to load
@@ -618,8 +705,22 @@ def randomAI():
         #only give orders if the fleet has none
         if orderOfID(fleet) != None:
             continue
-        #TODO add the automatic weapon loading if on friendly planet with weapons
-        #list available cations
+        #automatic weapon loading if on friendly planet with weapons
+        #TODO this only works for fleets specified earlier
+        maxMissiles = 3
+        if helper.shipsOfFleet(fleet) == [(9, ship, 1)]: 
+            nearestMyPlanet = helper.nearestMyPlanet(fleet)
+            if helper.position(fleet) == helper.position(nearestMyPlanet):
+                weaponsOnFleet = helper.resourceAvailable(fleet, helper.designName(weapon))
+                if weaponsOnFleet < maxMissiles:
+                    weaponsOnPlanet = helper.resourceAvailable(nearestMyPlanet, helper.designName(weapon))
+                    if weaponsOnPlanet > 0:
+                        weaponsToLoad = min(maxMissiles - weaponsOnFleet, weaponsOnPlanet)
+                        orderLoadArmament(fleet, [(helper.resourceByName(helper.designName(weapon)), weaponsToLoad)])
+        
+        #TODO maybe add an automatic colonisation if on neutral planet and can colonise
+        
+        #list available actions
         actionList = ["wait", "colonise", "attack", "move to friendly planet", "move to neutral planet"]
         #remove colonise option if the fleet can't colonise planets
         if not canColonise(fleet):
@@ -685,6 +786,7 @@ def randomAI():
     
 def bunkerAI():
     print "I am paranoid"
+    #this code will be very similar to rushAI (only with different designs=
     return
 
 def greedyAI():
@@ -694,14 +796,20 @@ def greedyAI():
     
 def multipleAI():
     print "I am a shapeshifter."
+    #TODO pick one of the other AI functions at random
     return
 
 def AICode():
+    #delete all messages so you don't get spammed
+    helper.deleteAllMessages()
     print "It's turn", helper.turnNumber()
     helper.printAboutMe()
     #helper.printDesignsWithProperties()
     #rushAI()
-    randomAI()
+    #randomAI()
+    for fleet in helper.myFleets():
+        for (something, design, num) in helper.shipsOfFleet(fleet):
+            maxNumberOfweapons(design)
     return
 
 """\

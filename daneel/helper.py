@@ -428,6 +428,13 @@ def resourceAvailable(id, resource):
             return tempResource[1]
     return 0
 
+def resources(id):
+    '''
+    Returns a list of all resources of the object with the given id. [(resourceID,stored,minable,inacc),...]
+    '''
+    global cache
+    return cache.objects[id].Resources[0][0]
+
 def printResources():
     '''
     Prints all resources (id, name).
@@ -475,6 +482,13 @@ def designName(id):
             return design.name
     return None
 
+def designComponents(id):
+    '''
+    Returns a list of components used in the design with the given id. [(part ID,number of parts),(...,...),...]
+    '''
+    global cache
+    return cache.designs[id].components
+    
 def generateDesignName(components):
     '''
     Generate an unique name based on components.
@@ -556,3 +570,13 @@ def printProperties():
     global cache
     for property in cache.properties.values():
         print property.id, property.name, "(" + property.description + ")"    
+
+def deleteAllMessages():
+    global cache
+    global connection
+    
+    for node in cache.messages[0]:
+        if node == None:
+            break
+        evt = cache.apply("messages", "remove", 0, node, None)
+        tp.client.cache.apply(connection, evt, cache)
