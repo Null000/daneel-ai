@@ -414,6 +414,16 @@ def resourceByName(name):
             return resource.id
     return None
 
+def resourceName(id):
+    '''
+    Returns the name of the reousrce with the given id.
+    '''
+    global cache
+    for resource in cache.resources.values():
+        if resource.id == id:
+            return resource.name
+    return None
+
 def resourceAvailable(id, resource):
     '''
     Returns the number of units of the resource that are available at the object with the given id.

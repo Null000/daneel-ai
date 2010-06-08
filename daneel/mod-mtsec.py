@@ -449,6 +449,9 @@ def maxfWeaponsOfDesign(design):
     return weapons
 
 def maxWeaponsOfFleet(fleetid):
+    '''
+    Returns a dictionary of types of weapons the fleet can carry. {"alpha":4,"beta":1,...}
+    '''
     maxWeapons = {}
     #find out the sum of weapons all the ships in this fleet can hold (and ther types)
     for (something, design, number) in helerp.shipsOfFleet(fleetid):
@@ -475,10 +478,37 @@ def typeOfWeapon(design):
     return None
 
 def weaponsNeeded(fleetid):
+    '''
+    Returns a dictionary of weapons that can be loaded by type {"alpha":3,"delta":1,...}
+    '''
     maxWeapons = maxWeaponsOfFleet(fleetid)
-    #TODO finish
+    #get the weapons already loaded on board the fleet [(resource id, number of units),...]
+    stuffLoaded = [(resource[0], resource[1]) for resource in helper.resources(fleetid)]
+    #build a dict of all the weapons loaded by type
+    weaponsLoaded = {}
+    for (id, number) in stuffLoaded:
+        #find a design id from the resource id (they have the same name)
+        resourceName = helper.resourceName(id)
+        designid = helper.designByName(resourceName)
+        if designid == None:
+            #resource is not a weapon
+            continue
+        type = typeOfWeapon(designid)
+        #add to the list of weapons
+        if type in weaponsLoaded.keys():
+            weaponsLoaded[type] += number
+        else:
+            weaponsLoaded[type] = number
     
-
+    # a dictionary for weapons that could be loaded by type
+    weaponsNeededDict = {}
+    for type in maxWeapons.keys():
+        if type in weaponsLoaded.keys():
+            if maxWeapons[type] > weaponsLoaded[type]:
+                weaponsNeededDict[type] = maxWeapons[type] - weaponsLoaded[type]
+        else:
+            weaponsNeededDict[type] = maxWeapons[type]
+    return weaponsNeededDict
 
 def commandoAI():
 
