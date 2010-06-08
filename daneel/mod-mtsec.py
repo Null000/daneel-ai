@@ -8,6 +8,7 @@ import extra.objectutils
 import helper
 import random
 from time import sleep
+import math
 
 rulesystem = None
 
@@ -399,7 +400,7 @@ def designWeapon(type, explosive):
     weaponHullDict = {"alpha":helper.componentByName("alpha missile hull"), "beta":helper.componentByName("beta missile hull"), "gamma":helper.componentByName("gamma missile hull"), "delta":helper.componentByName("delta missile hull"), "epsilon":helper.componentByName("epsilon missile hull"), "omega":helper.componentByName("omega torpedoe hull"), "upsilon":helper.componentByName("upsilon torpedoe hull"), "tau":helper.componentByName("tau torpedoe hull"), "sigma":helper.componentByName("sigma torpedoe hull"), "rho":helper.componentByName("rho torpedoe hull"), "xi":helper.componentByName("xi torpedoe hull")}
     
     #make a list of components to use (and calculate the max amount of explosives)
-    components = [weaponHullDict[type], int(floor(weaponSize[type] / explosiveSize[explosive]))]
+    components = [(weaponHullDict[type], int(math.floor(weaponSize[type] / explosiveSize[explosive])))]
     addWeaponDesign(components)
     return helper.designByName(helper.generateDesignName(components)) 
 
@@ -835,11 +836,11 @@ def AICode():
     print "It's turn", helper.turnNumber()
     helper.printAboutMe()
     #helper.printDesignsWithProperties()
-    #rushAI()
+    rushAI()
     #randomAI()
-    for fleet in helper.myFleets():
-        for (something, design, num) in helper.shipsOfFleet(fleet):
-            maxNumberOfweapons(design)
+#    for fleet in helper.myFleets():
+#        for (something, design, num) in helper.shipsOfFleet(fleet):
+#            maxWeaponsOfDesign(design)
     return
 
 """\
