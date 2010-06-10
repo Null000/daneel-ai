@@ -404,7 +404,7 @@ def designWeapon(type, explosive):
     addWeaponDesign(components)
     return helper.designByName(helper.generateDesignName(components)) 
 
-def maxfWeaponsOfDesign(design):
+def maxWeaponsOfDesign(design):
     '''
     Returns a dictionary of types of weapons the design (name or id) can carry. {"alpha":4,"beta":1,...}
     '''
@@ -455,14 +455,14 @@ def maxWeaponsOfFleet(fleetid):
     '''
     maxWeapons = {}
     #find out the sum of weapons all the ships in this fleet can hold (and ther types)
-    for (something, design, number) in helerp.shipsOfFleet(fleetid):
+    for (something, design, number) in helper.shipsOfFleet(fleetid):
         tempMaxWeapons = maxWeaponsOfDesign(design)
         #add all the weapons to the sum
         for weaponType in tempMaxWeapons.keys():
             if weaponType in maxWeapons.keys():
-                maxWeapons[weaponType] += tempMaxWeapons * number
+                maxWeapons[weaponType] += tempMaxWeapons[weaponType] * number
             else:
-                maxWeapons[weaponType] = tempMaxWeapons * number
+                maxWeapons[weaponType] = tempMaxWeapons[weaponType] * number
     return maxWeapons
 
 def typeOfWeapon(design):
@@ -484,23 +484,7 @@ def weaponsNeeded(fleetid):
     '''
     maxWeapons = maxWeaponsOfFleet(fleetid)
     #get the weapons already loaded on board the fleet [(resource id, number of units),...]
-    stuffLoaded = [(resource[0], resource[1]) for resource in helper.resources(fleetid)]
-    #build a dict of all the weapons loaded by type
-    weaponsLoaded = {}
-    for (id, number) in stuffLoaded:
-        #find a design id from the resource id (they have the same name)
-        resourceName = helper.resourceName(id)
-        designid = helper.designByName(resourceName)
-        if designid == None:
-            #resource is not a weapon
-            continue
-        type = typeOfWeapon(designid)
-        #add to the list of weapons
-        if type in weaponsLoaded.keys():
-            weaponsLoaded[type] += number
-        else:
-            weaponsLoaded[type] = number
-    
+    weaponsLoaded = weaponsOnObject(fleetid)
     # a dictionary for weapons that could be loaded by type
     weaponsNeededDict = {}
     for type in maxWeapons.keys():
@@ -510,6 +494,93 @@ def weaponsNeeded(fleetid):
         else:
             weaponsNeededDict[type] = maxWeapons[type]
     return weaponsNeededDict
+
+def weaponsOnObject(objectid):
+    '''
+    Returns a dictionary of weapons on this object (available on planet or loaded on fleet) by type. {"alpha":3,"delta":1,...}
+    '''
+    stuffOnObject = [(resource[0], resource[1]) for resource in helper.resources(objectid)]
+    #build a dict of all the weapons loaded by type
+    weaponsLoaded = {}
+    for (id, number) in stuffOnObject:
+        #find a design id from the resource id (they have the same name)
+        resourceName = helper.resourceName(id)
+        designid = helper.designByName(resourceName)
+        if designid == None:
+            #resource is not a weapon
+            continue
+        type = typeOfWeapon(designid)
+        if type == None:
+            #design not a weapon design
+            continue
+        #add to the list of weapons
+        if type in weaponsLoaded.keys():
+            weaponsLoaded[type] += number
+        else:
+            weaponsLoaded[type] = number
+    return weaponsLoaded
+            
+def loadWeapons(fleet, planet, weaponDict, alreadyLoaded={}):
+    '''
+    Gives a Load Armament order for all weapons in the weapon dictionary.
+    Already loaded dictionary provides how many weapons of each type have already been asigned to other ships.
+    '''
+    stuffOnPlanet = [(resource[0], resource[1]) for resource in helper.resources(planet)]
+    stuffToLoad = []
+    
+    #make a copy so we don't change the original
+    alreadyLoaded = alreadyLoaded.copy()
+    weaponDict = weaponDict.copy()
+
+    #for every type we need to load
+    for typeToLoad in weaponDict.keys():
+        #loop through all the resources on the planet until we add enough weapons of this type to the loading list
+        for (id, available) in stuffOnPlanet:
+            #find a design id from the resource id (they have the same name)
+            resourceName = helper.resourceName(id)
+            designid = helper.designByName(resourceName)
+            if designid == None:
+                #resource is not a weapon
+                continue
+            type = typeOfWeapon(designid)
+            if type == None:
+                #design not a weapon design
+                continue
+            #check the type of the weapon
+            if type == typeToLoad:
+                #how many are to be loaded to other ships
+                markedForLoading = 0
+                if alreadyLoaded.has_key(type):
+                    markedForLoading = alreadyLoaded[type]
+                #number of weapon we can load
+                canLoad = available - markedForLoading
+                #if we can load any of them
+                if canLoad > 0:
+                    willLoad = min(canLoad, weaponDict[type])
+                    #add weapons to the list of weapons to load
+                    stuffToLoad += [(id, willLoad)]
+                    
+                    #reduce the number of this type that need loading
+                    weaponDict[type] -= willLoad
+                    
+                    #we have passed all the weapons that were marked for other ships
+                    alreadyLoaded[type] = 0
+                    
+                    #continue to another type if all weapons of this type have been marked for loading
+                    if weaponDict[type] == 0:
+                        break
+                #all are to be loaded to ther ships    
+                else:
+                    alreadyLoaded[type] -= available
+                
+            #add to the list of weapons
+            if type in weaponsLoaded.keys():
+                weaponsLoaded[type] += number
+            else:
+                weaponsLoaded[type] = number
+    
+    assert stuffToLoad != []
+    orderLoadArmament(fleet, stuffToLoad)
 
 def commandoAI():
 
@@ -542,9 +613,8 @@ def rushAI():
     #replace the list of components with the id
     ship = helper.designByName(shipName)
     
-    #construct a design for a missile that fits the ship
-    weapon = designWeapon("delta", "uranium explosives")
-    weaponName = helper.designName(weapon)
+    #choose a cheap explosives for use in weapons
+    explosives = "uranium explosives"
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
@@ -553,33 +623,58 @@ def rushAI():
         #check if there is already something being build on this planet
         if currentOrder == None:
             #load ships with weapons and build more weapons if necessary
-            orderGiven = False
-            weaponsLoaded = 0
+            #what type of weapon should be build
+            weaponToBuild = None
+
+            weaponsOnPlanet = weaponsOnObject(myPlanet)
+            #weapons already loaded
+            weaponsLoadedDict = {}
+            
             for thingOnPlanet in helper.contains(myPlanet):
                 if helper.isMyFleet(thingOnPlanet):
-                    #check if it's rushAI design
-                    listOfShips = helper.shipsOfFleet(thingOnPlanet)
-                    #TODO take care of all ships not just rushAI design
-                    if listOfShips == [(9, ship, 1)]:
-                        weaponsNeeded = invasionWeaponsPerShip - helper.resourceAvailable(thingOnPlanet, weaponName)
-                        print helper.name(thingOnPlanet), "needs", weaponsNeeded, "more weapons"
-                        if weaponsNeeded > 0:
-                            #check if there is weapons available on the planet to load
-                            weaponsOnPlanet = helper.resourceAvailable(myPlanet, helper.designName(weapon)) - weaponsLoaded
-                            print weaponsOnPlanet, "weapons are on planet" 
-                            if weaponsOnPlanet > 0:
-                                #load as much as possible
-                                print "loading weapons onto", helper.name(thingOnPlanet)
-                                orderLoadArmament(thingOnPlanet, [(helper.resourceByName(helper.designName(weapon)), min(weaponsNeeded, weaponsOnPlanet))])
-                                weaponsLoaded += min(weaponsNeeded, weaponsOnPlanet)
+                    #find out if it needs any more weapons
+                    weaponsNeededDict = weaponsNeeded(thingOnPlanet)
+                    #if no needed weapons skip this fleet
+                    if len(weaponsNeededDict) == 0:
+                        continue
+                    
+                    #make a list of all weapons that will be loaded
+                    weaponsToLoadDict = {}
+                    #TODO replace all a in b.keys() with b.has_key(a)
+                    for typeOfWeaponNeeded in weaponsNeededDict.keys():
+                        available = 0
+                        if typeOfWeaponNeeded in weaponsOnPlanet.keys():
+                            available = weaponsOnPlanet[typeOfWeaponNeeded]
+                            if typeOfWeaponNeeded in weaponsLoadedDict.keys():
+                                available -= weaponsLoadedDict[typeOfWeaponNeeded]
+                            assert available >= 0
+                            #give build order if nesessary
+                            if weaponToBuild == None and available < weaponsNeededDict[typeOfWeaponNeeded]:
+                                weaponToBuild = typeOfWeaponNeeded
+                            #mark weapons for loading
+                            weaponsToLoadDict[typeOfWeaponNeeded] = min(available, weaponsNeededDict[typeOfWeaponNeeded])
+                    #if there is anything to load
+                    if weaponsToLoadDict != {}:
+                        #actualy load the weapons...
+                        loadWeapons(thingOnPlanet, myPlanet, weaponsToLoadDict, weaponsLoadedDict)
+                        #mark them as loaded
+                        for type in weaponsToLoadDict.keys():
+                            #make sure other ships don't try to load the same weapons
+                            if weaponsLoadedDict.has_key(type):
+                                weaponsLoadedDict[type] += weaponsToLoadDict[type]
                             else:
-                                #build more weapons
-                                buildWeapon(myPlanet, weapon)
-                                orderGiven = True
-                                break
-            #build a new ship if there is no orders to build weapons
-            if not orderGiven:
+                                weaponsLoadedDict[type] = weaponsToLoadDict[type]
+                    
+            #build weapons/ships order
+            if weaponToBuild == None:
+                #no weaopns to build... build a ship
                 buildShip(myPlanet, ship)
+            else:
+                #build a weapon of the required type
+                buildWeapon(myPlanet, designWeapon(weaponToBuild, explosive))    
+                    
+                    
+                    
                 
     #check how many fleets are available for the invasion
     potentialInvasionFleets = helper.myFleets()
@@ -593,7 +688,7 @@ def rushAI():
             potentialInvasionFleets.remove(fleet)
             continue
         #remove ship if its not loaded with weapons
-        if helper.resourceAvailable(fleet, helper.designName(weapon)) < invasionWeaponsPerShip:
+        if weaponsOnObject(fleet) == {}:
             potentialInvasionFleets.remove(fleet)
             continue
         
