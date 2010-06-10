@@ -683,15 +683,12 @@ def rushAI():
         potentialInvasionFleets.remove(fleet)
     #remove all of the fleets that are not fully loaded with weapons
     for fleet in potentialInvasionFleets:
-        #TODO make this work for all designs
-        if helper.shipsOfFleet(fleet) != [(9, ship, 1)]:
-            potentialInvasionFleets.remove(fleet)
-            continue
         #remove ship if its not loaded with weapons
         if weaponsOnObject(fleet) == {}:
+            print helper.name(fleet), "will no logner be invading"
             potentialInvasionFleets.remove(fleet)
-            continue
-        
+            #TODO make it go back to safety
+            continue 
         
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
@@ -714,7 +711,9 @@ def rushAI():
                     continue
             #mark it for invasion
             invasionFleets += [fleet]
-        
+    
+    #TODO make the invasion fleets go back if there are only a few of them left
+    
     allMyFleets = helper.myFleets()
     #attack the enemy with ships marked for invasion
     for fleet in invasionFleets:
@@ -931,8 +930,10 @@ def AICode():
     print "It's turn", helper.turnNumber()
     helper.printAboutMe()
     #helper.printDesignsWithProperties()
-    rushAI()
-    #randomAI()
+    if helper.playerName(helper.whoami()) == "ai":
+        rushAI()
+    else:
+        randomAI()
 #    for fleet in helper.myFleets():
 #        for (something, design, num) in helper.shipsOfFleet(fleet):
 #            maxWeaponsOfDesign(design)
