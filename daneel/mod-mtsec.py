@@ -603,8 +603,8 @@ def rushAI():
     
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship += [[helper.componentByName("advanced battle scout hull"), 1]]
-    #ship += [[helper.componentByName("colonisation module"), 1]] #TODO uncomment this when the design bug is fixed
+    ship += [[helper.componentByName("frigate"), 1]]
+    ship += [[helper.componentByName("colonisation module"), 1]] #TODO uncomment this when the design bug is fixed
     ship += [[helper.componentByName("delta missile tube"), 1]]
     ship += [[helper.componentByName("delta missile rack"), 1]]
     #add the design
@@ -672,22 +672,21 @@ def rushAI():
             else:
                 #build a weapon of the required type
                 buildWeapon(myPlanet, designWeapon(weaponToBuild, explosive))    
-                    
-                    
-                    
-                
+
     #check how many fleets are available for the invasion
     potentialInvasionFleets = helper.myFleets()
-    #remove all of the fleets that are already marked for the invasion
+    #remove all of the fleets that are already marked for the invasion and fleets that can no longer fight (no weapons)
     for fleet in invasionFleets:
         potentialInvasionFleets.remove(fleet)
+        #if it can no longer attack
+        if weaponsOnObject(fleet) == {}:
+            print helper.name(fleet), "is no longer invading"
+            invasionFleets.remove(fleet)
     #remove all of the fleets that are not fully loaded with weapons
     for fleet in potentialInvasionFleets:
         #remove ship if its not loaded with weapons
         if weaponsOnObject(fleet) == {}:
-            print helper.name(fleet), "will no logner be invading"
             potentialInvasionFleets.remove(fleet)
-            #TODO make it go back to safety
             continue 
         
     guardOnPlanets = {}
@@ -776,6 +775,14 @@ def rushAI():
                 #move to planet
                 print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
                 orderMove(fleet, planetPosition)
+        #TODO other ships should go to a friendly palanet for suplies (if not already there)
+        else:
+            nearestPlanet = helper.nearestMyPlanet(helper.position(fleet))
+            planetPosition = helper.position(nearestPlanet)
+            #move if not already there
+            if helper.position(fleet) != planetPosition:
+                print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
+                orderMove(fleet, planetPosition)
     return
     
 def randomAI():
@@ -785,8 +792,8 @@ def randomAI():
     print "I am confused."
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship += [[helper.componentByName("scout hull"), 1]]
-    #ship += [[helper.componentByName("colonisation module"), 1]] 
+    ship += [[helper.componentByName("frigate"), 1]]
+    ship += [[helper.componentByName("colonisation module"), 1]] 
     ship += [[helper.componentByName("delta missile tube"), 1]]
     ship += [[helper.componentByName("delta missile rack"), 1]]
     #add the design
@@ -809,6 +816,7 @@ def randomAI():
     for myPlanet in helper.myPlanets():
         #only give orders if the planet has none
         if orderOfID(myPlanet) != None:
+            print helper.name(myPlanet), "already has orders"
             continue
         #list available actions
         actionList = ["wait", "buildShip", "buildWeapon"]
@@ -816,11 +824,9 @@ def randomAI():
         #pick an action
         action = random.choice(actionList)
         if action == "buildShip":
-            print "building ship on", helper.name(myPlanet)
             buildShip(myPlanet, ship)
             continue
         if action == "buildWeapon":
-            print "building weapon on", helper.name(myPlanet)
             buildWeapon(myPlanet, weapon)
             continue
         print "doing nothing on", helper.name(myPlanet)
@@ -829,6 +835,7 @@ def randomAI():
     for fleet in helper.myFleets():
         #only give orders if the fleet has none
         if orderOfID(fleet) != None:
+            print helper.name(fleet), "already has orders"
             continue
         #automatic weapon loading if on friendly planet with weapons
         #TODO this only works for fleets specified earlier
@@ -925,12 +932,16 @@ def multipleAI():
     return
 
 def AICode():
+    if helper.myFleets() == [] and helper.myPlanets() == []:
+        print "Today was a good day to die."
+        exit(0)
+    
     #delete all messages so you don't get spammed
     helper.deleteAllMessages()
     print "It's turn", helper.turnNumber()
     helper.printAboutMe()
     #helper.printDesignsWithProperties()
-    if helper.playerName(helper.whoami()) == "ai":
+    if helper.playerName(helper.whoami()) == "ai3":
         rushAI()
     else:
         randomAI()

@@ -180,7 +180,7 @@ def pickle(variable, file_name):
 	file.close()
 	return
 
-def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',verbosity=1,benchmark=0):
+def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',verbosity=0,benchmark=0):
     try:
         level = {0:logging.WARNING,1:logging.INFO,2:logging.DEBUG}[verbosity]
     except KeyError:

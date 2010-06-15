@@ -343,10 +343,10 @@ def addDesign(name, description, categories, componentList, replaceOnDuplicate=F
     design = Design(-1, -1, 0, categories, name, description, 0, whoami(), componentList, "", [])
     if current == None:
         #create a new design
-        evt = cache.CacheDirtyEvent("designs", "create", -1, design)
+        evt = cache.apply("designs", "create", -1, design)
     else:
         #replace the existing design
-        evt = cache.CacheDirtyEvent("designs", "create", current, design)
+        evt = cache.apply("designs", "create", current, design)
         
     #apply changes
     tp.client.cache.apply(connection, evt, cache)
