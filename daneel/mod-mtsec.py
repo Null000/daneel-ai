@@ -558,7 +558,7 @@ def loadWeapons(fleet, planet, weaponDict, alreadyLoaded={}):
                 if canLoad > 0:
                     willLoad = min(canLoad, weaponDict[type])
                     #add weapons to the list of weapons to load
-                    stuffToLoad += [(id, willLoad)]
+                    stuffToLoad.append((id, willLoad))
                     
                     #reduce the number of this type that need loading
                     weaponDict[type] -= willLoad
@@ -599,14 +599,15 @@ def rushAI():
     
     #number of ships and weapons needed to start an invasion
     invasionShips = 10
-    invasionWeaponsPerShip = 2
+    #retreat if less than this number of ships marked for invasion
+    invasionShipsRetreat = 3
     
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship += [[helper.componentByName("frigate"), 1]]
-    ship += [[helper.componentByName("colonisation module"), 1]] #TODO uncomment this when the design bug is fixed
-    ship += [[helper.componentByName("delta missile tube"), 1]]
-    ship += [[helper.componentByName("delta missile rack"), 1]]
+    ship.append([helper.componentByName("frigate"), 1])
+    ship.append([helper.componentByName("colonisation module"), 1]) #TODO uncomment this when the design bug is fixed
+    ship.append([helper.componentByName("delta missile tube"), 1])
+    ship.append([helper.componentByName("delta missile rack"), 1])
     #add the design
     addShipDesign(ship)
     shipName = helper.generateDesignName(ship)
@@ -709,9 +710,13 @@ def rushAI():
                     guardOnPlanets[parent] = currentGuard + 1
                     continue
             #mark it for invasion
-            invasionFleets += [fleet]
+            invasionFleets.append(fleet)
     
-    #TODO make the invasion fleets go back if there are only a few of them left
+    #make the invasion fleets go back if there are only a few of them left
+    if len(invasionFleets) < invasionShipsRetreat:
+        print "to little attack ships. Retreat!"
+        invasionFleets = [] 
+    
     
     allMyFleets = helper.myFleets()
     #attack the enemy with ships marked for invasion
@@ -756,7 +761,6 @@ def rushAI():
             if currentGuard < defenceShips:
                 guardOnPlanets[parent] = currentGuard + 1
                 #make it stay there
-                #TODO can this destroy our loading orders?
                 orderNone(fleet)
                 continue
 
@@ -764,7 +768,7 @@ def rushAI():
         if canColonise(fleet):                
             nearestPlanet = helper.nearestNeutralPlanet(helper.position(fleet), planetsToIgnore)
             planetPosition = helper.position(nearestPlanet)
-            planetsToIgnore += [nearestPlanet]
+            planetsToIgnore.append(nearestPlanet)
             
             if helper.position(fleet) == planetPosition:
                 #colonise if there
@@ -775,7 +779,7 @@ def rushAI():
                 #move to planet
                 print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
                 orderMove(fleet, planetPosition)
-        #TODO other ships should go to a friendly palanet for suplies (if not already there)
+        #other ships should go to a friendly palanet for suplies (if not already there)
         else:
             nearestPlanet = helper.nearestMyPlanet(helper.position(fleet))
             planetPosition = helper.position(nearestPlanet)
@@ -792,10 +796,10 @@ def randomAI():
     print "I am confused."
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship += [[helper.componentByName("frigate"), 1]]
-    ship += [[helper.componentByName("colonisation module"), 1]] 
-    ship += [[helper.componentByName("delta missile tube"), 1]]
-    ship += [[helper.componentByName("delta missile rack"), 1]]
+    ship.append([helper.componentByName("frigate"), 1])
+    ship.append([helper.componentByName("colonisation module"), 1]) 
+    ship.append([helper.componentByName("delta missile tube"), 1])
+    ship.append([helper.componentByName("delta missile rack"), 1])
     #add the design
     addShipDesign(ship)
     shipName = helper.generateDesignName(ship)
@@ -804,8 +808,8 @@ def randomAI():
     
     #construct a design for a missile that fits the ship
     weapon = []
-    weapon += [[helper.componentByName("delta missile hull"), 1]]
-    weapon += [[helper.componentByName("uranium explosives"), 2]]
+    weapon.append([helper.componentByName("delta missile hull"), 1])
+    weapon.append([helper.componentByName("uranium explosives"), 2])
     #add the design
     addWeaponDesign(weapon)
     weaponName = helper.generateDesignName(weapon)
@@ -873,8 +877,8 @@ def randomAI():
         if action == "attack":
             #find 3 nearest enemy planets
             nearestEnemyPlanets = [helper.nearestEnemyPlanet(fleet)]
-            nearestEnemyPlanets += [helper.nearestEnemyPlanet(fleet, nearestEnemyPlanets)]
-            nearestEnemyPlanets += [helper.nearestEnemyPlanet(fleet, nearestEnemyPlanets)]
+            nearestEnemyPlanets.append(helper.nearestEnemyPlanet(fleet, nearestEnemyPlanets))
+            nearestEnemyPlanets.append(helper.nearestEnemyPlanet(fleet, nearestEnemyPlanets))
             #remove Nones
             while None in nearestEnemyPlanets:
                 nearestEnemyPlanets.remove(None)
@@ -887,8 +891,8 @@ def randomAI():
         if action == "move to friendly planet":
             #find 3 nearest enemy planets
             nearestMyPlanets = [helper.nearestMyPlanet(fleet)]
-            nearestMyPlanets += [helper.nearestMyPlanet(fleet, nearestMyPlanets)]
-            nearestMyPlanets += [helper.nearestMyPlanet(fleet, nearestMyPlanets)]
+            nearestMyPlanets.append(helper.nearestMyPlanet(fleet, nearestMyPlanets))
+            nearestMyPlanets.append(helper.nearestMyPlanet(fleet, nearestMyPlanets))
             #remove Nones
             while None in nearestMyPlanets:
                 nearestMyPlanets.remove(None)
@@ -902,8 +906,8 @@ def randomAI():
         if action == "move to neutral planet":
             #find 3 nearest enemy planets
             nearestNeutralPlanets = [helper.nearestNeutralPlanet(fleet)]
-            nearestNeutralPlanets += [helper.nearestNeutralPlanet(fleet, nearestNeutralPlanets)]
-            nearestNeutralPlanets += [helper.nearestNeutralPlanet(fleet, nearestNeutralPlanets)]
+            nearestNeutralPlanets.append(helper.nearestNeutralPlanet(fleet, nearestNeutralPlanets))
+            nearestNeutralPlanets.append(helper.nearestNeutralPlanet(fleet, nearestNeutralPlanets))
             #remove Nones
             while None in nearestNeutralPlanets:
                 nearestNeutralPlanets.remove(None)
@@ -941,7 +945,7 @@ def AICode():
     print "It's turn", helper.turnNumber()
     helper.printAboutMe()
     #helper.printDesignsWithProperties()
-    if helper.playerName(helper.whoami()) == "ai3":
+    if helper.playerName(helper.whoami()) == "ai":
         rushAI()
     else:
         randomAI()
