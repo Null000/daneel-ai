@@ -590,17 +590,22 @@ def commandoAI():
 
 invasionFleets = []
 
+
+
 def rushAI():
     '''
     AI player that builds large armies of cheap units and attacks in waves.
     '''
-    global invasionFleets
     print "I am Zerg."
     
     #number of ships and weapons needed to start an invasion
     invasionShips = 10
     #retreat if less than this number of ships marked for invasion
     invasionShipsRetreat = 3
+    #ships left on every planet when there is an invasion
+    defenceShipsOnInvasion = 1
+    #ships left on every planet (others go colonise)
+    defenceShips = 3
     
     #construct a design for a simple attack/colonisation ship
     ship = []
@@ -615,7 +620,13 @@ def rushAI():
     ship = helper.designByName(shipName)
     
     #choose a cheap explosives for use in weapons
-    explosives = "uranium explosives"
+    explosive = "uranium explosives"
+    
+    stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceShipsOnInvasion, defenceShips)
+    
+def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceShipsOnInvasion, defenceShips):
+    global invasionFleets
+    print "I am not the smartest one."
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
@@ -691,7 +702,6 @@ def rushAI():
         
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
-    defenceShips = 1
     #mark fleets for invasion
     print "there are", len(potentialInvasionFleets), "fleets ready for invasion"
     if len(potentialInvasionFleets) >= invasionShips:
@@ -705,7 +715,7 @@ def rushAI():
                 if parent in guardOnPlanets:
                     currentGuard = guardOnPlanets[parent]
                 #if not enough fleets are guarding add this one
-                if currentGuard < defenceShips:
+                if currentGuard < defenceShipsOnInvasion:
                     guardOnPlanets[parent] = currentGuard + 1
                     continue
             #mark it for invasion
@@ -933,7 +943,7 @@ def multipleAI():
     print "I am a shapeshifter."
     #randomly choose one of the other behaviours
     import random
-    random.choice([rushAI,commandoAI,bunkerAI,greedyAI])()
+    random.choice([rushAI, commandoAI, bunkerAI, greedyAI])()
     return
 
 def AICode():
