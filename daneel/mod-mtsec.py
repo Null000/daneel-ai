@@ -421,27 +421,27 @@ def maxWeaponsOfDesign(design):
     for (component, numberOfUnits) in cache.designs[design].components:
         #is the component a tube?
         #each tube can carry 1 weapon
-        if component in tubeDict.keys():
+        if tubeDict.has_key(component):
             type = tubeDict[component]
-            if type in weapons.keys():
+            if weapons.has_key(type):
                 weapons[type] += numberOfUnits 
             else:
                 weapons[type] = numberOfUnits
             continue
         #is the component a missile rack?
         #each missile rack can carry 2 weapons
-        if component in tubeDict.keys():
+        if tubeDict.has_key(component):
             type = tubeDict[component]
-            if type in weapons.keys():
+            if weapons.has_key(type):
                 weapons[type] += numberOfUnits * 2 
             else:
                 weapons[type] = numberOfUnits * 2
             continue
         #is the component a torpedo rack?
         #each torpedo rack can carry 4 weapons
-        if component in tubeDict.keys():
+        if tubeDict.has_key(component):
             type = tubeDict[component]
-            if type in weapons.keys():
+            if weapons.has_key(type):
                 weapons[type] += numberOfUnits * 4 
             else:
                 weapons[type] = numberOfUnits * 4
@@ -459,7 +459,7 @@ def maxWeaponsOfFleet(fleetid):
         tempMaxWeapons = maxWeaponsOfDesign(design)
         #add all the weapons to the sum
         for weaponType in tempMaxWeapons.keys():
-            if weaponType in maxWeapons.keys():
+            if maxWeapons.has_key(weaponType):
                 maxWeapons[weaponType] += tempMaxWeapons[weaponType] * number
             else:
                 maxWeapons[weaponType] = tempMaxWeapons[weaponType] * number
@@ -474,7 +474,7 @@ def typeOfWeapon(design):
     components = helper.designComponents()
     #loop through all components and look for a match
     for (id, value) in component:
-        if id in reverseWeaponHullDict.keys():
+        if reverseWeaponHullDict.has_key(id):
             return reverseWeaponHullDict[id]
     return None
 
@@ -488,7 +488,7 @@ def weaponsNeeded(fleetid):
     # a dictionary for weapons that could be loaded by type
     weaponsNeededDict = {}
     for type in maxWeapons.keys():
-        if type in weaponsLoaded.keys():
+        if weaponsLoaded.has_key(type):
             if maxWeapons[type] > weaponsLoaded[type]:
                 weaponsNeededDict[type] = maxWeapons[type] - weaponsLoaded[type]
         else:
@@ -514,7 +514,7 @@ def weaponsOnObject(objectid):
             #design not a weapon design
             continue
         #add to the list of weapons
-        if type in weaponsLoaded.keys():
+        if weaponsLoaded.has_key(type):
             weaponsLoaded[type] += number
         else:
             weaponsLoaded[type] = number
@@ -574,7 +574,7 @@ def loadWeapons(fleet, planet, weaponDict, alreadyLoaded={}):
                     alreadyLoaded[type] -= available
                 
             #add to the list of weapons
-            if type in weaponsLoaded.keys():
+            if weaponsLoaded.has_key(type):
                 weaponsLoaded[type] += number
             else:
                 weaponsLoaded[type] = number
@@ -641,12 +641,11 @@ def rushAI():
                     
                     #make a list of all weapons that will be loaded
                     weaponsToLoadDict = {}
-                    #TODO replace all a in b.keys() with b.has_key(a)
                     for typeOfWeaponNeeded in weaponsNeededDict.keys():
                         available = 0
-                        if typeOfWeaponNeeded in weaponsOnPlanet.keys():
+                        if weaponsOnPlanet.has_key(typeOfWeaponNeeded):
                             available = weaponsOnPlanet[typeOfWeaponNeeded]
-                            if typeOfWeaponNeeded in weaponsLoadedDict.keys():
+                            if weaponsLoadedDict.has_key(typeOfWeaponNeeded):
                                 available -= weaponsLoadedDict[typeOfWeaponNeeded]
                             assert available >= 0
                             #give build order if nesessary
@@ -932,7 +931,9 @@ def greedyAI():
     
 def multipleAI():
     print "I am a shapeshifter."
-    #TODO pick one of the other AI functions at random
+    #randomly choose one of the other behaviours
+    import random
+    random.choice([rushAI,commandoAI,bunkerAI,greedyAI])()
     return
 
 def AICode():
