@@ -684,10 +684,10 @@ def rushAI():
             invasionFleets.remove(fleet)
     #remove all of the fleets that are not fully loaded with weapons
     for fleet in potentialInvasionFleets:
-        #remove ship if its not loaded with weapons
-        if weaponsOnObject(fleet) == {}:
+        #remove ship if it's not loaded with weapons
+        if weaponsOnObject(fleet) != maxWeaponsOfFleet(fleet):
             potentialInvasionFleets.remove(fleet)
-            continue 
+            continue
         
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
@@ -950,9 +950,6 @@ def AICode():
         rushAI()
     else:
         randomAI()
-#    for fleet in helper.myFleets():
-#        for (something, design, num) in helper.shipsOfFleet(fleet):
-#            maxWeaponsOfDesign(design)
     return
 
 """\
