@@ -67,6 +67,7 @@ def orderMove(id, pos):
      Arg name: pos    Arg type: Absolute Space Coordinates (code:0)    Arg desc: The position in space to move to
     '''
     global rulesystem
+    assert len(pos) == 3
     rulesystem.addConstraint("order_move(" + str(id) + ", " + str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + ")")
     return
 
@@ -97,7 +98,8 @@ def orderColonise(id):
     id is for the object the order is for
     '''
     global rulesystem
-    rulesystem.addConstraint("order_colonise(" + str(id) + ")")
+    #TODO this is for coverage runs only
+    #rulesystem.addConstraint("order_colonise(" + str(id) + ")")
     return
 
 def orderSplitFleet(id, ships):
@@ -684,21 +686,40 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
                 #build a weapon of the required type
                 buildWeapon(myPlanet, designWeapon(weaponToBuild, explosive))    
 
+    allMyFleets = helper.myFleets() 
+    removeFromInvasionFleets = []
+    for fleet in invasionFleets:
+    	#mark nonexistant fleets (probably destroyed) for removal
+    	if fleet not in allMyFleets:
+    		removeFromInvasionFleets.append(fleet)    	
+    #remove all nonexistent fleets
+    for fleet in removeFromInvasionFleets:
+        invasionFleets.remove(fleet)
+
     #check how many fleets are available for the invasion
     potentialInvasionFleets = helper.myFleets()
+    removeFromInvasionFleets = []
     #remove all of the fleets that are already marked for the invasion and fleets that can no longer fight (no weapons)
     for fleet in invasionFleets:
         potentialInvasionFleets.remove(fleet)
         #if it can no longer attack
         if weaponsOnObject(fleet) == {}:
             print helper.name(fleet), "is no longer invading"
-            invasionFleets.remove(fleet)
+            removeFromInvasionFleets.append(fleet)
+    #remove all fleet without weapons
+    for fleet in removeFromInvasionFleets:
+        invasionFleets.remove(fleet)
+
+
     #remove all of the fleets that are not fully loaded with weapons
+    removeFromPotentialInvasionFleets = []
     for fleet in potentialInvasionFleets:
         #remove ship if it's not loaded with weapons
         if weaponsOnObject(fleet) != maxWeaponsOfFleet(fleet):
-            potentialInvasionFleets.remove(fleet)
-            continue
+            removeFromInvasionFleets.append(fleet)
+    for fleet in removeFromInvasionFleets:
+        potentialInvasionFleets.remove(fleet)
+    
         
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
@@ -726,13 +747,8 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
         print "to little attack ships. Retreat!"
         invasionFleets = [] 
     
-    
-    allMyFleets = helper.myFleets()
     #attack the enemy with ships marked for invasion
     for fleet in invasionFleets:
-        if not fleet in allMyFleets:
-            #this is not my fleet anymore... remove it
-            invasionFleets.remove(fleet)
         print helper.name(fleet), "is invading (beware!)"
         #find a planet to attack
         nearestPlanet = helper.nearestEnemyPlanet(helper.position(fleet))
@@ -750,7 +766,7 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
     #make a list of fleets not marked for invasion
     freeFleets = helper.myFleets()
     for fleet in invasionFleets:
-        freeFleets.remove(fleet)
+       	freeFleets.remove(fleet)
     
     #give orders to ships not marked for invasion
     #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
@@ -791,6 +807,7 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
         #other ships should go to a friendly palanet for suplies (if not already there)
         else:
             nearestPlanet = helper.nearestMyPlanet(helper.position(fleet))
+            assert nearestPlanet != None
             planetPosition = helper.position(nearestPlanet)
             #move if not already there
             if helper.position(fleet) != planetPosition:
