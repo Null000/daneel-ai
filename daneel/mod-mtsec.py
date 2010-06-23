@@ -98,8 +98,7 @@ def orderColonise(id):
     id is for the object the order is for
     '''
     global rulesystem
-    #TODO this is for coverage runs only
-    #rulesystem.addConstraint("order_colonise(" + str(id) + ")")
+    rulesystem.addConstraint("order_colonise(" + str(id) + ")")
     return
 
 def orderSplitFleet(id, ships):
@@ -370,15 +369,15 @@ def addWeaponDesign(components):
 #serial number for numbering fleets when naming for tracking purposes
 fleetSerialNumber = 0
 
-def buildShip(planet, ship):
+def buildShip(planet, ship, numberOfShips=1):
     global fleetSerialNumber
-    print "building ships on", helper.name(planet)
-    orderBuildFleet(planet, [(ship, 1)], helper.playerName(helper.whoami()) + "'s fleet #" + str(fleetSerialNumber))
+    print "building ships on", helper.name(planet), "(", helper.designName(ship), ")"
+    orderBuildFleet(planet, [(ship, numberOfShips)], helper.playerName(helper.whoami()) + "'s fleet #" + str(fleetSerialNumber))
     fleetSerialNumber += 1
     
-def buildWeapon(planet, weapon):
+def buildWeapon(planet, weapon, numberOfWeapons=1):
     print "building weapons on" , helper.name(planet)
-    orderBuildWeapon(planet, [(weapon, 1)])
+    orderBuildWeapon(planet, [(weapon, numberOfWeapons)])
 
 def moveToObject(objectToMove, objectToMoveTo):
     orderMove(objectToMove, helper.position(objectToMoveTo))
@@ -402,7 +401,7 @@ def designWeapon(type, explosive):
     weaponHullDict = {"alpha":helper.componentByName("alpha missile hull"), "beta":helper.componentByName("beta missile hull"), "gamma":helper.componentByName("gamma missile hull"), "delta":helper.componentByName("delta missile hull"), "epsilon":helper.componentByName("epsilon missile hull"), "omega":helper.componentByName("omega torpedoe hull"), "upsilon":helper.componentByName("upsilon torpedoe hull"), "tau":helper.componentByName("tau torpedoe hull"), "sigma":helper.componentByName("sigma torpedoe hull"), "rho":helper.componentByName("rho torpedoe hull"), "xi":helper.componentByName("xi torpedoe hull")}
     
     #make a list of components to use (and calculate the max amount of explosives)
-    components = [(weaponHullDict[type], int(math.floor(weaponSize[type] / explosiveSize[explosive])))]
+    components = [(weaponHullDict[type], 1), (helper.componentByName(explosive), int(math.floor(weaponSize[type] / explosiveSize[explosive])) / 4)] #TODO remove /4 when the bug is fixed
     addWeaponDesign(components)
     return helper.designByName(helper.generateDesignName(components)) 
 
@@ -473,9 +472,9 @@ def typeOfWeapon(design):
     '''
     #TODO make this global and initialse it only once
     reverseWeaponHullDict = {helper.componentByName("alpha missile hull"):"alpha", helper.componentByName("beta missile hull"):"beta", helper.componentByName("gamma missile hull"):"gamma", helper.componentByName("delta missile hull"):"delta", helper.componentByName("epsilon missile hull"):"epsilon", helper.componentByName("omega torpedoe hull"):"omega", helper.componentByName("upsilon torpedoe hull"):"upsilon", helper.componentByName("tau torpedoe hull"):"tau", helper.componentByName("sigma torpedoe hull"):"sigma", helper.componentByName("rho torpedoe hull"):"rho", helper.componentByName("xi torpedoe hull"):"xi"}
-    components = helper.designComponents()
+    components = helper.designComponents(design)
     #loop through all components and look for a match
-    for (id, value) in component:
+    for (id, value) in components:
         if reverseWeaponHullDict.has_key(id):
             return reverseWeaponHullDict[id]
     return None
@@ -505,6 +504,9 @@ def weaponsOnObject(objectid):
     #build a dict of all the weapons loaded by type
     weaponsLoaded = {}
     for (id, number) in stuffOnObject:
+        #ignore if there is 0 units (why does it even report it then?)
+        if number == 0:
+            continue
         #find a design id from the resource id (they have the same name)
         resourceName = helper.resourceName(id)
         designid = helper.designByName(resourceName)
@@ -531,11 +533,11 @@ def loadWeapons(fleet, planet, weaponDict, alreadyLoaded={}):
     stuffToLoad = []
     
     #make a copy so we don't change the original
-    alreadyLoaded = alreadyLoaded.copy()
-    weaponDict = weaponDict.copy()
+    alreadyLoaded2 = alreadyLoaded.copy()
+    weaponDict2 = weaponDict.copy()
 
     #for every type we need to load
-    for typeToLoad in weaponDict.keys():
+    for typeToLoad in weaponDict2.keys():
         #loop through all the resources on the planet until we add enough weapons of this type to the loading list
         for (id, available) in stuffOnPlanet:
             #find a design id from the resource id (they have the same name)
@@ -552,47 +554,72 @@ def loadWeapons(fleet, planet, weaponDict, alreadyLoaded={}):
             if type == typeToLoad:
                 #how many are to be loaded to other ships
                 markedForLoading = 0
-                if alreadyLoaded.has_key(type):
-                    markedForLoading = alreadyLoaded[type]
+                if alreadyLoaded2.has_key(type):
+                    markedForLoading = alreadyLoaded2[type]
                 #number of weapon we can load
                 canLoad = available - markedForLoading
                 #if we can load any of them
                 if canLoad > 0:
-                    willLoad = min(canLoad, weaponDict[type])
+                    willLoad = min(canLoad, weaponDict2[type])
                     #add weapons to the list of weapons to load
                     stuffToLoad.append((id, willLoad))
                     
                     #reduce the number of this type that need loading
-                    weaponDict[type] -= willLoad
+                    weaponDict2[type] -= willLoad
                     
                     #we have passed all the weapons that were marked for other ships
-                    alreadyLoaded[type] = 0
+                    alreadyLoaded2[type] = 0
                     
                     #continue to another type if all weapons of this type have been marked for loading
-                    if weaponDict[type] == 0:
+                    if weaponDict2[type] == 0:
                         break
                 #all are to be loaded to ther ships    
                 else:
-                    alreadyLoaded[type] -= available
-                
-            #add to the list of weapons
-            if weaponsLoaded.has_key(type):
-                weaponsLoaded[type] += number
-            else:
-                weaponsLoaded[type] = number
+                    if alreadyLoaded2.has_key(type):
+                        alreadyLoaded2[type] -= available
+            #TODO delete this if you find no use for it (not sure why this is here)
+#            #add to the list of weapons
+#            if weaponsLoaded.has_key(type):
+#                weaponsLoaded[type] += number
+#            else:
+#                weaponsLoaded[type] = number
     
     assert stuffToLoad != []
     orderLoadArmament(fleet, stuffToLoad)
 
-def commandoAI():
-
-    print "I am Rambo."
-    #this code will be very similar to rushAI (only with stronger ships)
-    return
-
+#list of fleets marked for invasion
 invasionFleets = []
 
-
+def commandoAI():
+    '''
+    AI player that builds strong units and attacks fast.
+    '''
+    print "I am Rambo."
+    
+    #number of ships and weapons needed to start an invasion
+    invasionShips = 1
+    #retreat if less than this number of ships marked for invasion
+    invasionShipsRetreat = 0
+    #ships left on every planet when there is an invasion
+    defenceShipsOnInvasion = 0
+    #ships left on every planet (others go colonise)
+    defenceShips = 0
+    
+    #construct a design for a simple attack/colonisation ship
+    ship = []
+    ship.append([helper.componentByName("dreadnought"), 1])
+    #ship.append([helper.componentByName("colonisation module"), 1])
+    ship.append([helper.componentByName("xi torpedoe tube"), 2])
+    #add the design
+    addShipDesign(ship)
+    shipName = helper.generateDesignName(ship)
+    #replace the list of components with the id
+    ship = helper.designByName(shipName)
+    
+    #choose a cheap explosives for use in weapons
+    explosive = "antimatter explosives"
+    
+    stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceShipsOnInvasion, defenceShips)
 
 def rushAI():
     '''
@@ -612,7 +639,7 @@ def rushAI():
     #construct a design for a simple attack/colonisation ship
     ship = []
     ship.append([helper.componentByName("frigate"), 1])
-    ship.append([helper.componentByName("colonisation module"), 1]) #TODO uncomment this when the design bug is fixed
+    #ship.append([helper.componentByName("colonisation module"), 1])
     ship.append([helper.componentByName("delta missile tube"), 1])
     ship.append([helper.componentByName("delta missile rack"), 1])
     #add the design
@@ -652,6 +679,7 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
                     if len(weaponsNeededDict) == 0:
                         continue
                     
+                    #TODO recheck if this actualy works
                     #make a list of all weapons that will be loaded
                     weaponsToLoadDict = {}
                     for typeOfWeaponNeeded in weaponsNeededDict.keys():
@@ -661,11 +689,13 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
                             if weaponsLoadedDict.has_key(typeOfWeaponNeeded):
                                 available -= weaponsLoadedDict[typeOfWeaponNeeded]
                             assert available >= 0
-                            #give build order if nesessary
-                            if weaponToBuild == None and available < weaponsNeededDict[typeOfWeaponNeeded]:
-                                weaponToBuild = typeOfWeaponNeeded
-                            #mark weapons for loading
-                            weaponsToLoadDict[typeOfWeaponNeeded] = min(available, weaponsNeededDict[typeOfWeaponNeeded])
+                            #if there are any to load
+                            if available > 0:
+                                #mark weapons for loading
+                                weaponsToLoadDict[typeOfWeaponNeeded] = min(available, weaponsNeededDict[typeOfWeaponNeeded])
+                        #give build order if nesessary
+                        if weaponToBuild == None and available < weaponsNeededDict[typeOfWeaponNeeded]:
+                            weaponToBuild = typeOfWeaponNeeded
                     #if there is anything to load
                     if weaponsToLoadDict != {}:
                         #actualy load the weapons...
@@ -716,8 +746,8 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
     for fleet in potentialInvasionFleets:
         #remove ship if it's not loaded with weapons
         if weaponsOnObject(fleet) != maxWeaponsOfFleet(fleet):
-            removeFromInvasionFleets.append(fleet)
-    for fleet in removeFromInvasionFleets:
+            removeFromPotentialInvasionFleets.append(fleet)
+    for fleet in removeFromPotentialInvasionFleets:
         potentialInvasionFleets.remove(fleet)
     
         
@@ -792,18 +822,21 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
         #move only ships that can colonise other planets
         if canColonise(fleet):                
             nearestPlanet = helper.nearestNeutralPlanet(helper.position(fleet), planetsToIgnore)
-            planetPosition = helper.position(nearestPlanet)
-            planetsToIgnore.append(nearestPlanet)
-            
-            if helper.position(fleet) == planetPosition:
-                #colonise if there
-                print helper.name(fleet), "is colonising", helper.name(nearestPlanet)
-                orderColonise(fleet)
-                pass
+            if nearestPlanet == None:
+                print helper.name(fleet), "has no planet to colonise."
             else:
-                #move to planet
-                print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
-                orderMove(fleet, planetPosition)
+                planetPosition = helper.position(nearestPlanet)
+                planetsToIgnore.append(nearestPlanet)
+                
+                if helper.position(fleet) == planetPosition:
+                    #colonise if there
+                    print helper.name(fleet), "is colonising", helper.name(nearestPlanet)
+                    orderColonise(fleet)
+                    pass
+                else:
+                    #move to planet
+                    print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
+                    orderMove(fleet, planetPosition)
         #other ships should go to a friendly palanet for suplies (if not already there)
         else:
             nearestPlanet = helper.nearestMyPlanet(helper.position(fleet))
@@ -823,7 +856,7 @@ def randomAI():
     #construct a design for a simple attack/colonisation ship
     ship = []
     ship.append([helper.componentByName("frigate"), 1])
-    ship.append([helper.componentByName("colonisation module"), 1]) 
+    #ship.append([helper.componentByName("colonisation module"), 1]) 
     ship.append([helper.componentByName("delta missile tube"), 1])
     ship.append([helper.componentByName("delta missile rack"), 1])
     #add the design
@@ -897,7 +930,7 @@ def randomAI():
         #pick an action
         action = random.choice(actionList)
         if action == "colonise":
-            print helper.name(fleet), "is colonising", helper.name(helper.targetPosition(fleet))
+            print helper.name(fleet), "is colonising", helper.name(helper.nearestNeutralPlanet(fleet))
             orderColonise(fleet)
             continue
         if action == "attack":
@@ -947,14 +980,68 @@ def randomAI():
     return
     
 def bunkerAI():
+    '''
+    AI player that builds strong defences.
+    '''
     print "I am paranoid"
-    #this code will be very similar to rushAI (only with different designs=
-    return
+
+    
+    #number of ships and weapons needed to start an invasion
+    invasionShips = 100
+    #retreat if less than this number of ships marked for invasion
+    invasionShipsRetreat = 0
+    #ships left on every planet when there is an invasion
+    defenceShipsOnInvasion = 10
+    #ships left on every planet (others go colonise)
+    defenceShips = 10
+    
+    #construct a design for a simple attack/colonisation ship
+    ship = []
+    ship.append([helper.componentByName("argonaut"), 1])
+    #ship.append([helper.componentByName("colonisation module"), 1])
+    ship.append([helper.componentByName("xi torpedoe tube"), 4]) #TODO this should be 5 units
+    #add the design
+    addShipDesign(ship)
+    shipName = helper.generateDesignName(ship)
+    #replace the list of components with the id
+    ship = helper.designByName(shipName)
+    
+    #choose a cheap explosives for use in weapons
+    explosive = "antimatter explosives"
+    
+    stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceShipsOnInvasion, defenceShips)
 
 def greedyAI():
+    '''
+    AI player that expands rapidely, but does not attack.
+    '''
     print "I am not wealthy enough"
-    #this code will be very similar to rushAI (only without attacking)
-    return
+    
+    #number of ships and weapons needed to start an invasion
+    invasionShips = 100
+    #retreat if less than this number of ships marked for invasion
+    invasionShipsRetreat = 3
+    #ships left on every planet when there is an invasion
+    defenceShipsOnInvasion = 1
+    #ships left on every planet (others go colonise)
+    defenceShips = 1
+    
+    #construct a design for a simple attack/colonisation ship
+    ship = []
+    ship.append([helper.componentByName("frigate"), 1])
+    #ship.append([helper.componentByName("colonisation module"), 1])
+    ship.append([helper.componentByName("delta missile tube"), 1])
+    ship.append([helper.componentByName("delta missile rack"), 1])
+    #add the design
+    addShipDesign(ship)
+    shipName = helper.generateDesignName(ship)
+    #replace the list of components with the id
+    ship = helper.designByName(shipName)
+    
+    #choose a cheap explosives for use in weapons
+    explosive = "uranium explosives"
+    
+    stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceShipsOnInvasion, defenceShips)
     
 def multipleAI():
     print "I am a shapeshifter."
@@ -964,9 +1051,15 @@ def multipleAI():
     return
 
 def AICode():
-    if helper.myFleets() == [] and helper.myPlanets() == []:
-        print "Today was a good day to die."
-        exit(0)
+    if helper.turnNumber() > 0:
+        if helper.myPlanets() == []:
+            print "Today was a good day to die."
+            print "turn:", helper.turnNumber()
+            exit(0)
+        if helper.planetsOwnedBy(helper.enemies()) == []:
+            print "I won!"
+            print "turn:", helper.turnNumber()
+            exit(0)
     
     #delete all messages so you don't get spammed
     helper.deleteAllMessages()
@@ -974,10 +1067,9 @@ def AICode():
     helper.printAboutMe()
     #helper.printDesignsWithProperties()
     if helper.playerName(helper.whoami()) == "ai":
-        rushAI()
+        bunkerAI()
     else:
-        randomAI()
-    return
+        greedyAI()
 
 """\
 list of possible components
