@@ -374,17 +374,19 @@ def buildShip(planet, ship, numberOfShips=1):
     print "building ships on", helper.name(planet), "(", helper.designName(ship), ")"
     orderBuildFleet(planet, [(ship, numberOfShips)], helper.playerName(helper.whoami()) + "'s fleet #" + str(fleetSerialNumber))
     fleetSerialNumber += 1
+    
+def factories(planet):
+    return helper.resourceAvailable(planet, "Factories")
 
-def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5):
+def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlreadyUsed=0):
     '''
     maxPointsToWaste is the % of the production points that can go unused. ( 0.0 - 1.0)
-    '''
-    #get the number of production points available
-    factories = helper.resourceAvailable(planet, "Factories")
-    
+    '''    
+    #factories on planet
+    factoriesOnPlanet = factories(planet)
     #TODO make this global
     #dictionary of hull sizes
-    hullSize = {"scout hull":60, "battle scout hull":80, "advanced battle scout hull":133, "frigate":200, "battle frigate":200, "destroyer":300, "battle destroyer":300, "battleship":375, "dreadnought":500, "argonaut":1000}
+    hullSize = {"scout hull":60.0, "battle scout hull":80.0, "advanced battle scout hull":133.0, "frigate":200.0, "battle frigate":200.0, "destroyer":300.0, "battle destroyer":300.0, "battleship":375.0, "dreadnought":500.0, "argonaut":1000.0}
     size = 0
     #get the size for this design
     for (id, number) in helper.designComponents(ship):
@@ -395,12 +397,12 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5):
             break
     assert size > 0
     #calculate how many points do you need to build 1 ship
-    pointsPerShip = size / 10
+    pointsPerShip = int(math.ceil(size / 10.0))
     numberToBuild = 0
-    points = 0
+    points = -pointsAlreadyUsed
     for turn in xrange(maxTurns):
         #calculate production points available at 1 + turn turns
-        points += min(factories + turn, 100)
+        points += min(factoriesOnPlanet + turn, 100)
         #how many ships you could build in 1 + turn turns
         numberToBuild = points / pointsPerShip
         #check if there are little enough points wasted
@@ -674,7 +676,7 @@ def rushAI():
     
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship.append([helper.componentByName("frigate"), 1])
+    ship.append([helper.componentByName("advanced battle scout hull"), 1])
     #ship.append([helper.componentByName("colonisation module"), 1])
     ship.append([helper.componentByName("delta missile tube"), 1])
     ship.append([helper.componentByName("delta missile rack"), 1])
@@ -891,7 +893,7 @@ def randomAI():
     print "I am confused."
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship.append([helper.componentByName("frigate"), 1])
+    ship.append([helper.componentByName("advanced battle scout hull"), 1])
     #ship.append([helper.componentByName("colonisation module"), 1]) 
     ship.append([helper.componentByName("delta missile tube"), 1])
     ship.append([helper.componentByName("delta missile rack"), 1])
@@ -1064,7 +1066,7 @@ def greedyAI():
     
     #construct a design for a simple attack/colonisation ship
     ship = []
-    ship.append([helper.componentByName("frigate"), 1])
+    ship.append([helper.componentByName("advanced battle scout hull"), 1])
     #ship.append([helper.componentByName("colonisation module"), 1])
     ship.append([helper.componentByName("delta missile tube"), 1])
     ship.append([helper.componentByName("delta missile rack"), 1])
