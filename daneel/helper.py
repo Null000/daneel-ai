@@ -406,6 +406,13 @@ def componentByName(name):
             return component.id
     return None
 
+def componentName(id):
+    '''
+    Returns the name of the component with the given id.
+    '''
+    global cache
+    return cache.components[id].name
+
 def resourceByName(name):
     '''
     Returns the id of the resource with the given name.
