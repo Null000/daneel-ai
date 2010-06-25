@@ -378,8 +378,14 @@ def buildShip(planet, ship, numberOfShips=1):
 def factories(planet):
     return helper.resourceAvailable(planet, "Factories")
 
-def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlreadyUsed=0):
+def optimalBuildWeapon(planet, weaponDict, maxTurns, pointsAlreadyUsed=0):
     '''
+    weaponDict - dictionary of number of weapons needed to be build by type {"alpha":3,"xi":2}
+    '''
+    
+
+def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlreadyUsed=0):
+    ''' 
     maxPointsToWaste is the % of the production points that can go unused. ( 0.0 - 1.0)
     '''    
     #factories on planet
@@ -411,7 +417,8 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlrea
     #in case 1 ships takes longer than maxTurns to build, build just one
     if numberToBuild == 0:
         numberToBuild = 1
-    buildShip(planet, ship, numberToBuild)    
+    buildShip(planet, ship, numberToBuild)
+    #TODO return the number of points used (in the current turn)
     
 def buildWeapon(planet, weapon, numberOfWeapons=1):
     print "building weapons on" , helper.name(planet)
@@ -1067,9 +1074,9 @@ def greedyAI():
     #construct a design for a simple attack/colonisation ship
     ship = []
     ship.append([helper.componentByName("advanced battle scout hull"), 1])
-    #ship.append([helper.componentByName("colonisation module"), 1])
-    ship.append([helper.componentByName("delta missile tube"), 1])
-    ship.append([helper.componentByName("delta missile rack"), 1])
+    ship.append([helper.componentByName("colonisation module"), 1])
+    #ship.append([helper.componentByName("delta missile tube"), 1])
+    #ship.append([helper.componentByName("delta missile rack"), 1])
     #add the design
     addShipDesign(ship)
     shipName = helper.generateDesignName(ship)
@@ -1105,7 +1112,7 @@ def AICode():
     helper.printAboutMe()
     #helper.printDesignsWithProperties()
     if helper.playerName(helper.whoami()) == "ai":
-        rushAI()
+        commandoAI()
     else:
         greedyAI()
 
