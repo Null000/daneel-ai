@@ -335,7 +335,6 @@ def checkIfOrdersSame(order1, order2):
     #check the type
     if type(order1) != type(order2):
         return False
-    #check the name TODO: might be included in type
     if order1._name != order2._name:
         return False
     #check the order arguments
@@ -654,12 +653,6 @@ def loadWeapons(fleet, planet, weaponDict, alreadyLoaded={}):
                 else:
                     if alreadyLoaded2.has_key(type):
                         alreadyLoaded2[type] -= available
-            #TODO delete this if you find no use for it (not sure why this is here)
-#            #add to the list of weapons
-#            if weaponsLoaded.has_key(type):
-#                weaponsLoaded[type] += number
-#            else:
-#                weaponsLoaded[type] = number
     
     assert stuffToLoad != []
     orderLoadArmament(fleet, stuffToLoad)
@@ -756,7 +749,6 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
                     if len(weaponsNeededDict) == 0:
                         continue
                     
-                    #TODO recheck if this actualy works
                     #make a list of all weapons that will be loaded
                     weaponsToLoadDict = {}
                     for typeOfWeaponNeeded in weaponsNeededDict.keys():
@@ -864,9 +856,7 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
             print helper.name(fleet), "is attacking", helper.name(nearestPlanet) 
             planetPosition = helper.position(nearestPlanet)
             if helper.position(fleet) != planetPosition:
-                #TODO: I think you can't attack a planet if you're moving there (even if you are there)
                 orderMove(fleet, planetPosition)
-                #TODO find out if you have to colonise a planet to take it over (I think so)
         else:
             print helper.name(fleet), "has nothing to attack"
     
@@ -1264,7 +1254,6 @@ def smartAI():
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
     #mark fleets for invasion
-    #TODO make only attack ships count
     print "there are", len(potentialInvasionFleets), "fleets ready for invasion"
     if len(potentialInvasionFleets) >= invasionShips:
         for fleet in potentialInvasionFleets:
@@ -1311,7 +1300,6 @@ def smartAI():
            freeFleets.remove(fleet)
     
     
-    #TODO colonise with all colonisation ships (thats what they are for) and only attack ships count as guardians
     #give orders to ships not marked for invasion
     #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
     planetsToIgnore = []
@@ -1326,7 +1314,7 @@ def smartAI():
             if parent in guardOnPlanets:
                 currentGuard = guardOnPlanets[parent]
             #if not enough fleets are guarding add this one
-            if currentGuard < defenceShips:
+            if currentGuard < defenceShips and not canColonise(fleet):
                 guardOnPlanets[parent] = currentGuard + 1
                 #make it stay there
                 orderNone(fleet)
