@@ -362,6 +362,7 @@ def waitingAI():
 
 def addShipDesign(components):
     helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("ships"), components)
+    return helper.designByName(helper.generateDesignName(components))
     
 def addWeaponDesign(components):
     helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("weapons"), components)
@@ -391,7 +392,7 @@ def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosives, maxPoi
     factoriesOnPlanet = factories(planet) - pointsAlreadyUsed
     buildList = []
     for type in weaponDict.keys():
-        design = designWeapon(type, explosive, maxExplosives)
+        design = designWeapon(type, explosivesList[0], maxExplosives)
         #cost of one unit of this design
         cost = 0
         #count the number of parts used
@@ -405,7 +406,7 @@ def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosives, maxPoi
         buildList.append((design,numberToBuild))
     
     assert buildList != []
-    orderBuildWeapon(planet, [(weapon, numberOfWeapons)])
+    orderBuildWeapon(planet, buildList)
     
 
 def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlreadyUsed=0):
@@ -418,8 +419,12 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlrea
     #dictionary of hull sizes
     hullSize = {"scout hull":60.0, "battle scout hull":80.0, "advanced battle scout hull":133.0, "frigate":200.0, "battle frigate":200.0, "destroyer":300.0, "battle destroyer":300.0, "battleship":375.0, "dreadnought":500.0, "argonaut":1000.0}
     size = 0
+    
+    #create the design
+    design = addShipDesign(ship)
+    
     #get the size for this design
-    for (id, number) in helper.designComponents(ship):
+    for (id, number) in helper.designComponents(design):
         name = helper.componentName(id).lower()
         #if the component is a hull 
         if hullSize.has_key(name):
@@ -442,7 +447,7 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlrea
     if numberToBuild == 0:
         numberToBuild = 1
     
-    buildShip(planet, ship, numberToBuild)
+    buildShip(planet, design, numberToBuild)
     #TODO return the number of points used (in the current turn)
     
 def buildWeapon(planet, weapon, numberOfWeapons=1):
@@ -783,7 +788,7 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
             #build weapons/ships order
             if weaponToBuild == None:
                 #no weaopns to build... build a ship
-                optimalBuildShip(myPlanet, ship)
+                buildShip(myPlanet, ship)
             else:
                 #build a weapon of the required type
                 buildWeapon(myPlanet, designWeapon(weaponToBuild, explosive))    
@@ -1123,7 +1128,7 @@ def multipleAI():
 
 def smartAI():
     global invasionFleets
-    print "I the smart one."
+    print "I am the smart one."
     
     #colonisation ship design
     #there is still space for tubes
@@ -1135,7 +1140,7 @@ def smartAI():
     ship = []
     ship.append([helper.componentByName("scout hull"), 1])
     #there is no need to have this many weapons on one ship
-    ship.append([helper.componentByName("alpha missile tube"), 20])
+    ship.append([helper.componentByName("alpha missile tube"), 10])
     
     #list of explosives to use
     explosivesList = ["antimatter explosives", "antiparticle explosives"]
@@ -1145,7 +1150,7 @@ def smartAI():
     invasionShipsRetreat = 0
     defenceShipsOnInvasion = 0
     defenceShips = 0
-    colonisationShipsPercent = 0.25 #TODO this will vary in the future
+    colonisationShipsPercent = 0.25 #TODO this will vary dynamicaly in the future
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
@@ -1214,8 +1219,8 @@ def smartAI():
                     #TODO experiment with max turns and other arguments
                     optimalBuildShip(myPlanet, ship)
             else:
-                #build a weapon of the required type
-                optimalBuildWeapon(myPlanet, weaponToBuild, explosivesList, maxExplosives)    
+                #build weapons of the required type
+                optimalBuildWeapon(myPlanet, weaponsToBuild, explosivesList, maxExplosives)    
 
     allMyFleets = helper.myFleets() 
     removeFromInvasionFleets = []
@@ -1374,9 +1379,11 @@ def AICode():
     #helper.printDesignsWithProperties()
     if helper.playerName(helper.whoami()) == "ai":
         #commandoAI()
-        rushAI()
+        #rushAI()
+        smartAI()
     else:
-        greedyAI()
+        #greedyAI()
+        commandoAI()
 
 """\
 list of possible components
