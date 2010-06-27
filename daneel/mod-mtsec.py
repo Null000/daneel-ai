@@ -378,15 +378,39 @@ def buildShip(planet, ship, numberOfShips=1):
 def factories(planet):
     return helper.resourceAvailable(planet, "Factories")
 
-def optimalBuildWeapon(planet, weaponDict, maxTurns, pointsAlreadyUsed=0):
+def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosives, maxPointsToWaste=0.2, maxTurns=1, pointsAlreadyUsed=0):
     '''
     weaponDict - dictionary of number of weapons needed to be build by type {"alpha":3,"xi":2}
     '''
+    #TODO correct this when mining gets implemented (if ever)
+    #currently a 1 production point is used for every component of the weapon (1 for the hull and 1 for each unit of explosives)
+    #this means only the first explosive from the explosives list will be used (and it is meaningless to use anything but the strongest)
+    #the current implementation ignores most of the optional arguments and just builds as many weapons as possible in a single turn
+    
+    #factories on planet
+    factoriesOnPlanet = factories(planet) - pointsAlreadyUsed
+    buildList = []
+    for type in weaponDict.keys():
+        design = designWeapon(type, explosive, maxExplosives)
+        #cost of one unit of this design
+        cost = 0
+        #count the number of parts used
+        for (id,number) in helper.designComponents(design):
+            cost += number
+        #calculate how many units of this type of weapon you can build
+        numberToBuild = factoriesOnPlanet/cost
+        if numberToBuild == 0:
+            continue
+        factoriesOnPlanet -= numberToBuild * cost
+        buildList.append((design,numberToBuild))
+    
+    assert buildList != []
+    orderBuildWeapon(planet, [(weapon, numberOfWeapons)])
     
 
 def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlreadyUsed=0):
-    ''' 
-    maxPointsToWaste is the % of the production points that can go unused. ( 0.0 - 1.0)
+    '''
+    maxPointsToWaste is the % of the production points that can go unused. (0.0 - 1.0)
     '''    
     #factories on planet
     factoriesOnPlanet = factories(planet)
@@ -417,7 +441,7 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlrea
     #in case 1 ships takes longer than maxTurns to build, build just one
     if numberToBuild == 0:
         numberToBuild = 1
-    #TODO give a build order for every ship (so we get seperate fleets)
+    
     buildShip(planet, ship, numberToBuild)
     #TODO return the number of points used (in the current turn)
     
@@ -436,7 +460,7 @@ def orderOfID(objectId):
     #return current order
     return queue.first.CurrentOrder
 
-def designWeapon(type, explosive):
+def designWeapon(type, explosive, maxExplosives=1000):
     '''
     Creates a design for a weapon of specified type using the maximum amount of specified explosives. Returns the id of the design.
     Example: for delta missile with uranium explosives use designWeapon("delta","uranium explosives")
@@ -448,8 +472,8 @@ def designWeapon(type, explosive):
     
     #make a list of components to use (and calculate the max amount of explosives)
     #TODO this is the real version, the other one if in use until the bug is fixed
-    #components = [(weaponHullDict[type], 1), (helper.componentByName(explosive), int(math.floor(weaponSize[type] / explosiveSize[explosive])))]
-    components = [(weaponHullDict[type], 1), (helper.componentByName(explosive), 1)]
+    #components = [(weaponHullDict[type], 1), (helper.componentByName(explosive), min(int(math.floor(weaponSize[type] / explosiveSize[explosive]),maxExplosives)))]
+    components = [(weaponHullDict[type], 1), (helper.componentByName(explosive), min(1, maxExplosives))]
     addWeaponDesign(components)
     return helper.designByName(helper.generateDesignName(components)) 
 
@@ -1102,6 +1126,7 @@ def smartAI():
     print "I the smart one."
     
     #colonisation ship design
+    #there is still space for tubes
     colonisationShip = []
     colonisationShip.append([helper.componentByName("advanced battle scout hull"), 1])
     colonisationShip.append([helper.componentByName("colonisation module"), 1])
@@ -1109,13 +1134,17 @@ def smartAI():
     #attack ship design
     ship = []
     ship.append([helper.componentByName("scout hull"), 1])
+    #there is no need to have this many weapons on one ship
     ship.append([helper.componentByName("alpha missile tube"), 20])
     
-    explosive = "antiparticle explosives"
+    #list of explosives to use
+    explosivesList = ["antimatter explosives", "antiparticle explosives"]
+    maxExplosives = 1 #TODO this could be an array for each type or maybe a dictionary
+    
     invasionShips = 1
     invasionShipsRetreat = 0
-    defenceShipsOnInvasion = 1
-    defenceShips = 3
+    defenceShipsOnInvasion = 0
+    defenceShips = 0
     colonisationShipsPercent = 0.25 #TODO this will vary in the future
     
     #build ships on all planets (and load them with weapons)
@@ -1157,9 +1186,9 @@ def smartAI():
                         if available < weaponsNeededDict[typeOfWeaponNeeded]:
                             #add it to the dictionary of weapons that need to be build
                             if weaponsToBuild.has_key(typeOfWeaponNeeded):
-                                weaponsToBuild[typeOfWeaponNeeded] +=  weaponsNeededDict[typeOfWeaponNeeded] - available
+                                weaponsToBuild[typeOfWeaponNeeded] += weaponsNeededDict[typeOfWeaponNeeded] - available
                             else:
-                                weaponsToBuild[typeOfWeaponNeeded] =  weaponsNeededDict[typeOfWeaponNeeded] - available
+                                weaponsToBuild[typeOfWeaponNeeded] = weaponsNeededDict[typeOfWeaponNeeded] - available
                     #if there is anything to load
                     if weaponsToLoadDict != {}:
                         #actualy load the weapons...
@@ -1177,16 +1206,16 @@ def smartAI():
                 #no weaopns to build... build a ship
                 #choose betwen an attack ship and a colonisation ship
                 if random.random() < colonisationShipsPercent:
-                    #TODO think about building mixed ships (seperate fleets, but in the same turn)
                     #build colonisation ship
+                    #TODO experiment with max turns and other arguments
                     optimalBuildShip(myPlanet, colonisationShip)
                 else:
                     #bild attack ship
+                    #TODO experiment with max turns and other arguments
                     optimalBuildShip(myPlanet, ship)
             else:
                 #build a weapon of the required type
-                #TODO adapt this to the weaponsToBuild dictionary
-                buildWeapon(myPlanet, designWeapon(weaponToBuild, explosive))    
+                optimalBuildWeapon(myPlanet, weaponToBuild, explosivesList, maxExplosives)    
 
     allMyFleets = helper.myFleets() 
     removeFromInvasionFleets = []
@@ -1260,7 +1289,7 @@ def smartAI():
     for fleet in invasionFleets:
         print helper.name(fleet), "is invading (beware!)"
         #find a planet to attack
-        #TODO make a weighted choise betwen say... 3 neares planets (make it a bit less predictable)
+        #TODO make a weighted choise betwen say... 3 nearest planets (make it a bit less predictable)
         nearestPlanet = helper.nearestEnemyPlanet(helper.position(fleet))
         #move to that planet
         if nearestPlanet != None:
