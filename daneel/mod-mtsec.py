@@ -417,6 +417,7 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlrea
     #in case 1 ships takes longer than maxTurns to build, build just one
     if numberToBuild == 0:
         numberToBuild = 1
+    #TODO give a build order for every ship (so we get seperate fleets)
     buildShip(planet, ship, numberToBuild)
     #TODO return the number of points used (in the current turn)
     
@@ -446,7 +447,9 @@ def designWeapon(type, explosive):
     weaponHullDict = {"alpha":helper.componentByName("alpha missile hull"), "beta":helper.componentByName("beta missile hull"), "gamma":helper.componentByName("gamma missile hull"), "delta":helper.componentByName("delta missile hull"), "epsilon":helper.componentByName("epsilon missile hull"), "omega":helper.componentByName("omega torpedoe hull"), "upsilon":helper.componentByName("upsilon torpedoe hull"), "tau":helper.componentByName("tau torpedoe hull"), "sigma":helper.componentByName("sigma torpedoe hull"), "rho":helper.componentByName("rho torpedoe hull"), "xi":helper.componentByName("xi torpedoe hull")}
     
     #make a list of components to use (and calculate the max amount of explosives)
-    components = [(weaponHullDict[type], 1), (helper.componentByName(explosive), int(math.floor(weaponSize[type] / explosiveSize[explosive])) / 4)] #TODO remove /4 when the bug is fixed
+    #TODO this is the real version, the other one if in use until the bug is fixed
+    #components = [(weaponHullDict[type], 1), (helper.componentByName(explosive), int(math.floor(weaponSize[type] / explosiveSize[explosive])))]
+    components = [(weaponHullDict[type], 1), (helper.componentByName(explosive), 1)]
     addWeaponDesign(components)
     return helper.designByName(helper.generateDesignName(components)) 
 
@@ -684,9 +687,9 @@ def rushAI():
     #construct a design for a simple attack/colonisation ship
     ship = []
     ship.append([helper.componentByName("advanced battle scout hull"), 1])
-    #ship.append([helper.componentByName("colonisation module"), 1])
+    ship.append([helper.componentByName("colonisation module"), 1])
     ship.append([helper.componentByName("delta missile tube"), 1])
-    ship.append([helper.componentByName("delta missile rack"), 1])
+    #ship.append([helper.componentByName("delta missile rack"), 1])
     #add the design
     addShipDesign(ship)
     shipName = helper.generateDesignName(ship)
@@ -845,7 +848,6 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
     
     #give orders to ships not marked for invasion
     #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
-    defenceShips = 3
     planetsToIgnore = []
     guardOnPlanets = {}
     for fleet in freeFleets:  
@@ -1095,6 +1097,236 @@ def multipleAI():
     random.choice([rushAI, commandoAI, bunkerAI, greedyAI])()
     return
 
+def smartAI():
+    global invasionFleets
+    print "I the smart one."
+    
+    #colonisation ship design
+    colonisationShip = []
+    colonisationShip.append([helper.componentByName("advanced battle scout hull"), 1])
+    colonisationShip.append([helper.componentByName("colonisation module"), 1])
+    
+    #attack ship design
+    ship = []
+    ship.append([helper.componentByName("scout hull"), 1])
+    ship.append([helper.componentByName("alpha missile tube"), 20])
+    
+    explosive = "antiparticle explosives"
+    invasionShips = 1
+    invasionShipsRetreat = 0
+    defenceShipsOnInvasion = 1
+    defenceShips = 3
+    colonisationShipsPercent = 0.25 #TODO this will vary in the future
+    
+    #build ships on all planets (and load them with weapons)
+    for myPlanet in helper.myPlanets():
+        currentOrder = orderOfID(myPlanet) 
+        print "checking what to do with", helper.name(myPlanet)
+        #check if there is already something being build on this planet
+        if currentOrder == None:
+            #load ships with weapons and build more weapons if necessary
+            #what type of weapon should be build
+            weaponsToBuild = {}
+
+            weaponsOnPlanet = weaponsOnObject(myPlanet)
+            #weapons already loaded
+            weaponsLoadedDict = {}
+            
+            for thingOnPlanet in helper.contains(myPlanet):
+                if helper.isMyFleet(thingOnPlanet):
+                    #find out if it needs any more weapons
+                    weaponsNeededDict = weaponsNeeded(thingOnPlanet)
+                    #if no needed weapons skip this fleet
+                    if len(weaponsNeededDict) == 0:
+                        continue
+                    
+                    #make a list of all weapons that will be loaded
+                    weaponsToLoadDict = {}
+                    for typeOfWeaponNeeded in weaponsNeededDict.keys():
+                        available = 0
+                        if weaponsOnPlanet.has_key(typeOfWeaponNeeded):
+                            available = weaponsOnPlanet[typeOfWeaponNeeded]
+                            if weaponsLoadedDict.has_key(typeOfWeaponNeeded):
+                                available -= weaponsLoadedDict[typeOfWeaponNeeded]
+                            assert available >= 0
+                            #if there are any to load
+                            if available > 0:
+                                #mark weapons for loading
+                                weaponsToLoadDict[typeOfWeaponNeeded] = min(available, weaponsNeededDict[typeOfWeaponNeeded])
+                        #give build order if nesessary
+                        if available < weaponsNeededDict[typeOfWeaponNeeded]:
+                            #add it to the dictionary of weapons that need to be build
+                            if weaponsToBuild.has_key(typeOfWeaponNeeded):
+                                weaponsToBuild[typeOfWeaponNeeded] +=  weaponsNeededDict[typeOfWeaponNeeded] - available
+                            else:
+                                weaponsToBuild[typeOfWeaponNeeded] =  weaponsNeededDict[typeOfWeaponNeeded] - available
+                    #if there is anything to load
+                    if weaponsToLoadDict != {}:
+                        #actualy load the weapons...
+                        loadWeapons(thingOnPlanet, myPlanet, weaponsToLoadDict, weaponsLoadedDict)
+                        #mark them as loaded
+                        for type in weaponsToLoadDict.keys():
+                            #make sure other ships don't try to load the same weapons
+                            if weaponsLoadedDict.has_key(type):
+                                weaponsLoadedDict[type] += weaponsToLoadDict[type]
+                            else:
+                                weaponsLoadedDict[type] = weaponsToLoadDict[type]
+                    
+            #build weapons/ships order
+            if weaponsToBuild == {}:
+                #no weaopns to build... build a ship
+                #choose betwen an attack ship and a colonisation ship
+                if random.random() < colonisationShipsPercent:
+                    #TODO think about building mixed ships (seperate fleets, but in the same turn)
+                    #build colonisation ship
+                    optimalBuildShip(myPlanet, colonisationShip)
+                else:
+                    #bild attack ship
+                    optimalBuildShip(myPlanet, ship)
+            else:
+                #build a weapon of the required type
+                #TODO adapt this to the weaponsToBuild dictionary
+                buildWeapon(myPlanet, designWeapon(weaponToBuild, explosive))    
+
+    allMyFleets = helper.myFleets() 
+    removeFromInvasionFleets = []
+    for fleet in invasionFleets:
+        #mark nonexistant fleets (probably destroyed) for removal
+        if fleet not in allMyFleets:
+            removeFromInvasionFleets.append(fleet)        
+    #remove all nonexistent fleets
+    for fleet in removeFromInvasionFleets:
+        invasionFleets.remove(fleet)
+
+    #check how many fleets are available for the invasion
+    potentialInvasionFleets = helper.myFleets()
+    removeFromInvasionFleets = []
+    #remove all of the fleets that are already marked for the invasion and fleets that can no longer fight (no weapons)
+    for fleet in invasionFleets:
+        potentialInvasionFleets.remove(fleet)
+        #if it can no longer attack
+        if weaponsOnObject(fleet) == {}:
+            print helper.name(fleet), "is no longer invading"
+            removeFromInvasionFleets.append(fleet)
+    #remove all fleet without weapons
+    for fleet in removeFromInvasionFleets:
+        invasionFleets.remove(fleet)
+
+
+    #remove all of the fleets that are not fully loaded with weapons and colonisation ships
+    removeFromPotentialInvasionFleets = []
+    for fleet in potentialInvasionFleets:
+        #remove ship if it's a colonisation ship
+        if canColonise(fleet):
+            removeFromPotentialInvasionFleets.append(fleet)
+            continue
+        #remove ship if it's not loaded with weapons
+        if weaponsOnObject(fleet) != maxWeaponsOfFleet(fleet):
+            removeFromPotentialInvasionFleets.append(fleet)
+    for fleet in removeFromPotentialInvasionFleets:
+        potentialInvasionFleets.remove(fleet)
+    
+        
+    guardOnPlanets = {}
+    allMyPlanets = helper.myPlanets()
+    #mark fleets for invasion
+    #TODO make only attack ships count
+    print "there are", len(potentialInvasionFleets), "fleets ready for invasion"
+    if len(potentialInvasionFleets) >= invasionShips:
+        for fleet in potentialInvasionFleets:
+            parent = helper.containedBy(fleet)        
+            #if the fleet is on one of our planets and the number of fleets on that planet
+            #is less than the minimum don't send the ships away
+            if parent in allMyPlanets:
+                #how many fleets are guarding this planet
+                currentGuard = 0
+                if parent in guardOnPlanets:
+                    currentGuard = guardOnPlanets[parent]
+                #if not enough fleets are guarding add this one
+                if currentGuard < defenceShipsOnInvasion:
+                    guardOnPlanets[parent] = currentGuard + 1
+                    continue
+            #mark it for invasion
+            invasionFleets.append(fleet)
+    
+    #make the invasion fleets go back if there are only a few of them left
+    if len(invasionFleets) < invasionShipsRetreat:
+        print "to little attack ships. Retreat!"
+        #TODO does this make sure they actualy retreat?
+        invasionFleets = [] 
+
+
+    #attack the enemy with ships marked for invasion
+    for fleet in invasionFleets:
+        print helper.name(fleet), "is invading (beware!)"
+        #find a planet to attack
+        #TODO make a weighted choise betwen say... 3 neares planets (make it a bit less predictable)
+        nearestPlanet = helper.nearestEnemyPlanet(helper.position(fleet))
+        #move to that planet
+        if nearestPlanet != None:
+            print helper.name(fleet), "is attacking", helper.name(nearestPlanet) 
+            planetPosition = helper.position(nearestPlanet)
+            if helper.position(fleet) != planetPosition:
+                orderMove(fleet, planetPosition)
+        else:
+            print helper.name(fleet), "has nothing to attack"
+    
+    #make a list of fleets not marked for invasion
+    freeFleets = helper.myFleets()
+    for fleet in invasionFleets:
+           freeFleets.remove(fleet)
+    
+    
+    #TODO colonise with all colonisation ships (thats what they are for) and only attack ships count as guardians
+    #give orders to ships not marked for invasion
+    #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
+    planetsToIgnore = []
+    guardOnPlanets = {}
+    for fleet in freeFleets:  
+        parent = helper.containedBy(fleet)        
+        #if the fleet is on one of our planets and the number of fleets on that planet
+        #is less than the minimum don't send the ships away
+        if parent in allMyPlanets:
+            #how many fleets are guarding this planet
+            currentGuard = 0
+            if parent in guardOnPlanets:
+                currentGuard = guardOnPlanets[parent]
+            #if not enough fleets are guarding add this one
+            if currentGuard < defenceShips:
+                guardOnPlanets[parent] = currentGuard + 1
+                #make it stay there
+                orderNone(fleet)
+                continue
+
+        #move only ships that can colonise other planets
+        if canColonise(fleet):                
+            nearestPlanet = helper.nearestNeutralPlanet(helper.position(fleet), planetsToIgnore)
+            if nearestPlanet == None:
+                print helper.name(fleet), "has no planet to colonise."
+            else:
+                planetPosition = helper.position(nearestPlanet)
+                planetsToIgnore.append(nearestPlanet)
+                
+                if helper.position(fleet) == planetPosition:
+                    #colonise if there
+                    print helper.name(fleet), "is colonising", helper.name(nearestPlanet)
+                    orderColonise(fleet)
+                    pass
+                else:
+                    #move to planet
+                    print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
+                    orderMove(fleet, planetPosition)
+        #other ships should go to a friendly palanet for suplies (if not already there)
+        else:
+            nearestPlanet = helper.nearestMyPlanet(helper.position(fleet))
+            assert nearestPlanet != None
+            planetPosition = helper.position(nearestPlanet)
+            #move if not already there
+            if helper.position(fleet) != planetPosition:
+                print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
+                orderMove(fleet, planetPosition)
+    return
+
 def AICode():
     if helper.turnNumber() > 0:
         if helper.myPlanets() == []:
@@ -1112,7 +1344,8 @@ def AICode():
     helper.printAboutMe()
     #helper.printDesignsWithProperties()
     if helper.playerName(helper.whoami()) == "ai":
-        commandoAI()
+        #commandoAI()
+        rushAI()
     else:
         greedyAI()
 

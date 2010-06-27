@@ -37,7 +37,7 @@ def callback(mode, state, message="", todownload=None, total=None, amount=None):
     logging.getLogger("daneel").debug("Downloading %s %s Message:%s", mode, state, message)
 
 def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
-    debug = True
+    debug = False
 
     host, username, game, password = url2bits(uri)
     print host, username, game, password
