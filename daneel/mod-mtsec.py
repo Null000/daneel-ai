@@ -446,6 +446,7 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlrea
     if numberToBuild == 0:
         numberToBuild = 1
     
+    #TODO figure out how to split fleet to 1 ship fleets
     buildShip(planet, design, numberToBuild)
     #TODO return the number of points used (in the current turn)
     
@@ -709,9 +710,9 @@ def rushAI():
     #construct a design for a simple attack/colonisation ship
     ship = []
     ship.append([helper.componentByName("advanced battle scout hull"), 1])
-    ship.append([helper.componentByName("colonisation module"), 1])
+    #ship.append([helper.componentByName("colonisation module"), 1])
     ship.append([helper.componentByName("delta missile tube"), 1])
-    #ship.append([helper.componentByName("delta missile rack"), 1])
+    ship.append([helper.componentByName("delta missile rack"), 1])
     #add the design
     addShipDesign(ship)
     shipName = helper.generateDesignName(ship)
@@ -788,9 +789,9 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
     allMyFleets = helper.myFleets() 
     removeFromInvasionFleets = []
     for fleet in invasionFleets:
-    	#mark nonexistant fleets (probably destroyed) for removal
-    	if fleet not in allMyFleets:
-    		removeFromInvasionFleets.append(fleet)    	
+        #mark nonexistant fleets (probably destroyed) for removal
+        if fleet not in allMyFleets:
+            removeFromInvasionFleets.append(fleet)        
     #remove all nonexistent fleets
     for fleet in removeFromInvasionFleets:
         invasionFleets.remove(fleet)
@@ -863,7 +864,7 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
     #make a list of fleets not marked for invasion
     freeFleets = helper.myFleets()
     for fleet in invasionFleets:
-       	freeFleets.remove(fleet)
+           freeFleets.remove(fleet)
     
     #give orders to ships not marked for invasion
     #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
@@ -1112,7 +1113,6 @@ def greedyAI():
 def multipleAI():
     print "I am a shapeshifter."
     #randomly choose one of the other behaviours
-    import random
     random.choice([rushAI, commandoAI, bunkerAI, greedyAI])()
     return
 
@@ -1350,20 +1350,18 @@ def smartAI():
     return
 
 def AICode():
+    helper.printAboutMe()
+    print "It's turn", helper.turnNumber()
     if helper.turnNumber() > 0:
         if helper.myPlanets() == []:
             print "Today was a good day to die."
-            print "turn:", helper.turnNumber()
             exit(0)
         if helper.planetsOwnedBy(helper.enemies()) == []:
             print "I won!"
-            print "turn:", helper.turnNumber()
             exit(0)
     
     #delete all messages so you don't get spammed
     helper.deleteAllMessages()
-    print "It's turn", helper.turnNumber()
-    helper.printAboutMe()
     #helper.printDesignsWithProperties()
     if helper.playerName(helper.whoami()) == "ai":
         #commandoAI()
@@ -1371,6 +1369,8 @@ def AICode():
         smartAI()
     else:
         #greedyAI()
+        #rushAI()
+        #bunkerAI()
         commandoAI()
 
 """\
