@@ -360,11 +360,11 @@ def waitingAI():
     return
 
 def addShipDesign(components):
-    helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("ships"), components)
+    helper.addDesign(helper.generateDesignName(components), "its a ship", helper.categoryByName("ships"), components)
     return helper.designByName(helper.generateDesignName(components))
     
 def addWeaponDesign(components):
-    helper.addDesign(helper.generateDesignName(components), "", helper.categoryByName("weapons"), components)
+    helper.addDesign(helper.generateDesignName(components), "it's a weapon", helper.categoryByName("weapons"), components)
 
 #serial number for numbering fleets when naming for tracking purposes
 fleetSerialNumber = 0
@@ -486,7 +486,6 @@ def maxWeaponsOfDesign(design):
     '''
     Returns a dictionary of types of weapons the design (name or id) can carry. {"alpha":4,"beta":1,...}
     '''
-    global cache
     if isinstance(design, str):
         design = helper.designByName(design)
 
@@ -496,7 +495,7 @@ def maxWeaponsOfDesign(design):
     torpedoRackDict = {helper.componentByName("omega torpedoe rack"):"omega", helper.componentByName("upsilon torpedoe rack"):"upsilon", helper.componentByName("tau torpedoe rack"):"tau", helper.componentByName("sigma torpedoe rack"):"sigma", helper.componentByName("rho torpedoe rack"):"rho", helper.componentByName("xi torpedoe rack"):"xi"}
         
     weapons = {}
-    for (component, numberOfUnits) in cache.designs[design].components:
+    for (component, numberOfUnits) in helper.designComponents(design):
         #is the component a tube?
         #each tube can carry 1 weapon
         if tubeDict.has_key(component):
@@ -720,7 +719,7 @@ def rushAI():
     ship = helper.designByName(shipName)
     
     #choose a cheap explosives for use in weapons
-    explosive = "uranium explosives"
+    explosive = "enriched uranium"
     
     stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceShipsOnInvasion, defenceShips)
     
@@ -809,7 +808,6 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
     #remove all fleet without weapons
     for fleet in removeFromInvasionFleets:
         invasionFleets.remove(fleet)
-
 
     #remove all of the fleets that are not fully loaded with weapons
     removeFromPotentialInvasionFleets = []
@@ -935,7 +933,7 @@ def randomAI():
     #construct a design for a missile that fits the ship
     weapon = []
     weapon.append([helper.componentByName("delta missile hull"), 1])
-    weapon.append([helper.componentByName("uranium explosives"), 2])
+    weapon.append([helper.componentByName("enriched uranium"), 2])
     #add the design
     addWeaponDesign(weapon)
     weaponName = helper.generateDesignName(weapon)
@@ -1106,7 +1104,7 @@ def greedyAI():
     ship = helper.designByName(shipName)
     
     #choose a cheap explosives for use in weapons
-    explosive = "uranium explosives"
+    explosive = "enriched uranium"
     
     stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceShipsOnInvasion, defenceShips)
     
@@ -1116,10 +1114,7 @@ def multipleAI():
     random.choice([rushAI, commandoAI, bunkerAI, greedyAI])()
     return
 
-def smartAI():
-    global invasionFleets
-    print "I am the smart one."
-    
+def smartPlanetCode(colonisationShipsPercent):
     #colonisation ship design
     #there is still space for tubes
     colonisationShip = []
@@ -1129,18 +1124,13 @@ def smartAI():
     #attack ship design
     ship = []
     ship.append([helper.componentByName("scout hull"), 1])
-    #there is no need to have this many weapons on one ship
+    #TODO add max number of tubes to the design, just no need to fill them all
+    #there is no need to have this many weapons on one ship (20 is the max)
     ship.append([helper.componentByName("alpha missile tube"), 10])
     
     #list of explosives to use
     explosivesList = ["antimatter explosives", "antiparticle explosives"]
     maxExplosives = 1 #TODO this could be an array for each type or maybe a dictionary
-    
-    invasionShips = 1
-    invasionShipsRetreat = 0
-    defenceShipsOnInvasion = 0
-    defenceShips = 0
-    colonisationShipsPercent = 0.25 #TODO this will vary dynamicaly in the future
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
@@ -1212,6 +1202,118 @@ def smartAI():
                 #build weapons of the required type
                 optimalBuildWeapon(myPlanet, weaponsToBuild, explosivesList, maxExplosives)    
 
+def speed(fleet):
+    minSpeed = 1e10
+    #check the speed of every ship design present
+    for (something,design,numberOfUnits) in helper.shipsOfFleet(fleet):
+        #get the ship speed
+        #Note: there are 2 speed properties and looks like the wrong one is used in the server code
+        #this might break if that gets fixed
+        propertyId = helper.propertyByDescription("The number of units the weapon can move each turn")
+        assert propertyId != None
+        speed = helper.designPropertyValue(design, propertyId)
+        #parse the speed string
+        speed = float(speed.split(" ")[0])
+        assert speed != None
+        minSpeed = min(speed,minSpeed)
+    return minSpeed
+        
+
+def distanceToObjectInTurns(fleet, object):
+    fleetSpeed = speed(fleet) * 1e6 #convert from mega units
+    distance = helper.distance(fleet,object)
+    return int(math.ceil(distance/fleetSpeed))
+    
+
+def smartColonisationHeuristic(fleet,planet):
+    #use only distance for starters
+    #BTW smaller is better
+    return distanceToObjectInTurns(fleet, planet)
+    #TODO code a real heuristic    
+    #dont forget to take distance to enemy into account
+    
+def smartColonisationCode():
+    #find ships able to colonise
+    fleets = []
+    for fleet in helper.myFleets():
+        if canColonise(fleet):
+            fleets.append(fleet)
+    #dictionary for scores by planet
+    scoreDict = {}
+    #calculate heuristics
+    for planet in helper.neutralPlanets():
+        planetScores = []
+        for fleet in fleets:
+            score = smartColonisationHeuristic(fleet, planet)
+            planetScores.append((score,fleet))
+        #sort the scores in ascending order
+        planetScores.sort()
+        scoreDict[planet] = planetScores
+    
+    #dictonary of ships in use
+    shipPlanetDict = {}
+    
+    planetsToCheck = helper.neutralPlanets()
+    
+    #while not all planets checked
+    while planetsToCheck != []:
+        planet = planetsToCheck[0]
+        #select best ship
+        for (score,ship) in scoreDict[planet]:
+            #if ship already used
+            if shipPlanetDict.has_key(ship):
+                (oldScore,oldPlanet) = shipPlanetDict[ship]
+                #if score of this planet is better (smaller is better)
+                if score < oldScore:
+                    #use this ship and make the other planet choose again
+                    shipPlanetDict[ship] = (score,planet)
+                    #make the other planet choose again
+                    planetsToCheck.append(oldPlanet)
+                    #done for this planet
+                    break
+                #choose next ship
+            #first planet to want this ship
+            else:
+                shipPlanetDict[ship] = (score,planet)
+                #done for this planet
+                break
+        #remove the planet from the list
+        planetsToCheck.remove(planet)
+    
+    #give orders to all ships
+    for ship in shipPlanetDict.keys():
+        (score,planet) = shipPlanetDict[ship]
+        #if the ship is already on the planet
+        if helper.position(ship) == helper.position(planet):
+            #colonise it
+            orderColonise(ship)
+        else:
+            #move towards it
+            moveToObject(ship, planet)
+    
+
+def smartAttackCode():
+    pass
+    #dont forget the auto attack code
+    #TODO move from smartAI
+
+
+def smartAI():
+    global invasionFleets
+    print "I am the smart one."
+    
+    invasionShips = 1
+    invasionShipsRetreat = 0
+    defenceShipsOnInvasion = 0
+    defenceShips = 0
+    colonisationShipsPercent = 0.25 #TODO this will vary dynamicaly in the future
+    
+    #give orders to planets
+    smartPlanetCode(colonisationShipsPercent)
+
+    #give orders to colonisation ships
+    smartColonisationCode()
+    
     allMyFleets = helper.myFleets() 
     removeFromInvasionFleets = []
     for fleet in invasionFleets:
@@ -1225,7 +1327,8 @@ def smartAI():
     #check how many fleets are available for the invasion
     potentialInvasionFleets = helper.myFleets()
     removeFromInvasionFleets = []
-    #remove all of the fleets that are already marked for the invasion and fleets that can no longer fight (no weapons)
+    #remove all of the fleets that are already marked for the invasion 
+    #and fleets that can no longer fight (no weapons)
     for fleet in invasionFleets:
         potentialInvasionFleets.remove(fleet)
         #if it can no longer attack
@@ -1238,12 +1341,14 @@ def smartAI():
 
 
     #remove all of the fleets that are not fully loaded with weapons and colonisation ships
+    #TODO also remove fleets with more then 1 ship (will be split to more fleets)
     removeFromPotentialInvasionFleets = []
     for fleet in potentialInvasionFleets:
         #remove ship if it's a colonisation ship
         if canColonise(fleet):
             removeFromPotentialInvasionFleets.append(fleet)
             continue
+        #TODO think about sending ships to attack even if they are not fully loaded
         #remove ship if it's not loaded with weapons
         if weaponsOnObject(fleet) != maxWeaponsOfFleet(fleet):
             removeFromPotentialInvasionFleets.append(fleet)
@@ -1299,12 +1404,14 @@ def smartAI():
     for fleet in invasionFleets:
            freeFleets.remove(fleet)
     
+    #TODO seperate code for colonisation ships... or even a seperte list for colonisation ships (even better)
+    #TODO attack ship list and colonisation ship list
     
     #give orders to ships not marked for invasion
     #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
     planetsToIgnore = []
     guardOnPlanets = {}
-    for fleet in freeFleets:  
+    for fleet in freeFleets:
         parent = helper.containedBy(fleet)        
         #if the fleet is on one of our planets and the number of fleets on that planet
         #is less than the minimum don't send the ships away
@@ -1364,14 +1471,24 @@ def AICode():
     helper.deleteAllMessages()
     #helper.printDesignsWithProperties()
     if helper.playerName(helper.whoami()) == "ai":
+        pass
         #commandoAI()
         #rushAI()
         smartAI()
     else:
+        pass
         #greedyAI()
         #rushAI()
         #bunkerAI()
         commandoAI()
+        #smartAI()
+        
+    #ship = []
+    #ship.append([helper.componentByName("scout hull"), 1])
+    #ship.append([helper.componentByName("alpha missile tube"), 10])
+    #addShipDesign(ship)
+    
+    #designWeapon("alpha", "antimatter explosives", 1)
 
 """\
 list of possible components

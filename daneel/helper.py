@@ -5,6 +5,7 @@ Created on 30.4.2010
 '''
 from tp.netlib.objects import Design
 import tp.client.cache
+import math
 
 rulesystem = None
 cache = None
@@ -15,6 +16,14 @@ def nearestMyFleet(position, ignore=[]):
     Finds the nearest fleet owned by you (position or object id). List of fleets to ignore is optional.
     '''
     return nearestFleetOwnedBy(position, whoami(), ignore)
+
+def distance(object1, object2):
+    return math.sqrt(distanceSqare(object1, object2))
+
+def distanceSqare(object1, object2):
+    (x1, y1, z1) = position(object1)
+    (x2, y2, z2) = position(object2)
+    return (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2
 
 def nearestFleetOwnedBy(targetPosition, owners, ignore=[]):
     '''
@@ -534,6 +543,16 @@ def propertyByName(name):
             return property.id
     return None
 
+def propertyByDescription(desc):
+    '''
+    Returns the id of the property with the given description. 
+    '''
+    global cache
+    for property in cache.properties.values():
+        if property.description.lower() == desc.lower():
+            return property.id
+    return None
+
 def propertyName(property):
     '''
     Returns the name of the property with the given id.
@@ -549,7 +568,10 @@ def designProperties(design):
     if type(design) != int:
         design = designByName(design)
     return cache.designs[design].properties    
-    
+
+def designPropertyValueByDescription(design, propertyDescription):
+    return designPropertyValue(design, propertyByDescription(propertyDescription))
+
 def designPropertyValue(design, property):
     '''
     Returns the value of the property (id or name) in the design (name or id).
@@ -577,7 +599,7 @@ def isMyFleet(id):
    
 def shipsOfFleet(fleetid):
     '''
-    Returns a list of ships of the fleet with the given id.
+    Returns a list of ships of the fleet with the given id. [(something,design,numberOfUnits),...]
     '''
     global cache
     return cache.objects[fleetid].Ships[0][0]
