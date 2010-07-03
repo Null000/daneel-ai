@@ -1114,7 +1114,9 @@ def multipleAI():
     random.choice([rushAI, commandoAI, bunkerAI, greedyAI])()
     return
 
-def smartPlanetCode(colonisationShipsPercent):
+def smartPlanetCode():
+    colonisationShipsPercent = 0.25 #TODO this will vary dynamicaly in the future
+    
     #colonisation ship design
     #there is still space for tubes
     colonisationShip = []
@@ -1233,6 +1235,8 @@ def smartColonisationHeuristic(fleet,planet):
     #dont forget to take distance to enemy into account
     
 def smartColonisationCode():
+    #TODO split fleet with more than 1 ship
+    
     #find ships able to colonise
     fleets = []
     for fleet in helper.myFleets():
@@ -1293,26 +1297,12 @@ def smartColonisationCode():
     
 
 def smartAttackCode():
-    pass
-    #dont forget the auto attack code
-    #TODO move from smartAI
-
-
-def smartAI():
     global invasionFleets
-    print "I am the smart one."
+    #TODO don't forget the auto attack code
     
     invasionShips = 1
     invasionShipsRetreat = 0
     defenceShipsOnInvasion = 0
-    defenceShips = 0
-    colonisationShipsPercent = 0.25 #TODO this will vary dynamicaly in the future
-    
-    #give orders to planets
-    smartPlanetCode(colonisationShipsPercent)
-
-    #give orders to colonisation ships
-    smartColonisationCode()
     
     allMyFleets = helper.myFleets() 
     removeFromInvasionFleets = []
@@ -1403,49 +1393,44 @@ def smartAI():
     freeFleets = helper.myFleets()
     for fleet in invasionFleets:
            freeFleets.remove(fleet)
-    
-    #TODO seperate code for colonisation ships... or even a seperte list for colonisation ships (even better)
-    #TODO attack ship list and colonisation ship list
+
+
+def smartGuardCode():
+    global invasionFleets
+    #TODO split fleets with more than 1 ship
+    defenceShips = 0
+
+
+    #make a list of all attack ships not currently attacking
+    freeFleets = helper.myFleets()
+    #remove colonisation ships and ships marked for invasion
+    for fleet in freeFleets[:]:
+        if canColonise(fleet) or fleet in invasionFleets:
+            freeFleets.remove(fleet)
     
     #give orders to ships not marked for invasion
-    #move ships to neutral planets and colonise them (leave some ships on every planet for defense)
-    planetsToIgnore = []
     guardOnPlanets = {}
+    
+    #TODO do this the other way around... for each planet find fleets that can guard it
+    #(this gives you a better choise of guards)
     for fleet in freeFleets:
         parent = helper.containedBy(fleet)        
         #if the fleet is on one of our planets and the number of fleets on that planet
         #is less than the minimum don't send the ships away
-        if parent in allMyPlanets:
+        if parent in helper.myPlanets():
             #how many fleets are guarding this planet
             currentGuard = 0
-            if parent in guardOnPlanets:
+            if guardOnPlanets.has_key(parent):
                 currentGuard = guardOnPlanets[parent]
             #if not enough fleets are guarding add this one
-            if currentGuard < defenceShips and not canColonise(fleet):
+            if currentGuard < defenceShips:
                 guardOnPlanets[parent] = currentGuard + 1
                 #make it stay there
                 orderNone(fleet)
                 continue
 
-        #move only ships that can colonise other planets
-        if canColonise(fleet):                
-            nearestPlanet = helper.nearestNeutralPlanet(helper.position(fleet), planetsToIgnore)
-            if nearestPlanet == None:
-                print helper.name(fleet), "has no planet to colonise."
-            else:
-                planetPosition = helper.position(nearestPlanet)
-                planetsToIgnore.append(nearestPlanet)
-                
-                if helper.position(fleet) == planetPosition:
-                    #colonise if there
-                    print helper.name(fleet), "is colonising", helper.name(nearestPlanet)
-                    orderColonise(fleet)
-                    pass
-                else:
-                    #move to planet
-                    print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
-                    orderMove(fleet, planetPosition)
         #other ships should go to a friendly palanet for suplies (if not already there)
+        #TODO make a weighted choise where to return (distance, weapons needed by ships already there)
         else:
             nearestPlanet = helper.nearestMyPlanet(helper.position(fleet))
             assert nearestPlanet != None
@@ -1453,7 +1438,23 @@ def smartAI():
             #move if not already there
             if helper.position(fleet) != planetPosition:
                 print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
-                orderMove(fleet, planetPosition)
+                orderMove(fleet, planetPosition)    
+
+def smartAI():
+    print "I am the smart one."
+    
+    #give orders to planets
+    smartPlanetCode()
+
+    #give orders to colonisation ships
+    smartColonisationCode()
+    
+    #give orders to attack ships marked for invasion 
+    smartAttackCode()
+        
+    #give orders to attack ships not marked for invasion
+    smartGuardCode()
+    
     return
 
 def AICode():
