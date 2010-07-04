@@ -213,6 +213,12 @@ def turnNumber():
     global rulesystem
     return rulesystem.findConstraint("turn(int)")[0].args[0]
 
+def playerByName(playerName):
+    for player in players():
+        if name(player) == playerName:
+            return player
+    return None
+
 def players():
     '''
     Returns a list of all the players. (including guest)

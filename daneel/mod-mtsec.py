@@ -1294,7 +1294,6 @@ def smartColonisationCode():
         else:
             #move towards it
             moveToObject(ship, planet)
-    
 
 def smartAttackCode():
     global invasionFleets
@@ -1303,16 +1302,13 @@ def smartAttackCode():
     invasionShips = 1
     invasionShipsRetreat = 0
     defenceShipsOnInvasion = 0
+    minimalLoadToAttack = 0.25 #TODO use this (maybe use a heuristic)
     
     allMyFleets = helper.myFleets() 
-    removeFromInvasionFleets = []
-    for fleet in invasionFleets:
+    for fleet in invasionFleets[:]:
         #mark nonexistant fleets (probably destroyed) for removal
         if fleet not in allMyFleets:
-            removeFromInvasionFleets.append(fleet)        
-    #remove all nonexistent fleets
-    for fleet in removeFromInvasionFleets:
-        invasionFleets.remove(fleet)
+            invasionFleets.remove(fleet)        
 
     #check how many fleets are available for the invasion
     potentialInvasionFleets = helper.myFleets()
@@ -1344,7 +1340,6 @@ def smartAttackCode():
             removeFromPotentialInvasionFleets.append(fleet)
     for fleet in removeFromPotentialInvasionFleets:
         potentialInvasionFleets.remove(fleet)
-    
         
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
@@ -1373,7 +1368,6 @@ def smartAttackCode():
         #TODO does this make sure they actualy retreat?
         invasionFleets = [] 
 
-
     #attack the enemy with ships marked for invasion
     for fleet in invasionFleets:
         print helper.name(fleet), "is invading (beware!)"
@@ -1388,18 +1382,12 @@ def smartAttackCode():
                 orderMove(fleet, planetPosition)
         else:
             print helper.name(fleet), "has nothing to attack"
-    
-    #make a list of fleets not marked for invasion
-    freeFleets = helper.myFleets()
-    for fleet in invasionFleets:
-           freeFleets.remove(fleet)
 
 
 def smartGuardCode():
     global invasionFleets
     #TODO split fleets with more than 1 ship
     defenceShips = 0
-
 
     #make a list of all attack ships not currently attacking
     freeFleets = helper.myFleets()
@@ -1458,7 +1446,7 @@ def smartAI():
     return
 
 def AICode():
-    helper.printAboutMe()
+    #helper.printAboutMe()
     print "It's turn", helper.turnNumber()
     if helper.turnNumber() > 0:
         if helper.myPlanets() == []:
