@@ -1396,37 +1396,21 @@ def smartGuardCode():
         if canColonise(fleet) or fleet in invasionFleets:
             freeFleets.remove(fleet)
     
-    #give orders to ships not marked for invasion
-    guardOnPlanets = {}
     
-    #TODO do this the other way around... for each planet find fleets that can guard it
-    #(this gives you a better choise of guards)
     for fleet in freeFleets:
-        parent = helper.containedBy(fleet)        
-        #if the fleet is on one of our planets and the number of fleets on that planet
-        #is less than the minimum don't send the ships away
+        parent = helper.containedBy(fleet)
+        #is the feet on a friendly planet?        
         if parent in helper.myPlanets():
-            #how many fleets are guarding this planet
-            currentGuard = 0
-            if guardOnPlanets.has_key(parent):
-                currentGuard = guardOnPlanets[parent]
-            #if not enough fleets are guarding add this one
-            if currentGuard < defenceShips:
-                guardOnPlanets[parent] = currentGuard + 1
-                #make it stay there
-                orderNone(fleet)
-                continue
-
+            #make it stay here
+            #TODO check for orders so we don't mess up loading orders
+            orderNone(fleet)
         #other ships should go to a friendly palanet for suplies (if not already there)
         #TODO make a weighted choise where to return (distance, weapons needed by ships already there)
         else:
             nearestPlanet = helper.nearestMyPlanet(helper.position(fleet))
             assert nearestPlanet != None
             planetPosition = helper.position(nearestPlanet)
-            #move if not already there
-            if helper.position(fleet) != planetPosition:
-                print "moving", helper.name(fleet), "to", helper.name(nearestPlanet)
-                orderMove(fleet, planetPosition)    
+            orderMove(fleet, planetPosition)    
 
 def smartAI():
     print "I am the smart one."
