@@ -457,13 +457,7 @@ def buildWeapon(planet, weapon, numberOfWeapons=1):
 def moveToObject(objectToMove, objectToMoveTo):
     orderMove(objectToMove, helper.position(objectToMoveTo))
     
-def orderOfID(objectId):
-    #TODO think about adding this to helper or at least a has order function
-    # get the queue for the object
-    queueid = extra.objectutils.getOrderQueueList(cache, objectId)[0][1]
-    queue = cache.orders[queueid]
-    #return current order
-    return queue.first.CurrentOrder
+
 
 def designWeapon(type, explosive, maxExplosives=1000):
     '''
@@ -729,10 +723,9 @@ def stupidAIBase(ship, explosive, invasionShips, invasionShipsRetreat, defenceSh
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
-        currentOrder = orderOfID(myPlanet) 
         print "checking what to do with", helper.name(myPlanet)
         #check if there is already something being build on this planet
-        if currentOrder == None:
+        if not helper.hasOrder(myPlanet):
             #load ships with weapons and build more weapons if necessary
             #what type of weapon should be build
             weaponToBuild = None
@@ -943,7 +936,7 @@ def randomAI():
     #give orders to planets
     for myPlanet in helper.myPlanets():
         #only give orders if the planet has none
-        if orderOfID(myPlanet) != None:
+        if helper.hasOrdeR(myPlanet):
             print helper.name(myPlanet), "already has orders"
             continue
         #list available actions
@@ -962,7 +955,7 @@ def randomAI():
     #give orders to fleets
     for fleet in helper.myFleets():
         #only give orders if the fleet has none
-        if orderOfID(fleet) != None:
+        if helper.hasOrder(fleet):
             print helper.name(fleet), "already has orders"
             continue
         #automatic weapon loading if on friendly planet with weapons
@@ -1136,10 +1129,9 @@ def smartPlanetCode():
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
-        currentOrder = orderOfID(myPlanet) 
         print "checking what to do with", helper.name(myPlanet)
         #check if there is already something being build on this planet
-        if currentOrder == None:
+        if not helper.hasOrder(myPlanet):
             #load ships with weapons and build more weapons if necessary
             #what type of weapon should be build
             weaponsToBuild = {}
@@ -1241,7 +1233,8 @@ def smartColonisationCode():
     fleets = []
     for fleet in helper.myFleets():
         if canColonise(fleet):
-            fleets.append(fleet)
+            fleets.append(fleet)       
+            
     #dictionary for scores by planet
     scoreDict = {}
     #calculate heuristics
@@ -1303,6 +1296,8 @@ def smartAttackCode():
     invasionShipsRetreat = 0
     defenceShipsOnInvasion = 0
     minimalLoadToAttack = 0.25 #TODO use this (maybe use a heuristic)
+    minimalLoadToGuard = 0.25 #TODO use this
+    
     
     allMyFleets = helper.myFleets() 
     for fleet in invasionFleets[:]:

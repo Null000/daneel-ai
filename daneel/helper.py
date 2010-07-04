@@ -6,6 +6,7 @@ Created on 30.4.2010
 from tp.netlib.objects import Design
 import tp.client.cache
 import math
+import extra
 
 rulesystem = None
 cache = None
@@ -396,6 +397,13 @@ def nop(group=None, state=None, message=None, todownload=None, amount=None):
     It does nothing and is used internaly.
     '''
     return
+
+def hasOrder(objectId):
+    # get the queue for the object
+    queueid = extra.objectutils.getOrderQueueList(cache, objectId)[0][1]
+    queue = cache.orders[queueid]
+    #return if there is no order
+    return queue.first.CurrentOrder != None
 
 def categoryByName(name):
     '''
