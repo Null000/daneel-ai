@@ -101,14 +101,14 @@ def orderColonise(id):
     rulesystem.addConstraint("order_colonise(" + str(id) + ")")
     return
 
-def orderSplitFleet(id, ships):
+def orderSplitFleet(fleetid, ships):
     '''
     Split the fleet into two
     id is for the object the order is for
      Arg name: ships    Arg type: List (code:6)    Arg desc: The ships to be transferred
     '''
     global rulesystem
-    rulesystem.addConstraint("order_split_fleet(" + str(id) + ", " + str(ships) + ")")
+    rulesystem.addConstraint("order_split_fleet(" + str(fleetid) + ", " + str(ships) + ")")
     return
 
 def orderMergeFleet(id):
@@ -395,14 +395,14 @@ def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosives, maxPoi
         #cost of one unit of this design
         cost = 0
         #count the number of parts used
-        for (id,number) in helper.designComponents(design):
+        for (id, number) in helper.designComponents(design):
             cost += number
         #calculate how many units of this type of weapon you can build
-        numberToBuild = factoriesOnPlanet/cost
+        numberToBuild = factoriesOnPlanet / cost
         if numberToBuild == 0:
             continue
         factoriesOnPlanet -= numberToBuild * cost
-        buildList.append((design,numberToBuild))
+        buildList.append((design, numberToBuild))
     
     assert buildList != []
     orderBuildWeapon(planet, buildList)
@@ -1107,8 +1107,9 @@ def multipleAI():
     random.choice([rushAI, commandoAI, bunkerAI, greedyAI])()
     return
 
-def smartPlanetCode():
+def smartPlanetCode(ignoreFleets=[]):
     colonisationShipsPercent = 0.25 #TODO this will vary dynamicaly in the future
+    loadPercent = 0.7 #TODO use this, this can vary in the future
     
     #colonisation ship design
     #there is still space for tubes
@@ -1170,8 +1171,9 @@ def smartPlanetCode():
                                 weaponsToBuild[typeOfWeaponNeeded] = weaponsNeededDict[typeOfWeaponNeeded] - available
                     #if there is anything to load
                     if weaponsToLoadDict != {}:
-                        #actualy load the weapons...
-                        loadWeapons(thingOnPlanet, myPlanet, weaponsToLoadDict, weaponsLoadedDict)
+                        #actualy load the weapons... if the fleet is not in the process of being split
+                        if not thingOnPlanet in ignoreFleets:
+                            loadWeapons(thingOnPlanet, myPlanet, weaponsToLoadDict, weaponsLoadedDict)
                         #mark them as loaded
                         for type in weaponsToLoadDict.keys():
                             #make sure other ships don't try to load the same weapons
@@ -1199,7 +1201,7 @@ def smartPlanetCode():
 def speed(fleet):
     minSpeed = 1e10
     #check the speed of every ship design present
-    for (something,design,numberOfUnits) in helper.shipsOfFleet(fleet):
+    for (something, design, numberOfUnits) in helper.shipsOfFleet(fleet):
         #get the ship speed
         #Note: there are 2 speed properties and looks like the wrong one is used in the server code
         #this might break if that gets fixed
@@ -1209,31 +1211,65 @@ def speed(fleet):
         #parse the speed string
         speed = float(speed.split(" ")[0])
         assert speed != None
-        minSpeed = min(speed,minSpeed)
+        minSpeed = min(speed, minSpeed)
     return minSpeed
         
 
 def distanceToObjectInTurns(fleet, object):
     fleetSpeed = speed(fleet) * 1e6 #convert from mega units
-    distance = helper.distance(fleet,object)
-    return int(math.ceil(distance/fleetSpeed))
+    distance = helper.distance(fleet, object)
+    return int(math.ceil(distance / fleetSpeed))
     
 
-def smartColonisationHeuristic(fleet,planet):
-    #use only distance for starters
+def smartColonisationHeuristic(fleet, planet):
     #BTW smaller is better
-    return distanceToObjectInTurns(fleet, planet)
-    #TODO code a real heuristic    
-    #dont forget to take distance to enemy into account
+    distance = distanceToObjectInTurns(fleet, planet)
+    distanceToEnemyPlanet = int(math.ceil(helper.distance(planet, helper.nearestEnemyPlanet(planet)) / speed(fleet)))
+    #if its closer its better, if its futher away from the enemy its better
+    return distance - distanceToEnemyPlanet / 3
     
-def smartColonisationCode():
-    #TODO split fleet with more than 1 ship
-    
+def smartSplitFleets(fleets=None):
+    '''
+    Splits fleets with more than one ship in half.
+    '''
+    if fleets == None:
+        fleets = helper.myFleets()
+    #list of fleets that will be split
+    splitFleets = []
+    for fleet in fleets:
+        #total number of ships in the fleet
+        numberOfShips = 0
+        fleetContent = helper.shipsOfFleet(fleet)
+        for (something, design, ships) in fleetContent:
+            numberOfShips += ships
+        if numberOfShips > 1:
+            #half of the ships
+            firstPartOfShips = numberOfShips / 2
+            assert firstPartOfShips > 0
+            tempShipNumber = 0
+            #list of ships in the first half
+            firstListOfShips = []
+            for (something, design, ships) in fleetContent:
+                temp = min(ships, firstPartOfShips - tempShipNumber)
+                firstListOfShips.append((design, temp))
+                tempShipNumber += temp
+                assert tempShipNumber <= firstPartOfShips
+                if tempShipNumber == firstPartOfShips:
+                    break
+            #add it to the list of fleets that will be split
+            splitFleets.append(fleet)
+            #give order (you only need one part defined)
+            orderSplitFleet(fleet, firstListOfShips)
+    return splitFleets
+            
+
+def smartColonisationCode(ignoreFleets=[]):
     #find ships able to colonise
     fleets = []
     for fleet in helper.myFleets():
-        if canColonise(fleet):
-            fleets.append(fleet)       
+        #add the fleet if it can colonise and if it isn't in the process of being split
+        if canColonise(fleet) and not fleet in ignoreFleets:
+            fleets.append(fleet)
             
     #dictionary for scores by planet
     scoreDict = {}
@@ -1242,7 +1278,7 @@ def smartColonisationCode():
         planetScores = []
         for fleet in fleets:
             score = smartColonisationHeuristic(fleet, planet)
-            planetScores.append((score,fleet))
+            planetScores.append((score, fleet))
         #sort the scores in ascending order
         planetScores.sort()
         scoreDict[planet] = planetScores
@@ -1256,14 +1292,14 @@ def smartColonisationCode():
     while planetsToCheck != []:
         planet = planetsToCheck[0]
         #select best ship
-        for (score,ship) in scoreDict[planet]:
+        for (score, ship) in scoreDict[planet]:
             #if ship already used
             if shipPlanetDict.has_key(ship):
-                (oldScore,oldPlanet) = shipPlanetDict[ship]
+                (oldScore, oldPlanet) = shipPlanetDict[ship]
                 #if score of this planet is better (smaller is better)
                 if score < oldScore:
                     #use this ship and make the other planet choose again
-                    shipPlanetDict[ship] = (score,planet)
+                    shipPlanetDict[ship] = (score, planet)
                     #make the other planet choose again
                     planetsToCheck.append(oldPlanet)
                     #done for this planet
@@ -1271,7 +1307,7 @@ def smartColonisationCode():
                 #choose next ship
             #first planet to want this ship
             else:
-                shipPlanetDict[ship] = (score,planet)
+                shipPlanetDict[ship] = (score, planet)
                 #done for this planet
                 break
         #remove the planet from the list
@@ -1279,7 +1315,7 @@ def smartColonisationCode():
     
     #give orders to all ships
     for ship in shipPlanetDict.keys():
-        (score,planet) = shipPlanetDict[ship]
+        (score, planet) = shipPlanetDict[ship]
         #if the ship is already on the planet
         if helper.position(ship) == helper.position(planet):
             #colonise it
@@ -1288,16 +1324,15 @@ def smartColonisationCode():
             #move towards it
             moveToObject(ship, planet)
 
-def smartAttackCode():
+def smartAttackCode(ignoreFleets=[]):
     global invasionFleets
     #TODO don't forget the auto attack code
     
     invasionShips = 1
     invasionShipsRetreat = 0
     defenceShipsOnInvasion = 0
-    minimalLoadToAttack = 0.25 #TODO use this (maybe use a heuristic)
-    minimalLoadToGuard = 0.25 #TODO use this
-    
+    minimalLoadToAttack = 0.50 #TODO make this dynamic
+    minimalLoadToGuard = 0.20 #TODO maybe use this
     
     allMyFleets = helper.myFleets() 
     for fleet in invasionFleets[:]:
@@ -1307,37 +1342,41 @@ def smartAttackCode():
 
     #check how many fleets are available for the invasion
     potentialInvasionFleets = helper.myFleets()
-    removeFromInvasionFleets = []
     #remove all of the fleets that are already marked for the invasion 
     #and fleets that can no longer fight (no weapons)
-    for fleet in invasionFleets:
+    for fleet in invasionFleets[:]:
         potentialInvasionFleets.remove(fleet)
         #if it can no longer attack
         if weaponsOnObject(fleet) == {}:
             print helper.name(fleet), "is no longer invading"
-            removeFromInvasionFleets.append(fleet)
-    #remove all fleet without weapons
-    for fleet in removeFromInvasionFleets:
-        invasionFleets.remove(fleet)
+            invasionFleets.remove(fleet)
 
 
     #remove all of the fleets that are not fully loaded with weapons and colonisation ships
-    #TODO also remove fleets with more then 1 ship (will be split to more fleets)
-    removeFromPotentialInvasionFleets = []
-    for fleet in potentialInvasionFleets:
+    for fleet in potentialInvasionFleets[:]:
         #remove ship if it's a colonisation ship
         if canColonise(fleet):
-            removeFromPotentialInvasionFleets.append(fleet)
+            potentialInvasionFleets.remove(fleet)
             continue
-        #TODO think about sending ships to attack even if they are not fully loaded
-        #remove ship if it's not loaded with weapons
-        if weaponsOnObject(fleet) != maxWeaponsOfFleet(fleet):
-            removeFromPotentialInvasionFleets.append(fleet)
-    for fleet in removeFromPotentialInvasionFleets:
-        potentialInvasionFleets.remove(fleet)
+        #remove fleets in process of being split
+        if fleet in ignoreFleets:
+            potentialInvasionFleets.remove(fleet)
+            continue
+        #remove ship if it doesn't have enough weapons
+        maxWeaponsOnBoard = 0
+        for (type, number) in maxWeaponsOfFleet(fleet).items():
+            maxWeaponsOnBoard += number
+        weaponsOnBoard = 0
+        for (type, number) in weaponsOnObject(fleet).items():
+            weaponsOnBoard += number
+        assert maxWeaponsOnBoard != 0
+        if weaponsOnBoard / maxWeaponsOnBoard < minimalLoadToAttack:
+            potentialInvasionFleets.remove(fleet)
         
     guardOnPlanets = {}
     allMyPlanets = helper.myPlanets()
+    
+    #TODO remove guard fleets from potential invasion fleets
     #mark fleets for invasion
     print "there are", len(potentialInvasionFleets), "fleets ready for invasion"
     if len(potentialInvasionFleets) >= invasionShips:
@@ -1360,7 +1399,7 @@ def smartAttackCode():
     #make the invasion fleets go back if there are only a few of them left
     if len(invasionFleets) < invasionShipsRetreat:
         print "to little attack ships. Retreat!"
-        #TODO does this make sure they actualy retreat?
+        #the smart guard code takes care of returning to friendly planets
         invasionFleets = [] 
 
     #attack the enemy with ships marked for invasion
@@ -1379,19 +1418,15 @@ def smartAttackCode():
             print helper.name(fleet), "has nothing to attack"
 
 
-def smartGuardCode():
+def smartGuardCode(ignoreFleets=[]):
     global invasionFleets
-    #TODO split fleets with more than 1 ship
-    defenceShips = 0
-
     #make a list of all attack ships not currently attacking
     freeFleets = helper.myFleets()
-    #remove colonisation ships and ships marked for invasion
+    #remove colonisation ships and ships marked for invasion and fleets in the process of beeing split
     for fleet in freeFleets[:]:
-        if canColonise(fleet) or fleet in invasionFleets:
+        if canColonise(fleet) or fleet in invasionFleets or fleet in ignoreFleets: 
             freeFleets.remove(fleet)
-    
-    
+        
     for fleet in freeFleets:
         parent = helper.containedBy(fleet)
         #is the feet on a friendly planet?        
@@ -1410,17 +1445,20 @@ def smartGuardCode():
 def smartAI():
     print "I am the smart one."
     
+    #split fleets that can be split
+    splitFleets = smartSplitFleets()
+    
     #give orders to planets
-    smartPlanetCode()
+    smartPlanetCode(splitFleets)
 
     #give orders to colonisation ships
-    smartColonisationCode()
+    smartColonisationCode(splitFleets)
     
     #give orders to attack ships marked for invasion 
-    smartAttackCode()
+    smartAttackCode(splitFleets)
         
     #give orders to attack ships not marked for invasion
-    smartGuardCode()
+    smartGuardCode(splitFleets)
     
     return
 
