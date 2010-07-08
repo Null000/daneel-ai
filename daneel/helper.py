@@ -178,6 +178,17 @@ def position(id):
             return [x.args[1], x.args[2], x.args[3]] 
     return None
 
+def velocity(id):
+    '''
+    Returns the velocity of the object with the given id.
+    '''
+    global rulesystem
+    pos = rulesystem.findConstraint("vel(int,int,int,int)")
+    for x in pos:
+        if int(x.args[0]) == id:
+            return [x.args[1], x.args[2], x.args[3]] 
+    return None
+
 def name(id):
     '''
     Returns the name of the object with the given id. (not to be used for player names)

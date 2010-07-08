@@ -446,7 +446,6 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlrea
     if numberToBuild == 0:
         numberToBuild = 1
     
-    #TODO figure out how to split fleet to 1 ship fleets
     buildShip(planet, design, numberToBuild)
     #TODO return the number of points used (in the current turn)
     
@@ -1108,7 +1107,8 @@ def multipleAI():
     return
 
 def smartPlanetCode(ignoreFleets=[]):
-    colonisationShipsPercent = 0.25 #TODO this will vary dynamicaly in the future
+    #TODO this should be around 0.25 when the colonisation is working again
+    colonisationShipsPercent = 0 #TODO this will vary dynamicaly in the future
     loadPercent = 0.7 #TODO use this, this can vary in the future
     
     #colonisation ship design
@@ -1327,6 +1327,7 @@ def smartColonisationCode(ignoreFleets=[]):
 def smartAttackCode(ignoreFleets=[]):
     global invasionFleets
     #TODO don't forget the auto attack code
+    #TODO send only a limited amount of ships to every planet
     
     invasionShips = 1
     invasionShipsRetreat = 0
@@ -1442,8 +1443,41 @@ def smartGuardCode(ignoreFleets=[]):
             planetPosition = helper.position(nearestPlanet)
             orderMove(fleet, planetPosition)    
 
+#dictionary of information about the enemy fleets designs (max speed which can tell us ship type)
+enemyDesignMaxSpeed = {}
+enemyDesignType = {}
+
+#TODO this is currently not working since the velocity is always (0,0,0) thest it when this gets fixed
+def smartScanEnemy():
+    global enemyDesignMaxSpeed
+    enemyFleets = helper.fleetsOwnedBy(helper.enemies())
+    
+    #update info for every enemy fleet
+    for fleet in enemyFleets:
+        #calculate velocity
+        velocity = helper.velocity(fleet)
+        velocitySize = math.sqrt(velocity[0] ** 2 + velocity[1] ** 2 + velocity[2] ** 2)
+        
+        #get the designs
+        ships = helper.shipsOfFleet(fleet)
+        for (something, design, number) in ships:
+            #change data if the speed is bigger or no previous data exists
+            if enemyDesignMaxSpeed.has_key(design) and enemyDesignMaxSpeed[design] < velocitySize or not enemyDesignMaxSpeed.has_key(design):
+                #update the max speed seen for this design
+                enemyDesignMaxSpeed[design] = velocitySize
+                #guess again what type of ship could this be
+                designGuess = shipTypeGuess(velocitySize)
+                enemyDesignType[design] = designGuess
+
+def shipTypeGuess(maxSpeed):
+    #TODO implement this
+    pass
+
 def smartAI():
     print "I am the smart one."
+    
+    #scan the enemy fleets
+    smartScanEnemy()
     
     #split fleets that can be split
     splitFleets = smartSplitFleets()
@@ -1483,10 +1517,11 @@ def AICode():
         smartAI()
     else:
         pass
+        waitingAI()
         #greedyAI()
         #rushAI()
         #bunkerAI()
-        commandoAI()
+        #commandoAI()
         #smartAI()
         
     #ship = []
