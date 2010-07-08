@@ -411,17 +411,14 @@ def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosives, maxPoi
 def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlreadyUsed=0):
     '''
     maxPointsToWaste is the % of the production points that can go unused. (0.0 - 1.0)
-    '''    
+    '''
+    global hullSize    
     #factories on planet
     factoriesOnPlanet = factories(planet)
-    #TODO make this global
-    #dictionary of hull sizes
-    hullSize = {"scout hull":60.0, "battle scout hull":80.0, "advanced battle scout hull":133.0, "frigate":200.0, "battle frigate":200.0, "destroyer":300.0, "battle destroyer":300.0, "battleship":375.0, "dreadnought":500.0, "argonaut":1000.0}
-    size = 0
-    
     #create the design
     design = addShipDesign(ship)
     
+    size = 0
     #get the size for this design
     for (id, number) in helper.designComponents(design):
         name = helper.componentName(id).lower()
@@ -463,10 +460,9 @@ def designWeapon(type, explosive, maxExplosives=1000):
     Creates a design for a weapon of specified type using the maximum amount of specified explosives. Returns the id of the design.
     Example: for delta missile with uranium explosives use designWeapon("delta","uranium explosives")
     '''
-    #TODO this could be global
-    weaponSize = {"alpha":3.0, "beta":6.0, "gamma":8.0, "delta":12.0, "epsilon":24.0, "omega":40.0, "upsilon":60.0, "tau":80.0, "sigma":110.0, "rho":150.0, "xi":200.0}
-    explosiveSize = {"uranium explosives":4.0, "thorium explosives":4.5, "cerium explosives":3.0, "enriched uranium":2.0, "massivium":12.0, "antiparticle explosives":0.8, "antimatter explosives":0.5}
-    weaponHullDict = {"alpha":helper.componentByName("alpha missile hull"), "beta":helper.componentByName("beta missile hull"), "gamma":helper.componentByName("gamma missile hull"), "delta":helper.componentByName("delta missile hull"), "epsilon":helper.componentByName("epsilon missile hull"), "omega":helper.componentByName("omega torpedoe hull"), "upsilon":helper.componentByName("upsilon torpedoe hull"), "tau":helper.componentByName("tau torpedoe hull"), "sigma":helper.componentByName("sigma torpedoe hull"), "rho":helper.componentByName("rho torpedoe hull"), "xi":helper.componentByName("xi torpedoe hull")}
+    global weaponSize
+    global explosiveSize
+    global weaponHullDict  
     
     #make a list of components to use (and calculate the max amount of explosives)
     #TODO this is the real version, the other one if in use until the bug is fixed
@@ -479,13 +475,11 @@ def maxWeaponsOfDesign(design):
     '''
     Returns a dictionary of types of weapons the design (name or id) can carry. {"alpha":4,"beta":1,...}
     '''
+    global tubeDict
+    global missileRackDict
+    global torpedoRackDict 
     if isinstance(design, str):
         design = helper.designByName(design)
-
-    #TODO this could be made global
-    tubeDict = {helper.componentByName("alpha missile tube"):"alpha", helper.componentByName("beta missile tube"):"beta", helper.componentByName("gamma missile tube"):"gamma", helper.componentByName("delta missile tube"):"delta", helper.componentByName("epsilon missile tube"):"epsilon", helper.componentByName("omega torpedoe tube"):"omega", helper.componentByName("upsilon torpedoe tube"):"upsilon", helper.componentByName("tau torpedoe tube"):"tau", helper.componentByName("sigma torpedoe tube"):"sigma", helper.componentByName("rho torpedoe tube"):"rho", helper.componentByName("xi torpedoe tube"):"xi"}
-    missileRackDict = {helper.componentByName("alpha missile rack"):"alpha", helper.componentByName("beta missile rack"):"beta", helper.componentByName("gamma missile rack"):"gamma", helper.componentByName("delta missile rack"):"delta", helper.componentByName("epsilon missile rack"):"epsilon"}
-    torpedoRackDict = {helper.componentByName("omega torpedoe rack"):"omega", helper.componentByName("upsilon torpedoe rack"):"upsilon", helper.componentByName("tau torpedoe rack"):"tau", helper.componentByName("sigma torpedoe rack"):"sigma", helper.componentByName("rho torpedoe rack"):"rho", helper.componentByName("xi torpedoe rack"):"xi"}
         
     weapons = {}
     for (component, numberOfUnits) in helper.designComponents(design):
@@ -539,8 +533,7 @@ def typeOfWeapon(design):
     '''
     Returns the type of weapon. Example if the design contains an alpha missile hull the function returns "alpha"
     '''
-    #TODO make this global and initialse it only once
-    reverseWeaponHullDict = {helper.componentByName("alpha missile hull"):"alpha", helper.componentByName("beta missile hull"):"beta", helper.componentByName("gamma missile hull"):"gamma", helper.componentByName("delta missile hull"):"delta", helper.componentByName("epsilon missile hull"):"epsilon", helper.componentByName("omega torpedoe hull"):"omega", helper.componentByName("upsilon torpedoe hull"):"upsilon", helper.componentByName("tau torpedoe hull"):"tau", helper.componentByName("sigma torpedoe hull"):"sigma", helper.componentByName("rho torpedoe hull"):"rho", helper.componentByName("xi torpedoe hull"):"xi"}
+    global reverseWeaponHullDict
     components = helper.designComponents(design)
     #loop through all components and look for a match
     for (id, value) in components:
@@ -1470,7 +1463,7 @@ def smartScanEnemy():
                 enemyDesignType[design] = designGuess
 
 def shipTypeGuess(maxSpeed):
-    #TODO implement this
+    #TODO implement this (when server speed information issue get sorted out)
     pass
 
 def smartAI():
@@ -1496,7 +1489,42 @@ def smartAI():
     
     return
 
+#global stuff (mostly dictionaries of ruleset facts).
+#if it's None then its' initiated in initGlobals()
+reverseWeaponHullDict = None
+#dictionary of hull sizes
+hullSize = {"scout hull":60.0, "battle scout hull":80.0, "advanced battle scout hull":133.0, "frigate":200.0, "battle frigate":200.0, "destroyer":300.0, "battle destroyer":300.0, "battleship":375.0, "dreadnought":500.0, "argonaut":1000.0}
+#dictionary of weapon sizes
+weaponSize = {"alpha":3.0, "beta":6.0, "gamma":8.0, "delta":12.0, "epsilon":24.0, "omega":40.0, "upsilon":60.0, "tau":80.0, "sigma":110.0, "rho":150.0, "xi":200.0}
+#dictionary of explosive sizes
+explosiveSize = {"uranium explosives":4.0, "thorium explosives":4.5, "cerium explosives":3.0, "enriched uranium":2.0, "massivium":12.0, "antiparticle explosives":0.8, "antimatter explosives":0.5}
+weaponHullDict = None
+tubeDict = None
+missileRackDict = None
+torpedoRackDict = None
+
+def initGlobals():
+    global reverseWeaponHullDict
+    global weaponHullDict
+    global tubeDict
+    global missileRackDict
+    global torpedoRackDict
+    #dictionary of weapon types by hull component id
+    if reverseWeaponHullDict == None:
+        reverseWeaponHullDict = {helper.componentByName("alpha missile hull"):"alpha", helper.componentByName("beta missile hull"):"beta", helper.componentByName("gamma missile hull"):"gamma", helper.componentByName("delta missile hull"):"delta", helper.componentByName("epsilon missile hull"):"epsilon", helper.componentByName("omega torpedoe hull"):"omega", helper.componentByName("upsilon torpedoe hull"):"upsilon", helper.componentByName("tau torpedoe hull"):"tau", helper.componentByName("sigma torpedoe hull"):"sigma", helper.componentByName("rho torpedoe hull"):"rho", helper.componentByName("xi torpedoe hull"):"xi"}
+    #dictionary of weapon hull component ids by type
+    if weaponHullDict == None:
+        weaponHullDict = {"alpha":helper.componentByName("alpha missile hull"), "beta":helper.componentByName("beta missile hull"), "gamma":helper.componentByName("gamma missile hull"), "delta":helper.componentByName("delta missile hull"), "epsilon":helper.componentByName("epsilon missile hull"), "omega":helper.componentByName("omega torpedoe hull"), "upsilon":helper.componentByName("upsilon torpedoe hull"), "tau":helper.componentByName("tau torpedoe hull"), "sigma":helper.componentByName("sigma torpedoe hull"), "rho":helper.componentByName("rho torpedoe hull"), "xi":helper.componentByName("xi torpedoe hull")}
+    if tubeDict == None:
+        tubeDict = {helper.componentByName("alpha missile tube"):"alpha", helper.componentByName("beta missile tube"):"beta", helper.componentByName("gamma missile tube"):"gamma", helper.componentByName("delta missile tube"):"delta", helper.componentByName("epsilon missile tube"):"epsilon", helper.componentByName("omega torpedoe tube"):"omega", helper.componentByName("upsilon torpedoe tube"):"upsilon", helper.componentByName("tau torpedoe tube"):"tau", helper.componentByName("sigma torpedoe tube"):"sigma", helper.componentByName("rho torpedoe tube"):"rho", helper.componentByName("xi torpedoe tube"):"xi"}
+    if missileRackDict == None:
+        missileRackDict = {helper.componentByName("alpha missile rack"):"alpha", helper.componentByName("beta missile rack"):"beta", helper.componentByName("gamma missile rack"):"gamma", helper.componentByName("delta missile rack"):"delta", helper.componentByName("epsilon missile rack"):"epsilon"}
+    if torpedoRackDict == None:
+        torpedoRackDict = {helper.componentByName("omega torpedoe rack"):"omega", helper.componentByName("upsilon torpedoe rack"):"upsilon", helper.componentByName("tau torpedoe rack"):"tau", helper.componentByName("sigma torpedoe rack"):"sigma", helper.componentByName("rho torpedoe rack"):"rho", helper.componentByName("xi torpedoe rack"):"xi"}
+
 def AICode():
+    initGlobals()
+    
     #helper.printAboutMe()
     print "It's turn", helper.turnNumber()
     if helper.turnNumber() > 0:
