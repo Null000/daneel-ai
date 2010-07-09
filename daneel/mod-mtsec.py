@@ -378,7 +378,7 @@ def buildShip(planet, ship, numberOfShips=1):
 def factories(planet):
     return helper.resourceAvailable(planet, "Factories")
 
-def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosives, maxPointsToWaste=0.2, maxTurns=1, pointsAlreadyUsed=0):
+def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosivesList, maxPointsToWaste=0.2, maxTurns=1, pointsAlreadyUsed=0):
     '''
     weaponDict - dictionary of number of weapons needed to be build by type {"alpha":3,"xi":2}
     '''
@@ -391,7 +391,7 @@ def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosives, maxPoi
     factoriesOnPlanet = factories(planet) - pointsAlreadyUsed
     buildList = []
     for type in weaponDict.keys():
-        design = designWeapon(type, explosivesList[0], maxExplosives)
+        design = designWeapon(type, explosivesList[0], maxExplosivesList[0])
         #cost of one unit of this design
         cost = 0
         #count the number of parts used
@@ -541,9 +541,10 @@ def typeOfWeapon(design):
             return reverseWeaponHullDict[id]
     return None
 
-def weaponsNeeded(fleetid):
+def weaponsNeeded(fleetid, loadPercent=1.0):
     '''
     Returns a dictionary of weapons that can be loaded by type {"alpha":3,"delta":1,...}
+    loadPercent specifies how much should the ship be loded (0.0 - 1.0)
     '''
     maxWeapons = maxWeaponsOfFleet(fleetid)
     #get the weapons already loaded on board the fleet [(resource id, number of units),...]
@@ -552,10 +553,10 @@ def weaponsNeeded(fleetid):
     weaponsNeededDict = {}
     for type in maxWeapons.keys():
         if weaponsLoaded.has_key(type):
-            if maxWeapons[type] > weaponsLoaded[type]:
-                weaponsNeededDict[type] = maxWeapons[type] - weaponsLoaded[type]
+            if int(math.ceil(float(maxWeapons[type]) * loadPercent)) > weaponsLoaded[type]:
+                weaponsNeededDict[type] = int(math.ceil(float(maxWeapons[type]) * loadPercent)) - weaponsLoaded[type]
         else:
-            weaponsNeededDict[type] = maxWeapons[type]
+            weaponsNeededDict[type] = int(math.ceil(float(maxWeapons[type]) * loadPercent))
     return weaponsNeededDict
 
 def weaponsOnObject(objectid):
@@ -951,7 +952,7 @@ def randomAI():
             print helper.name(fleet), "already has orders"
             continue
         #automatic weapon loading if on friendly planet with weapons
-        #TODO this only works for fleets specified earlier
+        #this only works for fleets specified earlier
         maxMissiles = 3
         if helper.shipsOfFleet(fleet) == [(9, ship, 1)]: 
             nearestMyPlanet = helper.nearestMyPlanet(fleet)
@@ -962,8 +963,6 @@ def randomAI():
                     if weaponsOnPlanet > 0:
                         weaponsToLoad = min(maxMissiles - weaponsOnFleet, weaponsOnPlanet)
                         orderLoadArmament(fleet, [(helper.resourceByName(helper.designName(weapon)), weaponsToLoad)])
-        
-        #TODO maybe add an automatic colonisation if on neutral planet and can colonise
         
         #list available actions
         actionList = ["wait", "colonise", "attack", "move to friendly planet", "move to neutral planet"]
@@ -1102,7 +1101,7 @@ def multipleAI():
 def smartPlanetCode(ignoreFleets=[]):
     #TODO this should be around 0.25 when the colonisation is working again
     colonisationShipsPercent = 0 #TODO this will vary dynamicaly in the future
-    loadPercent = 0.7 #TODO use this, this can vary in the future
+    loadPercent = 0.7 #TODO this can vary in the future
     
     #colonisation ship design
     #there is still space for tubes
@@ -1119,7 +1118,7 @@ def smartPlanetCode(ignoreFleets=[]):
     
     #list of explosives to use
     explosivesList = ["antimatter explosives", "antiparticle explosives"]
-    maxExplosives = 1 #TODO this could be an array for each type or maybe a dictionary
+    maxExplosives = [1, 1]
     
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
@@ -1137,7 +1136,7 @@ def smartPlanetCode(ignoreFleets=[]):
             for thingOnPlanet in helper.contains(myPlanet):
                 if helper.isMyFleet(thingOnPlanet):
                     #find out if it needs any more weapons
-                    weaponsNeededDict = weaponsNeeded(thingOnPlanet)
+                    weaponsNeededDict = weaponsNeeded(thingOnPlanet, loadPercent)
                     #if no needed weapons skip this fleet
                     if len(weaponsNeededDict) == 0:
                         continue
@@ -1429,12 +1428,30 @@ def smartGuardCode(ignoreFleets=[]):
             #TODO check for orders so we don't mess up loading orders
             orderNone(fleet)
         #other ships should go to a friendly palanet for suplies (if not already there)
-        #TODO make a weighted choise where to return (distance, weapons needed by ships already there)
         else:
-            nearestPlanet = helper.nearestMyPlanet(helper.position(fleet))
-            assert nearestPlanet != None
-            planetPosition = helper.position(nearestPlanet)
-            orderMove(fleet, planetPosition)    
+            #TODO this could be used even if the fleet is on a planet (bit it is preocupied)
+            #move to the planet with the best (lowest) score
+            planetList = []
+            for planet in helper.myPlanets():
+                planetList.append((smartGuardReturnHeuristic(fleet, planet),planet))
+            assert planetList != []
+            #move to the one with the lowest score
+            moveToObject(fleet,min(planetList)[1])
+
+def smartGuardReturnHeuristic(fleet,planet):
+    #where to return when you run out of weapons or the invasion is ower
+    #distance, weapons needed by ships already there
+    #smaller is better
+    distance = distanceToObjectInTurns(fleet, planet)
+    weaponsNeededByShips = 0
+    #for all objects on a planet
+    for fleet in helper.contains(planet):
+        #check if it really my fleet
+        if helper.isMyFleet(fleet):
+            for (type,number) in weaponsNeeded(fleet):
+                weaponsNeededByShips += number
+    return distance + weaponsNeededByShips/10
+
 
 #dictionary of information about the enemy fleets designs (max speed which can tell us ship type)
 enemyDesignMaxSpeed = {}
