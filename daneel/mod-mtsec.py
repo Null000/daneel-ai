@@ -1487,7 +1487,7 @@ def smartGuardReturnHeuristic(fleet, planet):
     for fleet in helper.contains(planet):
         #check if it really my fleet
         if helper.isMyFleet(fleet):
-            for (type, number) in weaponsNeeded(fleet):
+            for (type, number) in weaponsNeeded(fleet).items():
                 weaponsNeededByShips += number
     return distance + weaponsNeededByShips / 10
 
@@ -1586,7 +1586,14 @@ def AICode():
     if helper.turnNumber() > 0:
         if helper.myPlanets() == []:
             print "Today was a good day to die."
-            exit(0)
+            sleep(3)
+            playersDead = 0
+            for player in helper.playersWithoutGuest():
+                if helper.planetsOwnedBy(player) == []:
+                    playersDead += 1
+            if playersDead == len(helper.playersWithoutGuest()) -1:
+                exit(0)
+            return
         if helper.planetsOwnedBy(helper.enemies()) == []:
             print "I won!"
             exit(0)
