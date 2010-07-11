@@ -133,6 +133,9 @@ def fleetsOwnedBy(owners):
     Returns a list of all fleets owned by any player in the owners list (can be an int).
     '''
     global rulesystem
+    if type(owners) == int:
+        owners = [owners]
+    
     fleets = rulesystem.findConstraint("fleet(int)")
     list = []
     for x in fleets:
@@ -339,6 +342,9 @@ def planetsOwnedBy(owners):
         if owner(planet) in owners:
             planetList += [planet]
     return planetList
+
+def enemyPlanets():
+    return planetsOwnedBy(enemies())
     
 def neutralPlanets():
     '''

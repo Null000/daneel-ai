@@ -1332,7 +1332,8 @@ def smartAttackCode(ignoreFleets=[]):
     invasionShips = 1
     invasionShipsRetreat = 0
     defenceShipsOnInvasion = 0
-    minimalLoadToAttack = 0.50 #TODO make this dynamic
+    #Warning: this should not be higher than loadPercent in smartPlanetCode
+    minimalLoadToAttack = 0.30 #TODO make this dynamic
     minimalLoadToGuard = 0.20 #TODO maybe use this
     
     allMyFleets = helper.myFleets() 
@@ -1434,12 +1435,12 @@ def smartAttackHeuristics(fleet, planet):
     #closer is better
     #weaker enemy at that point is better
     #stronger other playersat that point is batter
-    return distance + enemyStrength - otherPlayers / 2.0
+    return distance + enemyStrength - othersStrength / 2.0
 
 def smartAttackStrength(object, player):
     strenght = 0.0
     for fleet in helper.fleetsOwnedBy(player):
-        fleetDistance = distanceToObjectInTurns(fleet, planet, defaultSpeed=True)
+        fleetDistance = distanceToObjectInTurns(fleet, object, defaultSpeed=True)
         #so we can't divide with zero
         fleetDistance += 1
         numberOfEnemyShips = 0
