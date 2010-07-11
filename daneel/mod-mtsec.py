@@ -451,7 +451,13 @@ def buildWeapon(planet, weapon, numberOfWeapons=1):
     orderBuildWeapon(planet, [(weapon, numberOfWeapons)])
 
 def moveToObject(objectToMove, objectToMoveTo):
-    orderMove(objectToMove, helper.position(objectToMoveTo))
+    #if already there
+    if helper.position(objectToMove) == helper.position(objectToMoveTo):
+        #don't have to do anything
+        orderNone(objectToMove)
+    else:
+        #if not there... go there
+        orderMove(objectToMove, helper.position(objectToMoveTo))
     
 
 
@@ -1101,7 +1107,7 @@ def multipleAI():
 def smartPlanetCode(ignoreFleets=[]):
     #TODO this should be around 0.25 when the colonisation is working again
     colonisationShipsPercent = 0 #TODO this will vary dynamicaly in the future
-    loadPercent = 0.7 #TODO this can vary in the future
+    loadPercent = 0.4 #TODO this can vary in the future
     
     #colonisation ship design
     #there is still space for tubes
@@ -1185,7 +1191,7 @@ def smartPlanetCode(ignoreFleets=[]):
                 else:
                     #bild attack ship
                     #TODO experiment with max turns and other arguments
-                    optimalBuildShip(myPlanet, ship)
+                    optimalBuildShip(myPlanet, ship, maxTurns=1)
             else:
                 #build weapons of the required type
                 optimalBuildWeapon(myPlanet, weaponsToBuild, explosivesList, maxExplosives)    
@@ -1207,8 +1213,10 @@ def speed(fleet):
     return minSpeed
         
 
-def distanceToObjectInTurns(fleet, object):
-    fleetSpeed = speed(fleet) * 1e6 #convert from mega units
+def distanceToObjectInTurns(fleet, object, defaultSpeed=False):
+    fleetSpeed = 100 * 1e6 #scout speed as default
+    if defaultSpeed == False:
+        fleetSpeed = speed(fleet) * 1e6 #convert from mega units
     distance = helper.distance(fleet, object)
     return int(math.ceil(distance / fleetSpeed))
     
@@ -1399,17 +1407,47 @@ def smartAttackCode(ignoreFleets=[]):
     for fleet in invasionFleets:
         print helper.name(fleet), "is invading (beware!)"
         #find a planet to attack
-        #TODO make a weighted choise betwen say... 3 nearest planets (make it a bit less predictable)
-        nearestPlanet = helper.nearestEnemyPlanet(helper.position(fleet))
-        #move to that planet
-        if nearestPlanet != None:
-            print helper.name(fleet), "is attacking", helper.name(nearestPlanet) 
-            planetPosition = helper.position(nearestPlanet)
-            if helper.position(fleet) != planetPosition:
-                orderMove(fleet, planetPosition)
-        else:
+        scoreList = []
+        for planet in helper.enemyPlanets():
+            scoreList.append((smartAttackHeuristics(fleet, planet), planet))
+        #check if there is anything to attack
+        if scoreList == []:
             print helper.name(fleet), "has nothing to attack"
+        else:
+            #attack the planet with the lowest score
+            planetToAttack = min(scoreList)[1]
+            print helper.name(fleet), "is attacking", helper.name(planetToAttack)
+            moveToObject(fleet, planetToAttack)
 
+def smartAttackHeuristics(fleet, planet):
+    #BTW smaller is better
+    distance = float(distanceToObjectInTurns(fleet, planet))
+    #TODO since every fleet can be deadly think about only the distance to the nearest enemy fleet
+    #strenght of the enemy
+    enemyStrength = smartAttackStrength(planet, helper.owner(planet))
+    #strength of other players (inclouding you)
+    othersStrength = 0.0
+    otherPlayers = helper.playersWithoutGuest()
+    otherPlayers.remove(helper.owner(planet))
+    for player in otherPlayers:
+        othersStrength += smartAttackStrength(planet, player)
+    #closer is better
+    #weaker enemy at that point is better
+    #stronger other playersat that point is batter
+    return distance + enemyStrength - otherPlayers / 2.0
+
+def smartAttackStrength(object, player):
+    strenght = 0.0
+    for fleet in helper.fleetsOwnedBy(player):
+        fleetDistance = distanceToObjectInTurns(fleet, planet, defaultSpeed=True)
+        #so we can't divide with zero
+        fleetDistance += 1
+        numberOfEnemyShips = 0
+        for (something, design, number) in helper.shipsOfFleet(fleet):
+            numberOfEnemyShips += number
+        #TODO make the HP count as well
+        strenght += float(numberOfEnemyShips) / float(fleetDistance)
+    return strenght
 
 def smartGuardCode(ignoreFleets=[]):
     global invasionFleets
@@ -1433,12 +1471,12 @@ def smartGuardCode(ignoreFleets=[]):
             #move to the planet with the best (lowest) score
             planetList = []
             for planet in helper.myPlanets():
-                planetList.append((smartGuardReturnHeuristic(fleet, planet),planet))
+                planetList.append((smartGuardReturnHeuristic(fleet, planet), planet))
             assert planetList != []
             #move to the one with the lowest score
-            moveToObject(fleet,min(planetList)[1])
+            moveToObject(fleet, min(planetList)[1])
 
-def smartGuardReturnHeuristic(fleet,planet):
+def smartGuardReturnHeuristic(fleet, planet):
     #where to return when you run out of weapons or the invasion is ower
     #distance, weapons needed by ships already there
     #smaller is better
@@ -1448,9 +1486,9 @@ def smartGuardReturnHeuristic(fleet,planet):
     for fleet in helper.contains(planet):
         #check if it really my fleet
         if helper.isMyFleet(fleet):
-            for (type,number) in weaponsNeeded(fleet):
+            for (type, number) in weaponsNeeded(fleet):
                 weaponsNeededByShips += number
-    return distance + weaponsNeededByShips/10
+    return distance + weaponsNeededByShips / 10
 
 
 #dictionary of information about the enemy fleets designs (max speed which can tell us ship type)
@@ -1562,11 +1600,11 @@ def AICode():
         smartAI()
     else:
         pass
-        waitingAI()
+        #waitingAI()
         #greedyAI()
         #rushAI()
         #bunkerAI()
-        #commandoAI()
+        commandoAI()
         #smartAI()
         
     #ship = []
