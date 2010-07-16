@@ -1403,22 +1403,74 @@ def smartAttackCode(ignoreFleets=[]):
         print "to little attack ships. Retreat!"
         #the smart guard code takes care of returning to friendly planets
         invasionFleets = [] 
+        
+    #dictionary of attack scores
+    scoreDictByPlanet = {}
+    scoreDictByFleet = {}
+    #calculate scores for every planet and fleet combination    
+    for planet in helper.enemyPlanets():
+        planetScores = []
+        for fleet in invasionFleets:
+            #calculate the score for this planet fleet combination
+            score = smartAttackHeuristics(fleet, planet)
+            #add it to the by fleet dictionary
+            if scoreDictByFleet.has_key(fleet):
+                scoreDictByFleet[fleet].append((score, planet))
+            else:
+                scoreDictByFleet[fleet] = [(score, planet)]
+            planetScores.append((score, fleet))
+        #add it to the by planet dictionary
+        scoreDictByPlanet[planet] = planetScores
 
-    #attack the enemy with ships marked for invasion
-    for fleet in invasionFleets:
-        print helper.name(fleet), "is invading (beware!)"
-        #find a planet to attack
-        scoreList = []
-        for planet in helper.enemyPlanets():
-            scoreList.append((smartAttackHeuristics(fleet, planet), planet))
-        #check if there is anything to attack
-        if scoreList == []:
-            print helper.name(fleet), "has nothing to attack"
-        else:
-            #attack the planet with the lowest score
-            planetToAttack = min(scoreList)[1]
-            print helper.name(fleet), "is attacking", helper.name(planetToAttack)
-            moveToObject(fleet, planetToAttack)
+    #sort all score lists
+    for planet in scoreDictByPlanet.keys():
+        scoreDictByPlanet[planet].sort()
+    for fleet in scoreDictByFleet.keys():
+        scoreDictByFleet[fleet].sort()
+
+    fleetsWithoutOrders = invasionFleets[:]
+    
+    #dictionary for correcting scores (add points for every ship that is attacking the planet)
+    planetScoreCorrection = {}
+    
+    #until all invasion ships have orders
+    while fleetsWithoutOrders != []:
+        #dictionary of fleets and their scores by planet. {planetid:[(score,fleet),...],...}
+        fleetByPlanetDict = {}
+        #ship chooses a planet
+        for fleet in fleetsWithoutOrders:
+            minScore = 1e10
+            bestPlanet = -1
+            #find the best planet for this ship
+            for (score, planet) in scoreDictByFleet[fleet]:
+                #point bonus for ships already attacking this planet
+                correction = 0
+                if planetScoreCorrection.has_key(planet):
+                    correction = planetScoreCorrection[planet] 
+                if score + correction < minScore:
+                    #this planet is better
+                    minScore = score + correction
+                    bestPlanet = planet
+            assert bestPlanet != -1
+            #add choise to the dictionary
+            if fleetByPlanetDict.has_key(bestPlanet):
+                fleetByPlanetDict[bestPlanet].append((minScore, fleet))
+            else:
+                fleetByPlanetDict[bestPlanet] = [(minScore, fleet)]
+            
+        #add 1 ship for each planet
+        for (planet, scores) in fleetByPlanetDict.items():
+            (score,fleet) = min(scores)
+            #give planet correction extra points
+            if planetScoreCorrection.has_key(planet):
+                planetScoreCorrection[planet] += smartAttackHeuristicsCorrection(fleet, planet)
+            else:
+                planetScoreCorrection[planet] = smartAttackHeuristicsCorrection(fleet, planet)
+            #remove fleet from the list
+            fleetsWithoutOrders.remove(fleet)
+            #give order
+            moveToObject(fleet, planet)
+            
 
 def smartAttackHeuristics(fleet, planet):
     #BTW smaller is better
@@ -1436,6 +1488,10 @@ def smartAttackHeuristics(fleet, planet):
     #weaker enemy at that point is better
     #stronger other playersat that point is batter
     return distance + enemyStrength - othersStrength / 2.0
+
+def smartAttackHeuristicsCorrection(fleet, planet):
+    #TODO implement
+    return 2
 
 def smartAttackStrength(object, player):
     strenght = 0.0
@@ -1591,7 +1647,7 @@ def AICode():
             for player in helper.playersWithoutGuest():
                 if helper.planetsOwnedBy(player) == []:
                     playersDead += 1
-            if playersDead == len(helper.playersWithoutGuest()) -1:
+            if playersDead == len(helper.playersWithoutGuest()) - 1:
                 exit(0)
             return
         if helper.planetsOwnedBy(helper.enemies()) == []:
@@ -1612,8 +1668,8 @@ def AICode():
         #greedyAI()
         #rushAI()
         #bunkerAI()
-        commandoAI()
-        #smartAI()
+        #commandoAI()
+        smartAI()
         
     #ship = []
     #ship.append([helper.componentByName("scout hull"), 1])
