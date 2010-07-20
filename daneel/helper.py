@@ -128,6 +128,9 @@ def fleets():
         list += [int(x.args[0])]
     return list
 
+def enemyFleets():
+    return fleetsOwnedBy(enemies())
+
 def fleetsOwnedBy(owners):
     '''
     Returns a list of all fleets owned by any player in the owners list (can be an int).

@@ -191,6 +191,7 @@ def executeOrdersMove(cache, connection):
     orders = rulesystem.findConstraint("order_move(int,int,int,int)")
     for orderConstraint in orders:
         args = orderConstraint.args
+        print "order_move", args
         objectId = int(args[0])
         pos = [[int(args[1]), int(args[2]), int(args[3])]]
         ordertype = findOrderDesc("Move")
@@ -308,14 +309,25 @@ def executeOrdersUnloadArmament(cache, connection):
 def executeOrder(cache, connection, objectId, order):
     # get the queue for the object
     queueid = extra.objectutils.getOrderQueueList(cache, objectId)[0][1]
-    queue = cache.orders[queueid]
+    #TODO this is for debugging
+    queue = None
+    try:
+        queue = cache.orders[queueid]
+    except Exception:
+        print "cache.orders[queueid] has failed on object", objectId
+        return
+        
     node = queue.first
     
     #check if there is no existing order
     if order != None and queue.first.CurrentOrder is None:
-        # make a new order   
+        # make a new order
         evt = cache.apply("orders", "create after", queueid, node, order)
-        tp.client.cache.apply(connection, evt, cache)
+        try:
+            tp.client.cache.apply(connection, evt, cache)
+        except Exception:
+            print "tp.client.cache.apply(connection, evt, cache) has failed on object", objectId
+            return
     #check if the existing order is the same as current order
     elif not checkIfOrdersSame(node.CurrentOrder, order):
         if order != None:
@@ -1106,8 +1118,9 @@ def multipleAI():
 
 def smartPlanetCode(ignoreFleets=[]):
     #TODO this should be around 0.25 when the colonisation is working again
-    colonisationShipsPercent = 0 #TODO this will vary dynamicaly in the future
-    loadPercent = 0.4 #TODO this can vary in the future
+    colonisationShipsPercent = 1.0 #TODO this will vary dynamicaly in the future
+    global loadPercent
+    #loadPercent = 1 #TODO this can vary in the future
     
     #colonisation ship design
     #there is still space for tubes
@@ -1120,7 +1133,7 @@ def smartPlanetCode(ignoreFleets=[]):
     ship.append([helper.componentByName("scout hull"), 1])
     #TODO add max number of tubes to the design, just no need to fill them all
     #there is no need to have this many weapons on one ship (20 is the max)
-    ship.append([helper.componentByName("alpha missile tube"), 10])
+    ship.append([helper.componentByName("alpha missile tube"), 19])
     
     #list of explosives to use
     explosivesList = ["antimatter explosives", "antiparticle explosives"]
@@ -1460,7 +1473,7 @@ def smartAttackCode(ignoreFleets=[]):
             
         #add 1 ship for each planet
         for (planet, scores) in fleetByPlanetDict.items():
-            (score,fleet) = min(scores)
+            (score, fleet) = min(scores)
             #give planet correction extra points
             if planetScoreCorrection.has_key(planet):
                 planetScoreCorrection[planet] += smartAttackHeuristicsCorrection(fleet, planet)
@@ -1491,6 +1504,7 @@ def smartAttackHeuristics(fleet, planet):
 
 def smartAttackHeuristicsCorrection(fleet, planet):
     #TODO implement
+    #consider ship type and distance (the closer, more points)
     return 2
 
 def smartAttackStrength(object, player):
@@ -1594,7 +1608,7 @@ def smartAI():
     smartColonisationCode(splitFleets)
     
     #give orders to attack ships marked for invasion 
-    smartAttackCode(splitFleets)
+    #smartAttackCode(splitFleets)
         
     #give orders to attack ships not marked for invasion
     smartGuardCode(splitFleets)
@@ -1634,42 +1648,102 @@ def initGlobals():
     if torpedoRackDict == None:
         torpedoRackDict = {helper.componentByName("omega torpedoe rack"):"omega", helper.componentByName("upsilon torpedoe rack"):"upsilon", helper.componentByName("tau torpedoe rack"):"tau", helper.componentByName("sigma torpedoe rack"):"sigma", helper.componentByName("rho torpedoe rack"):"rho", helper.componentByName("xi torpedoe rack"):"xi"}
 
+def onWin():
+    print "I won!"
+    saveData()
+    exit(99)
+    
+def onLose():
+    print "Today was a good day to die."
+    
+def onAllLose():
+    exit(42) #don't panic
+
+loadPercent = 1.0
+def optimisationValues(value):
+    global loadPercent
+    loadPercent = float(value)
+    
+
+drawData = []
+def gatherData():
+    global drawData
+    dataThisTurn = {}
+    #data for planets
+    myPlanets = []
+    for planet in helper.myPlanets():
+        myPlanets.append(helper.position(planet))
+    dataThisTurn["myPlanets"] = myPlanets
+    neutralPlanets = []
+    for planet in helper.neutralPlanets():
+        neutralPlanets.append(helper.position(planet))
+    dataThisTurn["neutralPlanets"] = neutralPlanets
+    enemyPlanets = []
+    for planet in helper.enemyPlanets():
+        enemyPlanets.append(helper.position(planet))
+    dataThisTurn["enemyPlanets"] = enemyPlanets
+    #data for fleets
+    myFleets = []
+    for fleet in helper.myFleets():
+        myFleets.append(helper.position(fleet))
+    dataThisTurn["myFleets"] = myFleets
+    enemyFleets = []
+    for fleet in helper.enemyFleets():
+        enemyFleets.append(helper.position(fleet))
+    dataThisTurn["enemyFleets"] = myFleets
+    #append to all data
+    drawData.append(dataThisTurn)
+
+def saveData():
+    #save the draw data for visualisation
+    import pickle
+    global drawData
+    import os
+    f = open(os.getcwd()+"/draw.pickle","w")
+    pickle.dump(drawData,f)
+    f.close()
+
 def AICode():
     initGlobals()
+    
+    gatherData()
     
     #helper.printAboutMe()
     print "It's turn", helper.turnNumber()
     if helper.turnNumber() > 0:
         if helper.myPlanets() == []:
-            print "Today was a good day to die."
+            onLose()
             sleep(3)
             playersDead = 0
             for player in helper.playersWithoutGuest():
                 if helper.planetsOwnedBy(player) == []:
                     playersDead += 1
             if playersDead == len(helper.playersWithoutGuest()) - 1:
-                exit(0)
+                onAllLose()
             return
         if helper.planetsOwnedBy(helper.enemies()) == []:
-            print "I won!"
-            exit(0)
+            onWin()
+            
     
     #delete all messages so you don't get spammed
     helper.deleteAllMessages()
     #helper.printDesignsWithProperties()
     if helper.playerName(helper.whoami()) == "ai":
+        if helper.turnNumber() % 10 == 0:
+            saveData()
         pass
         #commandoAI()
         #rushAI()
         smartAI()
+        #greedyAI()
     else:
         pass
-        #waitingAI()
+        waitingAI()
         #greedyAI()
         #rushAI()
         #bunkerAI()
         #commandoAI()
-        smartAI()
+        #smartAI() 
         
     #ship = []
     #ship.append([helper.componentByName("scout hull"), 1])
