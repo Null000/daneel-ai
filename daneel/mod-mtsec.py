@@ -1118,7 +1118,7 @@ def multipleAI():
 
 def smartPlanetCode(ignoreFleets=[]):
     #TODO this should be around 0.25 when the colonisation is working again
-    colonisationShipsPercent = 1.0 #TODO this will vary dynamicaly in the future
+    colonisationShipsPercent = 0.5 #TODO this will vary dynamicaly in the future
     global loadPercent
     #loadPercent = 1 #TODO this can vary in the future
     
@@ -1608,7 +1608,8 @@ def smartAI():
     smartColonisationCode(splitFleets)
     
     #give orders to attack ships marked for invasion 
-    #smartAttackCode(splitFleets)
+    if helper.turnNumber() > 9:
+        smartAttackCode(splitFleets)
         
     #give orders to attack ships not marked for invasion
     smartGuardCode(splitFleets)
@@ -1690,7 +1691,7 @@ def gatherData():
     enemyFleets = []
     for fleet in helper.enemyFleets():
         enemyFleets.append(helper.position(fleet))
-    dataThisTurn["enemyFleets"] = myFleets
+    dataThisTurn["enemyFleets"] = enemyFleets
     #append to all data
     drawData.append(dataThisTurn)
 
@@ -1738,12 +1739,12 @@ def AICode():
         #greedyAI()
     else:
         pass
-        waitingAI()
+        #waitingAI()
         #greedyAI()
         #rushAI()
         #bunkerAI()
         #commandoAI()
-        #smartAI() 
+        smartAI() 
         
     #ship = []
     #ship.append([helper.componentByName("scout hull"), 1])
