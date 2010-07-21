@@ -1118,9 +1118,9 @@ def multipleAI():
 
 def smartPlanetCode(ignoreFleets=[]):
     #TODO this should be around 0.25 when the colonisation is working again
-    colonisationShipsPercent = 0.5 #TODO this will vary dynamicaly in the future
-    global loadPercent
-    #loadPercent = 1 #TODO this can vary in the future
+    colonisationShipsPercent = 0.0 #TODO this will vary dynamicaly in the future
+    #global loadPercent
+    loadPercent = 1.0 #TODO this can vary in the future
     
     #colonisation ship design
     #there is still space for tubes
@@ -1203,8 +1203,11 @@ def smartPlanetCode(ignoreFleets=[]):
                     optimalBuildShip(myPlanet, colonisationShip)
                 else:
                     #bild attack ship
-                    #TODO experiment with max turns and other arguments
-                    optimalBuildShip(myPlanet, ship, maxTurns=1)
+                    #TODO this is for debugging... should be optimal
+                    #optimalBuildShip(myPlanet, ship, maxTurns=1)
+                    
+                    design = addShipDesign(ship)
+                    buildShip(myPlanet, design, 1)
             else:
                 #build weapons of the required type
                 optimalBuildWeapon(myPlanet, weaponsToBuild, explosivesList, maxExplosives)    
@@ -1236,8 +1239,8 @@ def distanceToObjectInTurns(fleet, object, defaultSpeed=False):
 
 def smartColonisationHeuristic(fleet, planet):
     #BTW smaller is better
-    distance = distanceToObjectInTurns(fleet, planet)
-    distanceToEnemyPlanet = int(math.ceil(helper.distance(planet, helper.nearestEnemyPlanet(planet)) / speed(fleet)))
+    distance = helper.distance(fleet, planet)
+    distanceToEnemyPlanet = int(helper.distance(planet, helper.nearestEnemyPlanet(planet)))
     #if its closer its better, if its futher away from the enemy its better
     return distance - distanceToEnemyPlanet / 3
     
@@ -1596,10 +1599,15 @@ def smartAI():
     print "I am the smart one."
     
     #scan the enemy fleets
-    smartScanEnemy()
+    #currently has no meaning...
+    #smartScanEnemy()
     
     #split fleets that can be split
-    splitFleets = smartSplitFleets()
+    #splitFleets = smartSplitFleets()
+    #TODO for testing purposes
+    splitFleets = [] 
+    #smartSplitFleets()
+    
     
     #give orders to planets
     smartPlanetCode(splitFleets)
@@ -1608,8 +1616,8 @@ def smartAI():
     smartColonisationCode(splitFleets)
     
     #give orders to attack ships marked for invasion 
-    if helper.turnNumber() > 9:
-        smartAttackCode(splitFleets)
+    #if helper.turnNumber() > 9:
+    smartAttackCode(splitFleets)
         
     #give orders to attack ships not marked for invasion
     smartGuardCode(splitFleets)
@@ -1660,7 +1668,7 @@ def onLose():
 def onAllLose():
     exit(42) #don't panic
 
-loadPercent = 1.0
+loadPercent = 0.12
 def optimisationValues(value):
     global loadPercent
     loadPercent = float(value)

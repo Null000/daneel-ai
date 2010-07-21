@@ -234,7 +234,7 @@ def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):
                 time.sleep(max(1, min(10,waitfor / 100)))
         except IOError:
             print "Connection lost"
-            exit(1)
+            exit(2)
 
 def gameLoopBenchMark(rulesfile,turns,connection,cache,verbosity):		
     rulesystem = createRuleSystem(rulesfile,verbosity,cache,connection)

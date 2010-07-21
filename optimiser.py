@@ -15,7 +15,7 @@ for i in range(100):
     
     server = subprocess.Popen(["tpserver-cpp", "-v", "-C", "/home/null/3thousandparsec/tpserver-cpp/quickstart-mtsec.conf"])
     time.sleep(5)
-    ai1 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai:ai@localhost/aiTest", "-o", "0.2"])
+    ai1 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai:ai@localhost/aiTest"])
     time.sleep(2)
     ai2 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai2:ai@localhost/aiTest", "-o", "0.9"])
     
