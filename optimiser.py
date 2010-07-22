@@ -1,19 +1,28 @@
+'''
+For automatic AI battles. Automatically starts and kills the server and AI clients. Keeps score.
+If manually killed you also have to kill the server. 
+'''
+
 import subprocess
 import os
 import time
+#folder with daneel-ai
+daneelAiFolder = "/home/null/5thousandparsec/fresh/daneel-ai"
+#folder with config files for ther server
+serverConfigFolder = "/home/null/3thousandparsec/tpserver-cpp/"
 
 win1 = 0
 win2 = 0
 serverDeaths = 0
 
 
-os.chdir("/home/null/5thousandparsec/fresh/daneel-ai")
+os.chdir(daneelAiFolder)
 for i in range(10):
     print "round", i + 1
     kl = subprocess.Popen(["killall", "-9", "tpserver-cpp"])
     kl.wait()
     
-    server = subprocess.Popen(["tpserver-cpp", "-v", "-C", "/home/null/3thousandparsec/tpserver-cpp/quickstart-mtsec.conf"])
+    server = subprocess.Popen(["tpserver-cpp", "-v", "-C", serverConfigFolder + "quickstart-mtsec.conf"])
     time.sleep(5)
     ai1 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai:ai@localhost/aiTest", "-o", "0.2"])
     time.sleep(2)

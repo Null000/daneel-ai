@@ -1,13 +1,12 @@
 '''
-Created on 20.7.2010
-
+Produces images and video (using mencoder) from data from AI.
 @author: null
 '''
 import Image, ImageDraw
 import pickle
 import subprocess
 
-def drawFleet(draw,position,colour):
+def drawFleet(draw, position, colour):
     #a small cross
     size = 2
     [x, y, z] = position
@@ -41,8 +40,14 @@ def drawPlanet(draw, position, colour):
 scaleFactor = 17000000
 offsetX = 400
 offsetY = 300
+
+#where to save the images and video
+saveFolder = "/home/null/temp/"
+#where is the data from the AI
+pickleDataPath = "/home/null/draw.pickle"  
+
 if __name__ == '__main__':
-    f = open("/home/null/draw.pickle")
+    f = open(pickleDataPath)
     drawData = pickle.load(f)
         
     width = 800
@@ -63,7 +68,7 @@ if __name__ == '__main__':
         turnText = str(index + 1)
         minimalNumberOfDigits = 3
         while len(turnText) < minimalNumberOfDigits:
-            turnText = "0"+turnText
+            turnText = "0" + turnText
         
         draw.text((10, 10), "turn " + turnText, white)
      
@@ -80,9 +85,9 @@ if __name__ == '__main__':
             drawFleet(draw, fleet, red)
         
         
-        filename = "/home/null/temp/" + turnText + ".png"
+        filename = saveFolder + turnText + ".png"
         image1.save(filename)
     
     #convert to a video using mencoder
-    command = "mencoder mf:///home/null/temp/*.png -mf w=" + str(width) + ":h=" + str(height) + ":fps=1:type=png -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o /home/null/temp/video.mpg"
+    command = "mencoder mf://" + saveFolder + "*.png -mf w=" + str(width) + ":h=" + str(height) + ":fps=1:type=png -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o /home/null/temp/video.mpg"
     subprocess.Popen(command.split(" "))
