@@ -8,14 +8,14 @@ serverDeaths = 0
 
 
 os.chdir("/home/null/5thousandparsec/fresh/daneel-ai")
-for i in range(100):
+for i in range(10):
     print "round", i + 1
     kl = subprocess.Popen(["killall", "-9", "tpserver-cpp"])
     kl.wait()
     
     server = subprocess.Popen(["tpserver-cpp", "-v", "-C", "/home/null/3thousandparsec/tpserver-cpp/quickstart-mtsec.conf"])
     time.sleep(5)
-    ai1 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai:ai@localhost/aiTest"])
+    ai1 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai:ai@localhost/aiTest", "-o", "0.1"])
     time.sleep(2)
     ai2 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai2:ai@localhost/aiTest", "-o", "0.9"])
     

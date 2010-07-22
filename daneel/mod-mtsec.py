@@ -423,6 +423,7 @@ def optimalBuildWeapon(planet, weaponDict, explosivesList, maxExplosivesList, ma
 def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlreadyUsed=0):
     '''
     maxPointsToWaste is the % of the production points that can go unused. (0.0 - 1.0)
+    since building time is different than it should be according to the wiki this does not work properly
     '''
     global hullSize    
     #factories on planet
@@ -683,7 +684,7 @@ def commandoAI():
     #construct a design for a simple attack/colonisation ship
     ship = []
     ship.append([helper.componentByName("dreadnought"), 1])
-    #ship.append([helper.componentByName("colonisation module"), 1])
+    ship.append([helper.componentByName("colonisation module"), 1])
     ship.append([helper.componentByName("xi torpedoe tube"), 2])
     #add the design
     addShipDesign(ship)
@@ -714,7 +715,7 @@ def rushAI():
     #construct a design for a simple attack/colonisation ship
     ship = []
     ship.append([helper.componentByName("advanced battle scout hull"), 1])
-    #ship.append([helper.componentByName("colonisation module"), 1])
+    ship.append([helper.componentByName("colonisation module"), 1])
     ship.append([helper.componentByName("delta missile tube"), 1])
     ship.append([helper.componentByName("delta missile rack"), 1])
     #add the design
@@ -1118,7 +1119,8 @@ def multipleAI():
 
 def smartPlanetCode(ignoreFleets=[]):
     #TODO this should be around 0.25 when the colonisation is working again
-    colonisationShipsPercent = 0.0 #TODO this will vary dynamicaly in the future
+    #colonisationShipsPercent = 0.3 #TODO this will vary dynamicaly in the future
+    global colonisationShipsPercent
     #global loadPercent
     loadPercent = 1.0 #TODO this can vary in the future
     
@@ -1199,15 +1201,18 @@ def smartPlanetCode(ignoreFleets=[]):
                 #choose betwen an attack ship and a colonisation ship
                 if random.random() < colonisationShipsPercent:
                     #build colonisation ship
-                    #TODO experiment with max turns and other arguments
-                    optimalBuildShip(myPlanet, colonisationShip)
+                    design = addShipDesign(colonisationShip)
+                    buildShip(myPlanet, design, 1)
+                    
+                    #optimalBuild is broken
+                    #optimalBuildShip(myPlanet, colonisationShip)
                 else:
                     #bild attack ship
-                    #TODO this is for debugging... should be optimal
-                    #optimalBuildShip(myPlanet, ship, maxTurns=1)
-                    
                     design = addShipDesign(ship)
                     buildShip(myPlanet, design, 1)
+                    
+                    #optimalBuild is broken
+                    #optimalBuildShip(myPlanet, ship, maxTurns=1)
             else:
                 #build weapons of the required type
                 optimalBuildWeapon(myPlanet, weaponsToBuild, explosivesList, maxExplosives)    
@@ -1335,9 +1340,11 @@ def smartColonisationCode(ignoreFleets=[]):
         #if the ship is already on the planet
         if helper.position(ship) == helper.position(planet):
             #colonise it
+            print helper.name(ship), ship, "colonising", helper.name(planet)
             orderColonise(ship)
         else:
             #move towards it
+            print helper.name(ship), ship, "moving to colonise", helper.name(planet)
             moveToObject(ship, planet)
 
 def smartAttackCode(ignoreFleets=[]):
@@ -1603,21 +1610,18 @@ def smartAI():
     #smartScanEnemy()
     
     #split fleets that can be split
-    #splitFleets = smartSplitFleets()
-    #TODO for testing purposes
-    splitFleets = [] 
-    #smartSplitFleets()
-    
+    splitFleets = smartSplitFleets()
     
     #give orders to planets
     smartPlanetCode(splitFleets)
 
     #give orders to colonisation ships
-    smartColonisationCode(splitFleets)
+    if helper.turnNumber() > 4:
+        smartColonisationCode(splitFleets)
     
     #give orders to attack ships marked for invasion 
-    #if helper.turnNumber() > 9:
-    smartAttackCode(splitFleets)
+    if helper.turnNumber() > 4:
+        smartAttackCode(splitFleets)
         
     #give orders to attack ships not marked for invasion
     smartGuardCode(splitFleets)
@@ -1668,10 +1672,10 @@ def onLose():
 def onAllLose():
     exit(42) #don't panic
 
-loadPercent = 0.12
+colonisationShipsPercent = 0.0
 def optimisationValues(value):
-    global loadPercent
-    loadPercent = float(value)
+    global colonisationShipsPercent
+    colonisationShipsPercent = float(value)
     
 
 drawData = []
@@ -1708,8 +1712,8 @@ def saveData():
     import pickle
     global drawData
     import os
-    f = open(os.getcwd()+"/draw.pickle","w")
-    pickle.dump(drawData,f)
+    f = open(os.getcwd() + "/draw.pickle", "w")
+    pickle.dump(drawData, f)
     f.close()
 
 def AICode():
@@ -1732,14 +1736,15 @@ def AICode():
             return
         if helper.planetsOwnedBy(helper.enemies()) == []:
             onWin()
+    else:
+        sleep(5)
             
     
     #delete all messages so you don't get spammed
     helper.deleteAllMessages()
     #helper.printDesignsWithProperties()
     if helper.playerName(helper.whoami()) == "ai":
-        if helper.turnNumber() % 10 == 0:
-            saveData()
+        saveData()
         pass
         #commandoAI()
         #rushAI()

@@ -9,7 +9,7 @@ import subprocess
 
 def drawFleet(draw,position,colour):
     #a small cross
-    size = 1
+    size = 2
     [x, y, z] = position
     #scale
     global scaleFactor
@@ -25,7 +25,7 @@ def drawFleet(draw,position,colour):
 
 def drawPlanet(draw, position, colour):
     #a small rectangle
-    size = 1
+    size = 2
     [x, y, z] = position
     #scale
     global scaleFactor
@@ -75,14 +75,14 @@ if __name__ == '__main__':
             drawPlanet(draw, planet, red)
      
         for fleet in data["myFleets"]:
-            drawFleet(draw, fleet, blue)
+            drawFleet(draw, fleet, green)
         for fleet in data["enemyFleets"]:
-            drawFleet(draw, fleet, yellow)
+            drawFleet(draw, fleet, red)
         
         
         filename = "/home/null/temp/" + turnText + ".png"
         image1.save(filename)
     
     #convert to a video using mencoder
-    command = "mencoder mf:///home/null/temp/*.png -mf w=" + str(width) + ":h=" + str(height) + ":fps=2:type=png -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o /home/null/temp/video.mpg"
+    command = "mencoder mf:///home/null/temp/*.png -mf w=" + str(width) + ":h=" + str(height) + ":fps=1:type=png -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o /home/null/temp/video.mpg"
     subprocess.Popen(command.split(" "))
