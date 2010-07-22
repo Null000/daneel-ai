@@ -1118,6 +1118,9 @@ def multipleAI():
     return
 
 def smartPlanetCode(ignoreFleets=[]):
+    '''
+    Code for ordering planets.
+    '''
     #TODO this should be around 0.25 when the colonisation is working again
     #colonisationShipsPercent = 0.3 #TODO this will vary dynamicaly in the future
     global colonisationShipsPercent
@@ -1218,6 +1221,9 @@ def smartPlanetCode(ignoreFleets=[]):
                 optimalBuildWeapon(myPlanet, weaponsToBuild, explosivesList, maxExplosives)    
 
 def speed(fleet):
+    '''
+    Returns the speed of the fleet
+    '''
     minSpeed = 1e10
     #check the speed of every ship design present
     for (something, design, numberOfUnits) in helper.shipsOfFleet(fleet):
@@ -1235,6 +1241,9 @@ def speed(fleet):
         
 
 def distanceToObjectInTurns(fleet, object, defaultSpeed=False):
+    '''
+    Returns how many turns it takes for the fleet to reach the object
+    '''
     fleetSpeed = 100 * 1e6 #scout speed as default
     if defaultSpeed == False:
         fleetSpeed = speed(fleet) * 1e6 #convert from mega units
@@ -1243,6 +1252,9 @@ def distanceToObjectInTurns(fleet, object, defaultSpeed=False):
     
 
 def smartColonisationHeuristic(fleet, planet):
+    '''
+    Heuristic for determening the fittnes of this fleet to colonise this planet.
+    '''
     #BTW smaller is better
     distance = helper.distance(fleet, planet)
     distanceToEnemyPlanet = int(helper.distance(planet, helper.nearestEnemyPlanet(planet)))
@@ -1285,6 +1297,9 @@ def smartSplitFleets(fleets=None):
             
 
 def smartColonisationCode(ignoreFleets=[]):
+    '''
+    Code for ordering colonisation ships.
+    '''
     #find ships able to colonise
     fleets = []
     for fleet in helper.myFleets():
@@ -1348,6 +1363,9 @@ def smartColonisationCode(ignoreFleets=[]):
             moveToObject(ship, planet)
 
 def smartAttackCode(ignoreFleets=[]):
+    '''
+    Code for ordering attack ships to attack.
+    '''
     global invasionFleets
     #TODO don't forget the auto attack code
     #TODO send only a limited amount of ships to every planet
@@ -1496,6 +1514,9 @@ def smartAttackCode(ignoreFleets=[]):
             
 
 def smartAttackHeuristics(fleet, planet):
+    '''
+    Heuristic for determening the fittnes of this fleet to attack this planet.
+    '''
     #BTW smaller is better
     distance = float(distanceToObjectInTurns(fleet, planet))
     #TODO since every fleet can be deadly think about only the distance to the nearest enemy fleet
@@ -1513,11 +1534,17 @@ def smartAttackHeuristics(fleet, planet):
     return distance + enemyStrength - othersStrength / 2.0
 
 def smartAttackHeuristicsCorrection(fleet, planet):
+    '''
+    Huristic score correction for each fleet that is already attacking the specified planet.
+    '''
     #TODO implement
     #consider ship type and distance (the closer, more points)
     return 2
 
 def smartAttackStrength(object, player):
+    '''
+    Heuristic for determening the strenght of a player at the position of the specified object.
+    '''
     strenght = 0.0
     for fleet in helper.fleetsOwnedBy(player):
         fleetDistance = distanceToObjectInTurns(fleet, object, defaultSpeed=True)
@@ -1531,6 +1558,9 @@ def smartAttackStrength(object, player):
     return strenght
 
 def smartGuardCode(ignoreFleets=[]):
+    '''
+    Code for ordering attack ships that aren't attacking.
+    '''
     global invasionFleets
     #make a list of all attack ships not currently attacking
     freeFleets = helper.myFleets()
@@ -1558,6 +1588,9 @@ def smartGuardCode(ignoreFleets=[]):
             moveToObject(fleet, min(planetList)[1])
 
 def smartGuardReturnHeuristic(fleet, planet):
+    '''
+    Heuristic for determening the fitness of a friendly planet for restocking with weapons
+    '''
     #where to return when you run out of weapons or the invasion is ower
     #distance, weapons needed by ships already there
     #smaller is better
@@ -1578,6 +1611,9 @@ enemyDesignType = {}
 
 #TODO this is currently not working since the velocity is always (0,0,0) thest it when this gets fixed
 def smartScanEnemy():
+    '''
+    Scans speed of enemy fleets in order to determine the ship type based on max speed.
+    '''
     global enemyDesignMaxSpeed
     enemyFleets = helper.fleetsOwnedBy(helper.enemies())
     
@@ -1599,6 +1635,9 @@ def smartScanEnemy():
                 enemyDesignType[design] = designGuess
 
 def shipTypeGuess(maxSpeed):
+    '''
+    Returns best guess what the ship type could be. (returns hull component id)
+    '''
     #TODO implement this (when server speed information issue get sorted out)
     pass
 
@@ -1643,6 +1682,9 @@ missileRackDict = None
 torpedoRackDict = None
 
 def initGlobals():
+    '''
+    Initialisation of global variables
+    '''
     global reverseWeaponHullDict
     global weaponHullDict
     global tubeDict
@@ -1662,14 +1704,23 @@ def initGlobals():
         torpedoRackDict = {helper.componentByName("omega torpedoe rack"):"omega", helper.componentByName("upsilon torpedoe rack"):"upsilon", helper.componentByName("tau torpedoe rack"):"tau", helper.componentByName("sigma torpedoe rack"):"sigma", helper.componentByName("rho torpedoe rack"):"rho", helper.componentByName("xi torpedoe rack"):"xi"}
 
 def onWin():
+    '''
+    When you win. It's game over.
+    '''
     print "I won!"
     saveData()
     exit(99)
     
 def onLose():
+    '''
+    When you lose. It's not neceseerly game over (other players can still be playing)
+    '''
     print "Today was a good day to die."
     
 def onAllLose():
+    '''
+    When you lose. It's game over (all other players also finished).
+    '''
     exit(42) #don't panic
 
 colonisationShipsPercent = 0.0
@@ -1677,9 +1728,12 @@ def optimisationValues(value):
     global colonisationShipsPercent
     colonisationShipsPercent = float(value)
     
-
+#data for visualisation
 drawData = []
 def gatherData():
+    '''
+    Gathers data for visualisation.
+    '''
     global drawData
     dataThisTurn = {}
     #data for planets
@@ -1737,6 +1791,7 @@ def AICode():
         if helper.planetsOwnedBy(helper.enemies()) == []:
             onWin()
     else:
+        #sleet so other clients can be started
         sleep(5)
             
     
@@ -1753,18 +1808,11 @@ def AICode():
     else:
         pass
         #waitingAI()
-        #greedyAI()
+        greedyAI()
         #rushAI()
         #bunkerAI()
         #commandoAI()
-        smartAI() 
-        
-    #ship = []
-    #ship.append([helper.componentByName("scout hull"), 1])
-    #ship.append([helper.componentByName("alpha missile tube"), 10])
-    #addShipDesign(ship)
-    
-    #designWeapon("alpha", "antimatter explosives", 1)
+        #smartAI() 
 
 """\
 list of possible components

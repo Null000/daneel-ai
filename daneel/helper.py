@@ -19,9 +19,15 @@ def nearestMyFleet(position, ignore=[]):
     return nearestFleetOwnedBy(position, whoami(), ignore)
 
 def distance(object1, object2):
+    '''
+    Returns the distance between given objects
+    '''
     return math.sqrt(distanceSqare(object1, object2))
 
 def distanceSqare(object1, object2):
+    '''
+    Returns the sqare distance between given objects.
+    '''
     (x1, y1, z1) = position(object1)
     (x2, y2, z2) = position(object2)
     return (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2
@@ -129,6 +135,9 @@ def fleets():
     return list
 
 def enemyFleets():
+    '''
+    Returns a list of enemy fleets.
+    '''
     return fleetsOwnedBy(enemies())
 
 def fleetsOwnedBy(owners):
@@ -347,6 +356,9 @@ def planetsOwnedBy(owners):
     return planetList
 
 def enemyPlanets():
+    '''
+    Returns a list of enemy planets.
+    '''
     return planetsOwnedBy(enemies())
     
 def neutralPlanets():
@@ -419,6 +431,9 @@ def nop(group=None, state=None, message=None, todownload=None, amount=None):
     return
 
 def hasOrder(objectId):
+    '''
+    Returns True if the object already has an order.
+    '''
     # get the queue for the object
     queueid = extra.objectutils.getOrderQueueList(cache, objectId)[0][1]
     queue = cache.orders[queueid]
@@ -604,6 +619,9 @@ def designProperties(design):
     return cache.designs[design].properties    
 
 def designPropertyValueByDescription(design, propertyDescription):
+    '''
+    Returns the value of the property (with given description) in the design (name or id).
+    '''
     return designPropertyValue(design, propertyByDescription(propertyDescription))
 
 def designPropertyValue(design, property):
@@ -647,6 +665,9 @@ def printProperties():
         print property.id, property.name, "(" + property.description + ")"    
 
 def deleteAllMessages():
+    '''
+    Deletes all messages.
+    '''
     global cache
     global connection
     

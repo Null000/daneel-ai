@@ -15,9 +15,9 @@ for i in range(10):
     
     server = subprocess.Popen(["tpserver-cpp", "-v", "-C", "/home/null/3thousandparsec/tpserver-cpp/quickstart-mtsec.conf"])
     time.sleep(5)
-    ai1 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai:ai@localhost/aiTest", "-o", "0.1"])
+    ai1 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai:ai@localhost/aiTest", "-o", "0.2"])
     time.sleep(2)
-    ai2 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai2:ai@localhost/aiTest", "-o", "0.9"])
+    ai2 = subprocess.Popen(["python", "daneel-ai.py", "-f", "mtsec", "-u", "ai2:ai@localhost/aiTest", "-o", "0.8"])
     
     timer = 0
     while ai1.poll() == None and ai2.poll() == None and server.poll() == None:
