@@ -276,6 +276,12 @@ def playerName(id):
             return player.args[1]
     return None
 
+def myName():
+    '''
+    Returns your player name.
+    '''
+    return playerName(whoami())
+
 def enemies():
     '''
     Returns a list of all the enemy playes.

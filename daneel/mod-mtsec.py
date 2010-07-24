@@ -457,7 +457,6 @@ def optimalBuildShip(planet, ship, maxPointsToWaste=0.2, maxTurns=5, pointsAlrea
         numberToBuild = 1
     
     buildShip(planet, design, numberToBuild)
-    #TODO return the number of points used (in the current turn)
     
 def buildWeapon(planet, weapon, numberOfWeapons=1):
     print "building weapons on" , helper.name(planet)
@@ -1574,11 +1573,17 @@ def smartGuardCode(ignoreFleets=[]):
         #is the feet on a friendly planet?        
         if parent in helper.myPlanets():
             #make it stay here
+            #TODO find out more about this bug
+            try:
+                if helper.hasOrder(fleet):
+                    print "possible trouble"
+            except Exception:
+                pass
             #TODO check for orders so we don't mess up loading orders
             orderNone(fleet)
         #other ships should go to a friendly palanet for suplies (if not already there)
         else:
-            #TODO this could be used even if the fleet is on a planet (bit it is preocupied)
+            #TODO this could be used even if the fleet is on a planet (but it is preocupied)
             #move to the planet with the best (lowest) score
             planetList = []
             for planet in helper.myPlanets():
@@ -1655,12 +1660,11 @@ def smartAI():
     smartPlanetCode(splitFleets)
 
     #give orders to colonisation ships
-    if helper.turnNumber() > 4:
-        smartColonisationCode(splitFleets)
+    #if helper.turnNumber() > 4:
+    smartColonisationCode(splitFleets)
     
     #give orders to attack ships marked for invasion 
-    if helper.turnNumber() > 4:
-        smartAttackCode(splitFleets)
+    smartAttackCode(splitFleets)
         
     #give orders to attack ships not marked for invasion
     smartGuardCode(splitFleets)
@@ -1793,7 +1797,6 @@ def AICode():
     else:
         #sleet so other clients can be started
         sleep(5)
-            
     
     #delete all messages so you don't get spammed
     helper.deleteAllMessages()
@@ -1808,11 +1811,11 @@ def AICode():
     else:
         pass
         #waitingAI()
-        greedyAI()
+        #greedyAI()
         #rushAI()
         #bunkerAI()
         #commandoAI()
-        #smartAI() 
+        smartAI() 
 
 """\
 list of possible components
