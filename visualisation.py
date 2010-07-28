@@ -45,8 +45,10 @@ offsetY = 300
 saveFolder = "/home/null/temp/"
 #where is the data from the AI
 pickleDataPath = "/home/null/draw.pickle"  
+#pickleDataPath = "draw.pickle"
 
-if __name__ == '__main__':
+    
+def visualise():
     f = open(pickleDataPath)
     drawData = pickle.load(f)
         
@@ -70,7 +72,9 @@ if __name__ == '__main__':
         while len(turnText) < minimalNumberOfDigits:
             turnText = "0" + turnText
         
-        draw.text((10, 10), "turn " + turnText, white)
+        draw.text((10, 10), "turn " + turnText + " planets left: " + str(len(data["neutralPlanets"])), white)
+        draw.text((10, 25), "planets: " + str(len(data["myPlanets"])) + " fleets: " + str(len(data["myFleets"])), green)
+        draw.text((10, 40), "planets: " + str(len(data["enemyPlanets"])) + " fleets: " + str(len(data["enemyFleets"])), red)
      
         for planet in data["myPlanets"]:
             drawPlanet(draw, planet, green)
@@ -91,3 +95,6 @@ if __name__ == '__main__':
     #convert to a video using mencoder
     command = "mencoder mf://" + saveFolder + "*.png -mf w=" + str(width) + ":h=" + str(height) + ":fps=1:type=png -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o /home/null/temp/video.mpg"
     subprocess.Popen(command.split(" "))
+
+if __name__ == '__main__':
+    visualise()

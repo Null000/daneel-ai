@@ -384,7 +384,7 @@ fleetSerialNumber = 0
 def buildShip(planet, ship, numberOfShips=1):
     global fleetSerialNumber
     print "building ships on", helper.name(planet), "(", helper.designName(ship), ")"
-    orderBuildFleet(planet, [(ship, numberOfShips)], helper.playerName(helper.whoami()) + "'s fleet #" + str(fleetSerialNumber))
+    orderBuildFleet(planet, [(ship, numberOfShips)], helper.myName() + "'s fleet #" + str(fleetSerialNumber))
     fleetSerialNumber += 1
     
 def factories(planet):
@@ -1654,19 +1654,24 @@ def smartAI():
     #smartScanEnemy()
     
     #split fleets that can be split
+    print "splitting fleets"
     splitFleets = smartSplitFleets()
     
     #give orders to planets
+    print "giving orders to planets"
     smartPlanetCode(splitFleets)
 
     #give orders to colonisation ships
     #if helper.turnNumber() > 4:
+    print "giving orders to colonisation ships"
     smartColonisationCode(splitFleets)
     
-    #give orders to attack ships marked for invasion 
+    #give orders to attack ships marked for invasion
+    print "giving orders to invading attack ships" 
     smartAttackCode(splitFleets)
         
     #give orders to attack ships not marked for invasion
+    print "giving orders to non-invading attack ships"
     smartGuardCode(splitFleets)
     
     return
@@ -1712,7 +1717,6 @@ def onWin():
     When you win. It's game over.
     '''
     print "I won!"
-    saveData()
     exit(99)
     
 def onLose():
@@ -1777,7 +1781,6 @@ def saveData():
 def AICode():
     initGlobals()
     
-    gatherData()
     
     #helper.printAboutMe()
     print "It's turn", helper.turnNumber()
@@ -1801,7 +1804,8 @@ def AICode():
     #delete all messages so you don't get spammed
     helper.deleteAllMessages()
     #helper.printDesignsWithProperties()
-    if helper.playerName(helper.whoami()) == "ai":
+    if helper.myName() == "ai":
+        gatherData()
         saveData()
         pass
         #commandoAI()
