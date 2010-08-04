@@ -67,7 +67,7 @@ def visualise():
         image1 = Image.new("RGB", (width, height), black)
         draw = ImageDraw.Draw(image1)
         
-        turnText = str(index + 1)
+        turnText = str(index)
         minimalNumberOfDigits = 3
         while len(turnText) < minimalNumberOfDigits:
             turnText = "0" + turnText

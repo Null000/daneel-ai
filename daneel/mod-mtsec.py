@@ -1143,6 +1143,8 @@ def smartPlanetCode(ignoreFleets=[]):
     explosivesList = ["antimatter explosives", "antiparticle explosives"]
     maxExplosives = [1, 1]
     
+    planetsWithoutOrders = []
+    
     #build ships on all planets (and load them with weapons)
     for myPlanet in helper.myPlanets():
         print "checking what to do with", helper.name(myPlanet)
@@ -1196,28 +1198,47 @@ def smartPlanetCode(ignoreFleets=[]):
                                 weaponsLoadedDict[type] += weaponsToLoadDict[type]
                             else:
                                 weaponsLoadedDict[type] = weaponsToLoadDict[type]
-                    
-            #build weapons/ships order
+
+            #if there is no need to build weapons
             if weaponsToBuild == {}:
-                #no weaopns to build... build a ship
-                #choose betwen an attack ship and a colonisation ship
-                if random.random() < colonisationShipsPercent:
-                    #build colonisation ship
-                    design = addShipDesign(colonisationShip)
-                    buildShip(myPlanet, design, 1)
-                    
-                    #optimalBuild is broken
-                    #optimalBuildShip(myPlanet, colonisationShip)
-                else:
-                    #bild attack ship
-                    design = addShipDesign(ship)
-                    buildShip(myPlanet, design, 1)
-                    
-                    #optimalBuild is broken
-                    #optimalBuildShip(myPlanet, ship, maxTurns=1)
+            #add it to the list
+                planetsWithoutOrders.append(myPlanet)
             else:
                 #build weapons of the required type
-                optimalBuildWeapon(myPlanet, weaponsToBuild, explosivesList, maxExplosives)    
+                optimalBuildWeapon(myPlanet, weaponsToBuild, explosivesList, maxExplosives)
+
+            
+            
+    #TODO advanced planet management
+    #give orders to planets that need them
+    for myPlanet in planetsWithoutOrders:
+        #no weaopns to build... build a ship
+        
+        #choose betwen an attack ship and a colonisation ship
+        if random.random() < colonisationShipsPercent:
+            #TODO this is a test...
+            colonisationShips = 0
+            for fleet in helper.myFleets():
+                if canColonise(fleet):
+                    colonisationShips += 1
+            
+            if colonisationShips < len(helper.neutralPlanets()):
+                #build colonisation ship
+                design = addShipDesign(colonisationShip)
+                buildShip(myPlanet, design, 1)
+            else:
+                design = addShipDesign(ship)
+                buildShip(myPlanet, design, 1)
+            
+            #optimalBuild is broken
+            #optimalBuildShip(myPlanet, colonisationShip)
+        else:
+            #bild attack ship
+            design = addShipDesign(ship)
+            buildShip(myPlanet, design, 1)
+            
+            #optimalBuild is broken
+            #optimalBuildShip(myPlanet, ship, maxTurns=1)    
 
 def speed(fleet):
     '''
@@ -1361,6 +1382,16 @@ def smartColonisationCode(ignoreFleets=[]):
             print helper.name(ship), ship, "moving to colonise", helper.name(planet)
             moveToObject(ship, planet)
 
+def closestEnemyPlanets(object, numberOfPlanets=10):
+    '''
+    Returns a list of the closest enemy planets to the given object (max number of planets is determened by numberOfPlanets)
+    '''
+    planetDistances = [(helper.distance(object, planet), planet) for planet in helper.enemyPlanets()]
+    planetDistances.sort()
+    #take only the closets
+    planetDistances = planetDistances[:min(numberOfPlanets, len(planetDistances))] 
+    return [planet for (distance, planet) in planetDistances]
+    
 def smartAttackCode(ignoreFleets=[]):
     '''
     Code for ordering attack ships to attack.
@@ -1443,14 +1474,16 @@ def smartAttackCode(ignoreFleets=[]):
         print "to little attack ships. Retreat!"
         #the smart guard code takes care of returning to friendly planets
         invasionFleets = [] 
+    else:
+        print len(invasionFleets), "ships are attacking"
         
     #dictionary of attack scores
     scoreDictByPlanet = {}
     scoreDictByFleet = {}
-    #calculate scores for every planet and fleet combination    
-    for planet in helper.enemyPlanets():
-        planetScores = []
-        for fleet in invasionFleets:
+    
+    #calculate scores for planet fleet combinations (take only 20 closest planets into accout)
+    for fleet in invasionFleets:
+        for planet in closestEnemyPlanets(fleet, 10):
             #calculate the score for this planet fleet combination
             score = smartAttackHeuristics(fleet, planet)
             #add it to the by fleet dictionary
@@ -1458,9 +1491,10 @@ def smartAttackCode(ignoreFleets=[]):
                 scoreDictByFleet[fleet].append((score, planet))
             else:
                 scoreDictByFleet[fleet] = [(score, planet)]
-            planetScores.append((score, fleet))
-        #add it to the by planet dictionary
-        scoreDictByPlanet[planet] = planetScores
+            if scoreDictByPlanet.has_key(planet):
+                scoreDictByPlanet[planet].append((score, fleet))
+            else:
+                scoreDictByPlanet[planet] = [(score, fleet)]
 
     #sort all score lists
     for planet in scoreDictByPlanet.keys():
@@ -1497,7 +1531,7 @@ def smartAttackCode(ignoreFleets=[]):
                 fleetByPlanetDict[bestPlanet].append((minScore, fleet))
             else:
                 fleetByPlanetDict[bestPlanet] = [(minScore, fleet)]
-            
+        
         #add 1 ship for each planet
         for (planet, scores) in fleetByPlanetDict.items():
             (score, fleet) = min(scores)
@@ -1544,6 +1578,12 @@ def smartAttackStrength(object, player):
     '''
     Heuristic for determening the strenght of a player at the position of the specified object.
     '''
+    global enemyStrenghtDict
+    
+    #check if it was already calculated
+    if enemyStrenghtDict.has_key((object,player)):
+        return enemyStrenghtDict[(object,player)]
+    
     strenght = 0.0
     for fleet in helper.fleetsOwnedBy(player):
         fleetDistance = distanceToObjectInTurns(fleet, object, defaultSpeed=True)
@@ -1554,6 +1594,10 @@ def smartAttackStrength(object, player):
             numberOfEnemyShips += number
         #TODO make the HP count as well
         strenght += float(numberOfEnemyShips) / float(fleetDistance)
+        
+    #save it
+    enemyStrenghtDict[(object,player)] = strenght
+    
     return strenght
 
 def smartGuardCode(ignoreFleets=[]):
@@ -1592,21 +1636,29 @@ def smartGuardCode(ignoreFleets=[]):
             #move to the one with the lowest score
             moveToObject(fleet, min(planetList)[1])
 
-def smartGuardReturnHeuristic(fleet, planet):
+def smartGuardReturnHeuristic(fleetGuard, planet):
     '''
     Heuristic for determening the fitness of a friendly planet for restocking with weapons
     '''
     #where to return when you run out of weapons or the invasion is ower
     #distance, weapons needed by ships already there
     #smaller is better
-    distance = distanceToObjectInTurns(fleet, planet)
+    distance = distanceToObjectInTurns(fleetGuard, planet)
+    
     weaponsNeededByShips = 0
-    #for all objects on a planet
-    for fleet in helper.contains(planet):
-        #check if it really my fleet
-        if helper.isMyFleet(fleet):
-            for (type, number) in weaponsNeeded(fleet).items():
-                weaponsNeededByShips += number
+    #no need to calculate if cached
+    if guardWeaponsNeededDict.has_key(planet):
+        weaponsNeededByShips = guardWeaponsNeededDict[planet] 
+    else:
+        #not cached, calculate
+        #for all objects on a planet
+        for fleet in helper.contains(planet):
+            #check if it really my fleet
+            if helper.isMyFleet(fleet):
+                for (type, number) in weaponsNeeded(fleet).items():
+                    weaponsNeededByShips += number
+        #save to cache
+        guardWeaponsNeededDict[planet] = weaponsNeededByShips
     return distance + weaponsNeededByShips / 10
 
 
@@ -1690,6 +1742,9 @@ tubeDict = None
 missileRackDict = None
 torpedoRackDict = None
 
+enemyStrenghtDict = {}
+guardWeaponsNeededDict = {}
+
 def initGlobals():
     '''
     Initialisation of global variables
@@ -1699,6 +1754,16 @@ def initGlobals():
     global tubeDict
     global missileRackDict
     global torpedoRackDict
+    global enemyStrenghtDict
+    global guardWeaponsNeededDict
+    
+    #this is meant to be reset every turn
+    #used by smartGuardReturnHeuristic
+    guardWeaponsNeededDict = {}
+    #this is meant to be reset every turn
+    #used by smartAttackStrenght
+    enemyStrenghtDict = {}
+    
     #dictionary of weapon types by hull component id
     if reverseWeaponHullDict == None:
         reverseWeaponHullDict = {helper.componentByName("alpha missile hull"):"alpha", helper.componentByName("beta missile hull"):"beta", helper.componentByName("gamma missile hull"):"gamma", helper.componentByName("delta missile hull"):"delta", helper.componentByName("epsilon missile hull"):"epsilon", helper.componentByName("omega torpedoe hull"):"omega", helper.componentByName("upsilon torpedoe hull"):"upsilon", helper.componentByName("tau torpedoe hull"):"tau", helper.componentByName("sigma torpedoe hull"):"sigma", helper.componentByName("rho torpedoe hull"):"rho", helper.componentByName("xi torpedoe hull"):"xi"}
@@ -1742,6 +1807,8 @@ def gatherData():
     '''
     Gathers data for visualisation.
     '''
+    print "Gathering data"
+    
     global drawData
     dataThisTurn = {}
     #data for planets
@@ -1768,6 +1835,7 @@ def gatherData():
     dataThisTurn["enemyFleets"] = enemyFleets
     #append to all data
     drawData.append(dataThisTurn)
+    print "Data gathered"
 
 def saveData():
     #save the draw data for visualisation
@@ -1780,7 +1848,11 @@ def saveData():
 
 def AICode():
     initGlobals()
-    
+
+    #save data for visualisation
+    if helper.myName() == "ai":
+        gatherData()
+        saveData()    
     
     #helper.printAboutMe()
     print "It's turn", helper.turnNumber()
@@ -1805,8 +1877,6 @@ def AICode():
     helper.deleteAllMessages()
     #helper.printDesignsWithProperties()
     if helper.myName() == "ai":
-        gatherData()
-        saveData()
         pass
         #commandoAI()
         #rushAI()
