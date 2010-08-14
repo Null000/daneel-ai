@@ -432,7 +432,7 @@ def addDesign(name, description, categories, componentList, replaceOnDuplicate=F
     
 def nop(group=None, state=None, message=None, todownload=None, amount=None):
     '''
-    It does nothing and is used internaly.
+    It does nothing and is used internally.
     '''
     return
 

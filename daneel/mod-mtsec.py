@@ -1120,10 +1120,7 @@ def smartPlanetCode(ignoreFleets=[]):
     '''
     Code for ordering planets.
     '''
-    #TODO this should be around 0.25 when the colonisation is working again
-    #colonisationShipsPercent = 0.3 #TODO this will vary dynamicaly in the future
-    global colonisationShipsPercent
-    #global loadPercent
+    colonisationShipsPercent = 0.9
     loadPercent = 1.0 #TODO this can vary in the future
     
     #colonisation ship design
@@ -1216,12 +1213,13 @@ def smartPlanetCode(ignoreFleets=[]):
         
         #choose betwen an attack ship and a colonisation ship
         if random.random() < colonisationShipsPercent:
-            #TODO this is a test...
+            #count the colonisation ships
             colonisationShips = 0
             for fleet in helper.myFleets():
                 if canColonise(fleet):
                     colonisationShips += 1
             
+            #check if there are already too many colonisation ships
             if colonisationShips < len(helper.neutralPlanets()):
                 #build colonisation ship
                 design = addShipDesign(colonisationShip)
@@ -1796,11 +1794,6 @@ def onAllLose():
     '''
     exit(42) #don't panic
 
-colonisationShipsPercent = 0.0
-def optimisationValues(value):
-    global colonisationShipsPercent
-    colonisationShipsPercent = float(value)
-    
 #data for visualisation
 drawData = []
 def gatherData():
@@ -1850,9 +1843,9 @@ def AICode():
     initGlobals()
 
     #save data for visualisation
-    if helper.myName() == "ai":
-        gatherData()
-        saveData()    
+    #if helper.myName() == "ai":
+    #    gatherData()
+    #    saveData()    
     
     #helper.printAboutMe()
     print "It's turn", helper.turnNumber()

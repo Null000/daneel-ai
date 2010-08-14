@@ -173,9 +173,6 @@ def init(cache,rulesystem,connection):
     	#call init if it exists in m
     	if "init" in [x[0] for x in inspect.getmembers(m)]:
             m.init(cache,rulesystem,connection)
-        #this is for optimisation
-        if "optimisationValues" in [x[0] for x in inspect.getmembers(m)]:
-            m.optimisationValues(optimiseValue)
 
 def pickle(variable, file_name):
 	file = open(file_name, 'wb')
@@ -249,8 +246,6 @@ def gameLoopBenchMark(rulesfile,turns,connection,cache,verbosity):
     
     return
 
-optimiseValue = None
-
 if __name__ == "__main__":
     parser = OptionParser(version="%prog " + ("%i.%i.%i" % version))
     parser.add_option("-f", "--file", dest="filename", default="rfts",
@@ -264,10 +259,6 @@ if __name__ == "__main__":
                       help="More verbose output. -vv and -vvv increase output even more.")
     parser.add_option("-b", dest="benchmark", default=0,
                       help="Runs the program in benchmarking mode.")
-    parser.add_option("-o", dest="optimise", default=0,
-                      help="Runs the program in benchmarking mode.")
-
 
     (options, args) = parser.parse_args()
-    optimiseValue = options.optimise
     gameLoop(options.filename,turns=options.numturns,uri=options.uri,verbosity=options.verbosity,benchmark=options.benchmark)
