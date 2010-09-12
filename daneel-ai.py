@@ -14,16 +14,15 @@ import inspect
 
 from optparse import OptionParser
 
-import tp.client.threads
-from tp.netlib.client import url2bits
 from tp.netlib import Connection
 from tp.netlib import failed, constants, objects
-from tp.client.cache import Cache
-
 import daneel
 from daneel.rulesystem import RuleSystem, BoundConstraint
 import picklegamestate
 import cPickle
+from tp.netlib.client import url2bits
+from tp.client.cache import Cache
+
 
 version = (0, 0, 3)
 mods = []
