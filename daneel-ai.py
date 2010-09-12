@@ -1,9 +1,9 @@
 #! /usr/bin/python
 
 try:
-	import requirements
+    import requirements
 except ImportError:
-	pass
+    pass
 
 import time
 import random
@@ -14,15 +14,16 @@ import inspect
 
 from optparse import OptionParser
 
+import tp.client.threads
+from tp.netlib.client import url2bits
 from tp.netlib import Connection
 from tp.netlib import failed, constants, objects
+from tp.client.cache import Cache
+
 import daneel
 from daneel.rulesystem import RuleSystem, BoundConstraint
 import picklegamestate
 import cPickle
-from tp.netlib.client import url2bits
-from tp.client.cache import Cache
-
 
 version = (0, 0, 3)
 mods = []
@@ -47,7 +48,7 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
 
     # Download the entire universe
     try:
-    	connection.setup(host=host, debug=debug)
+        connection.setup(host=host, debug=debug)
     except Exception,e: #TODO make the exception more specific
         print "Unable to connect to the host."
         return
@@ -67,7 +68,12 @@ def connect(uri='tp://daneel-ai:cannonfodder@localhost/tp'):
             print "Created username, but still couldn't login :/"
             return
 
-    cache = Cache(Cache.key(host, username))
+    games = connection.games()
+    if failed(games):
+        print "Getting the game object failed!"
+        return
+
+    cache = Cache(Cache.key(host, games[0], username))
     return connection, cache
 
 def getDataDir():
@@ -131,53 +137,56 @@ def stripline(line):
 
 def startTurn(cache,store, delta):
     for m in mods:
-    	#call startTurn if it exists in m
+        #call startTurn if it exists in m
         if "startTurn" in [x[0] for x in inspect.getmembers(m)]:
             m.startTurn(cache,store, delta)
 
 def endTurn(cache,rulesystem,connection):
     for m in mods:
-    	#call endTurn if it exists in m
+        #call endTurn if it exists in m
         if "endTurn" in [x[0] for x in inspect.getmembers(m)]:
             m.endTurn(cache,rulesystem,connection)
 
 def saveGame(cache):
-	root_dir = getDataDir()
-	save_dir = root_dir + "/states/"
-	writeable = checkSaveFolderWriteable(root_dir, save_dir)
-	# NB assumes there is enough space to write
-	if not writeable:
-		logging.getLogger("daneel").error("Cannot save information")
-	else:
-		cache.file = save_dir + time.time().__str__() + ".gamestate"
-		cache.save()
+    root_dir = getDataDir()
+    save_dir = root_dir + "/states/"
+    writeable = checkSaveFolderWriteable(root_dir, save_dir)
+    # NB assumes there is enough space to write
+    if not writeable:
+        logging.getLogger("daneel").error("Cannot save information")
+    else:
+        cache.file = save_dir + time.time().__str__() + ".gamestate"
+        cache.save()
 
 
-def checkSaveFolderWriteable(root_dir, save_dir):	
-	dir_exists = os.access(save_dir, os.F_OK)
-	dir_writeable = os.access(save_dir, os.W_OK)
-	dir_root_writeable = os.access(root_dir, os.W_OK)
-	if dir_exists and dir_writeable:
-		return True
-	if dir_exists and not dir_writeable:
-		return False
-	if dir_root_writeable:
-		os.mkdir(save_dir)
-		return True
-	else:
-		return False
+def checkSaveFolderWriteable(root_dir, save_dir):    
+    dir_exists = os.access(save_dir, os.F_OK)
+    dir_writeable = os.access(save_dir, os.W_OK)
+    dir_root_writeable = os.access(root_dir, os.W_OK)
+    if dir_exists and dir_writeable:
+        return True
+    if dir_exists and not dir_writeable:
+        return False
+    if dir_root_writeable:
+        os.mkdir(save_dir)
+        return True
+    else:
+        return False
 
 def init(cache,rulesystem,connection):
     for m in mods:
-    	#call init if it exists in m
-    	if "init" in [x[0] for x in inspect.getmembers(m)]:
+        #call init if it exists in m
+        if "init" in [x[0] for x in inspect.getmembers(m)]:
             m.init(cache,rulesystem,connection)
+        #this is for optimisation
+        if "optimisationValues" in [x[0] for x in inspect.getmembers(m)]:
+            m.optimisationValues(optimiseValue)
 
 def pickle(variable, file_name):
-	file = open(file_name, 'wb')
-	cPickle.dump(variable, file)
-	file.close()
-	return
+    file = open(file_name, 'wb')
+    cPickle.dump(variable, file)
+    file.close()
+    return
 
 def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',verbosity=0,benchmark=0):
     try:
@@ -189,16 +198,20 @@ def gameLoop(rulesfile,turns=-1,uri='tp://daneel-ai:cannonfodder@localhost/tp',v
     try:
         connection, cache = connect(uri)
     except Exception, e: #TODO Null make the exception more specific
+        import traceback
+        traceback.print_exc()
+
         print "Connection failed."
         print e
+
         return
     
 #    state = picklegamestate.GameState(rulesfile,turns,None,None,verbosity)
 #    state.pickle("./states/" + time.time().__str__() + ".gamestate")
-	
+    
     gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark)
 
-def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):		
+def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):        
     rulesystem = createRuleSystem(rulesfile,verbosity,cache,connection)
     logging.getLogger("daneel").info("Downloading all data")
     cache.update(connection,callback)
@@ -213,7 +226,7 @@ def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):
         cache.update(connection,callback)
         # store the cache
         #saveGame(cache)      
-        lastturn = cache.objects[0].Informational[0][0]
+        lastturn = connection.time().turn_num
 
         startTurn(cache,rulesystem,delta)
         rulesystem.addConstraint("cacheentered")
@@ -223,16 +236,16 @@ def gameLoopWrapped(rulesfile,turns,connection,cache,verbosity,benchmark):
         connection.turnfinished()
         waitfor = connection.time()
         
-        logging.getLogger("daneel").info("Awaiting end of turn %s est: (%s s)..." % (lastturn,waitfor))
+        logging.getLogger("daneel").info("Awaiting end of turn %s est: (%s s)..." % (lastturn,waitfor.time))
         try:
             while lastturn == connection.get_objects(0)[0].Informational[0][0]:
                 waitfor = connection.time()
-                time.sleep(max(1, min(10,waitfor / 100)))
+                time.sleep(max(1, min(10, waitfor.time / 100)))
         except IOError:
             print "Connection lost"
             exit(2)
 
-def gameLoopBenchMark(rulesfile,turns,connection,cache,verbosity):		
+def gameLoopBenchMark(rulesfile,turns,connection,cache,verbosity):        
     rulesystem = createRuleSystem(rulesfile,verbosity,cache,connection)
     logging.getLogger("daneel").info("Downloading all data")
 
@@ -244,6 +257,8 @@ def gameLoopBenchMark(rulesfile,turns,connection,cache,verbosity):
     rulesystem.clearStore()
     
     return
+
+optimiseValue = None
 
 if __name__ == "__main__":
     parser = OptionParser(version="%prog " + ("%i.%i.%i" % version))
@@ -258,6 +273,10 @@ if __name__ == "__main__":
                       help="More verbose output. -vv and -vvv increase output even more.")
     parser.add_option("-b", dest="benchmark", default=0,
                       help="Runs the program in benchmarking mode.")
+    parser.add_option("-o", dest="optimise", default=0,
+                      help="Runs the program in benchmarking mode.")
+
 
     (options, args) = parser.parse_args()
+    optimiseValue = options.optimise
     gameLoop(options.filename,turns=options.numturns,uri=options.uri,verbosity=options.verbosity,benchmark=options.benchmark)

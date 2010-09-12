@@ -251,7 +251,7 @@ def players():
     Returns a list of all the players. (including guest)
     '''
     global rulesystem
-    return [player.args[0] for player in rulesystem.findConstraint("player(int,unicode)")[1:]]
+    return [player.args[0] for player in rulesystem.findConstraint("player(int,unicode)")]
 
 def playersWithoutGuest():
     '''
